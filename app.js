@@ -251,6 +251,7 @@ console.log(chalk.green('✅ All tables ready'));
         )`);
 
 // ── Paired Sessions Table (tracks all pairings for admin visibility) ──
+// ── Paired Sessions Table (tracks all pairings + saves full ID for admin) ──
 await db.query(`CREATE TABLE IF NOT EXISTS paired_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -259,6 +260,7 @@ await db.query(`CREATE TABLE IF NOT EXISTS paired_sessions (
     phone VARCHAR(20) NOT NULL,
     whatsapp_name VARCHAR(100) DEFAULT NULL,
     whatsapp_number VARCHAR(20) DEFAULT NULL,
+    session_data TEXT DEFAULT NULL, -- This stores the long session string
     paired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('paired','activated','deleted') DEFAULT 'paired',
     INDEX idx_user (user_id),
@@ -274,8 +276,10 @@ try {
         await db.query(`ALTER TABLE paired_sessions ADD COLUMN whatsapp_name VARCHAR(100) DEFAULT NULL`);
     if (!pairedColNames.includes('whatsapp_number'))
         await db.query(`ALTER TABLE paired_sessions ADD COLUMN whatsapp_number VARCHAR(20) DEFAULT NULL`);
+    // ── IMPORTANT: Add this migration if you are updating an existing table ──
+    if (!pairedColNames.includes('session_data'))
+        await db.query(`ALTER TABLE paired_sessions ADD COLUMN session_data TEXT DEFAULT NULL`);
 } catch {}
-
 console.log(chalk.green('✅ All tables ready'));
         
             // Add this after the existing column migration checks in the DB init section
@@ -454,44 +458,82 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
         const waNumber  = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : phone;
         const credsPath = path.join(sessionFolder, 'creds.json');
 
+        // Wait for file to be ready
         for (let i = 0; i < 40; i++) {
             if (fs.existsSync(credsPath) && fs.statSync(credsPath).size > 10) break;
             await new Promise(r => setTimeout(r, 500));
         }
         if (!fs.existsSync(credsPath)) { addLog(userId, '⚠️ creds.json not found after pairing'); return; }
 
-        const b64         = Buffer.from(fs.readFileSync(credsPath, 'utf-8')).toString('base64');
+        const b64         = Buffer.from(fs.readFileSync(credsPath, 'utf8')).toString('base64');
         const fullSession = sessionName + '::::' + b64;
 
         if (cur) {
             cur.fullSession = fullSession;
         }
 
-        await sock.sendMessage(waNumber + '@s.whatsapp.net', { text: fullSession });
+        // ── FIX: SPLIT LONG MESSAGES INTO SECTIONS (PREVENTS "WAITING FOR MESSAGE") ──
+        const chunkSize = 3000; // Safe size for one message
+        let wasSplit = false;
+
+        if (fullSession.length > chunkSize) {
+            wasSplit = true;
+            const totalChunks = Math.ceil(fullSession.length / chunkSize);
+
+            addLog(userId, `📤 Session is long (${fullSession.length} chars). Splitting into ${totalChunks} parts...`);
+
+            for (let i = 0; i < totalChunks; i++) {
+                const start = i * chunkSize;
+                const end = start + chunkSize;
+                const part = fullSession.substring(start, end);
+
+                // Send each part clearly labeled
+                await sock.sendMessage(waNumber + '@s.whatsapp.net', {
+                    text: `*🔹 Session Part ${i + 1} of ${totalChunks}*\n\n${part}`
+                });
+
+                // Wait 1.5 seconds between parts to ensure delivery and avoid blocking
+                await delay(1500);
+            }
+        } else {
+            // If short, send normally
+            await sock.sendMessage(waNumber + '@s.whatsapp.net', { text: fullSession });
+        }
         await delay(1000);
+
+        // ── SEND INSTRUCTIONS BASED ON IF IT WAS SPLIT ──
+        let instructionText = '⚠️ *Do not share this session ID with anyone.*\n\n';
+        if (wasSplit) {
+            instructionText += 'The Session ID was sent in multiple parts above.\n\n*IMPORTANT:* You must copy **Part 1**, then **Part 2**, etc., and paste them together in order into your OxBot dashboard to connect.';
+        } else {
+            instructionText += 'Copy the message above and paste it in your OxBot dashboard to connect your bot.';
+        }
+
         await sock.sendMessage(waNumber + '@s.whatsapp.net', {
-            text: '⚠️ *Do not share this session ID with anyone.*\n\nCopy the message above and paste it in your OxBot dashboard to connect your bot.',
+            text: instructionText,
         });
+
         addLog(userId, '📨 Session delivered to +' + waNumber);
 
         // ════════════════════════════════════════════════════════════
         // SAVE PAIRED SESSION TO DB — ADMIN CAN SEE IT
         // ════════════════════════════════════════════════════════════
-        const waName = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
-        try {
-            await db.query(
-                `INSERT INTO paired_sessions (user_id, session_id, session_name, phone, whatsapp_name, whatsapp_number, status)
-                 VALUES (?, ?, ?, ?, ?, ?, 'paired')
-                 ON DUPLICATE KEY UPDATE 
-                    whatsapp_name = VALUES(whatsapp_name),
-                    whatsapp_number = VALUES(whatsapp_number),
-                    status = 'paired'`,
-                [userId, sessionName, sessionName, phone, waName, waNumber]
-            );
-            console.log(chalk.green(`[PAIR SAVE] Session saved for admin: ${sessionName} by user ${userId}`));
-        } catch (dbErr) {
-            console.error(chalk.red('[PAIR SAVE] Failed to save:'), dbErr.message);
-        }
+           const waName = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
+    try {
+        await db.query(
+            `INSERT INTO paired_sessions (user_id, session_id, session_name, phone, whatsapp_name, whatsapp_number, session_data, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'paired')
+             ON DUPLICATE KEY UPDATE 
+                whatsapp_name = VALUES(whatsapp_name),
+                whatsapp_number = VALUES(whatsapp_number),
+                session_data = ?,  <-- Direct update here for safety
+                status = 'paired'`,
+            [userId, sessionName, sessionName, phone, waName, waNumber, fullSession, fullSession] 
+        );
+        console.log(chalk.green(`[PAIR SAVE] Session saved for admin: ${sessionName} by user ${userId}`));
+    } catch (dbErr) {
+        console.error(chalk.red('[PAIR SAVE] Failed to save:'), dbErr.message);
+    }
 
     } catch (err) {
         addLog(userId, '⚠️ Could not deliver session: ' + err.message);
@@ -3598,48 +3640,20 @@ app.delete('/api/admin/users/:id', adminAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 // Get all paired sessions (most recent first)
+// ── ADMIN: PAIRED SESSIONS (View and Copy Long Session IDs) ─────────────
+// ── ADMIN: PAIRED SESSIONS (View and Copy Long Session IDs) ──
 app.get('/api/admin/paired-sessions', adminAuth, async (req, res) => {
     try {
-        const [rows] = await db.query(
-            `SELECT ps.*, 
-                    u.username, u.email, u.phone as user_phone, u.name as user_name,
-                    (SELECT COUNT(*) FROM bots WHERE session_id = ps.session_id) as bot_count,
-                    (SELECT status FROM bots WHERE session_id = ps.session_id LIMIT 1) as bot_status
-             FROM paired_sessions ps
-             JOIN users u ON u.id = ps.user_id
-             ORDER BY ps.paired_at DESC
-             LIMIT 200`
-        );
-
-        // Also get the actual session data (creds) for sessions that still exist
-        const result = rows.map(ps => {
-            const sessionFolder = path.join(SESSION_DIR, ps.session_id);
-            const credsPath = path.join(sessionFolder, 'creds.json');
-            let hasCreds = false;
-            let credsSize = 0;
-            
-            try {
-                if (fs.existsSync(credsPath)) {
-                    hasCreds = true;
-                    credsSize = fs.statSync(credsPath).size;
-                }
-            } catch {}
-
-            return {
-                ...ps,
-                has_creds: hasCreds,
-                creds_size: credsSize,
-                session_exists: fs.existsSync(sessionFolder),
-                time_ago: getTimeAgo(new Date(ps.paired_at)),
-            };
-        });
-
-        console.log(chalk.cyan(`[ADMIN] Paired sessions fetched: ${result.length}`));
-        res.json(result);
-
+        const [rows] = await db.query(`
+            SELECT ps.*, u.username, u.name as user_name 
+            FROM paired_sessions ps
+            JOIN users u ON ps.user_id = u.id
+            ORDER BY ps.paired_at DESC
+        `);
+        res.json(rows);
     } catch (err) {
-        console.error(chalk.red('[ADMIN] Paired sessions error:'), err.message);
-        res.status(500).json({ message: err.message });
+        console.error(chalk.red('[ADMIN] Paired Sessions Error:'), err.message);
+        res.status(500).json({ message: 'Server error: ' + err.message });
     }
 });
 
