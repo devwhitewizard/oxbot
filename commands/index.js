@@ -1,6 +1,6 @@
 /**
  * commands/index.js — OxBot Command Handler
- * Fixed: old message filtering, DM command support, public mode, menu sticker
+ * FINAL FIX: Per-Session Memory (botData.seen) & Robust Public/Private Logic
  */
 const fs   = require('fs');
 const path = require('path');
@@ -91,48 +91,25 @@ if (stickerPath) {
 }
 
 // ═══════════════════════════════════════════════════
-// ANTI-SPAM (Duplicate Message Filter)
+// TIME FILTERS
 // ═══════════════════════════════════════════════════
-const seen = new Set();
-setInterval(() => { if (seen.size > 1000) seen.clear(); }, 5 * 60 * 1000);
-
-function isDuplicate(id) {
-    if (!id || seen.has(id)) return !!id;
-    seen.add(id);
-    return false;
-}
-
-// ═══════════════════════════════════════════════════
-// ★ CRITICAL: OLD MESSAGE FILTER ★
-// Prevents processing messages from before bot restart
-// ═══════════════════════════════════════════════════
-const MESSAGE_AGE_LIMIT = 15000; // 15 seconds — ignore older messages
+const MESSAGE_AGE_LIMIT = 15000; 
+const botStartTime = Date.now();
 
 function isOldMessage(msg) {
     const ts = msg.messageTimestamp;
-    if (!ts) return false; // If no timestamp, allow it
-    
+    if (!ts) return false;
     const msgTimeMs = ts * 1000;
     const ageMs = Date.now() - msgTimeMs;
-    
-    if (ageMs > MESSAGE_AGE_LIMIT) {
-        console.log(`  ⏭️ Skipping old message (${Math.round(ageMs / 1000)}s ago)`);
-        return true;
-    }
+    if (ageMs > MESSAGE_AGE_LIMIT) return true;
     return false;
 }
-
-// Track bot start time to filter messages from before startup
-const botStartTime = Date.now();
 
 function isBeforeStartup(msg) {
     const ts = msg.messageTimestamp;
     if (!ts) return false;
     const msgTimeMs = ts * 1000;
-    if (msgTimeMs < botStartTime - 5000) { // 5s grace period
-        console.log(`  ⏭️ Skipping pre-startup message`);
-        return true;
-    }
+    if (msgTimeMs < botStartTime - 5000) return true;
     return false;
 }
 
@@ -228,7 +205,6 @@ async function isOwner(db, sessionId, senderId, sock, chatId) {
     if (!own) return false;
     const clean = cleanNum(senderId);
     if (phonesMatch(clean, own)) return true;
-    // LID fallback for groups
     if (sock && chatId?.endsWith('@g.us') && senderId.includes('@lid')) {
         try {
             const meta = await sock.groupMetadata(chatId);
@@ -256,7 +232,7 @@ async function getMode(db, sessionId) {
 function clearMode(sid) { modeCache.delete(sid); }
 
 // ═══════════════════════════════════════════════════
-// ★ MAIN HANDLER (FIXED) ★
+// ★ MAIN HANDLER (FINAL ISOLATION FIX) ★
 // ═══════════════════════════════════════════════════
 async function handleIncomingMessage(sock, msg, botData) {
     try {
@@ -277,16 +253,22 @@ async function handleIncomingMessage(sock, msg, botData) {
         }
 
         // ═══════════════════════════════════════════
-        // ★ OLD MESSAGE FILTER (FIX #1) ★
-        // Skip messages from before restart
+        // OLD MESSAGE FILTER
         // ═══════════════════════════════════════════
         if (isBeforeStartup(msg)) return;
         if (isOldMessage(msg)) return;
 
         // ═══════════════════════════════════════════
-        // DUPLICATE CHECK
+        // ★ CRITICAL: PER-SESSION DUPLICATE CHECK ★
+        // Each botData has its own 'seen' Set initialized in app.js.
+        // This guarantees 0 conflict between User A's bot and User B's bot.
         // ═══════════════════════════════════════════
-        if (isDuplicate(msg.key.id)) return;
+        if (!botData.seen) botData.seen = new Set();
+        if (botData.seen.has(msg.key.id)) return;
+        botData.seen.add(msg.key.id);
+        
+        // Auto-cleanup to prevent memory leak
+        if (botData.seen.size > 1000) botData.seen.clear();
 
         // ═══════════════════════════════════════════
         // EXTRACT TEXT & CHECK IF COMMAND
@@ -303,8 +285,7 @@ async function handleIncomingMessage(sock, msg, botData) {
         if (featAutoReply && !isCommand) featAutoReply(sock, msg, botData).catch(() => {});
         
         // ═══════════════════════════════════════════
-        // ★ PM BLOCKER FIX (FIX #2) ★
-        // DO NOT block if it's a command — let commands through!
+        // PM BLOCKER FIX
         // ═══════════════════════════════════════════
         if (featPmBlocker && !isCommand) {
             const blocked = await featPmBlocker(sock, msg, botData).catch(() => false);
@@ -312,7 +293,7 @@ async function handleIncomingMessage(sock, msg, botData) {
         }
 
         // ═══════════════════════════════════════════
-        // TYPING / AUTOREAD (for any message)
+        // TYPING / AUTOREAD
         // ═══════════════════════════════════════════
         if (featAutotyping) featAutotyping(sock, chatId, msg, botData).catch(() => {});
         if (featAutoread)   featAutoread(sock, msg, botData).catch(() => {});
@@ -336,9 +317,6 @@ async function handleIncomingMessage(sock, msg, botData) {
         const senderNum  = cleanNum(sender);
         const isDM       = !chatId.endsWith('@g.us');
         const isGroup    = chatId.endsWith('@g.us');
-
-        // Allow self-sent commands (app.js already filters out non-command self messages)
-
 
         console.log(`[${sessionId?.slice(-8)}] .${cmd} ← ${senderNum} [${isDM ? 'DM' : 'GROUP'}]`);
 
@@ -370,15 +348,15 @@ async function handleIncomingMessage(sock, msg, botData) {
         }
 
         // ═══════════════════════════════════════════
-        // ★ MODE GATE (FIX #3) ★
-        // Works for both DM and Group
+        // ★ MODE GATE (PUBLIC/PRIVATE LOGIC) ★
+        // This ensures User's bot in Private mode ignores Admin's messages.
         // ═══════════════════════════════════════════
         const mode = await getMode(db, sessionId);
         
         if (mode === 'private' && !msg.key.fromMe) {
             const own = await isOwner(db, sessionId, sender, sock, chatId);
             if (!own) {
-                // Silent ignore — don't reveal bot is active
+                // Silent ignore for non-owners in private mode
                 return;
             }
         }
