@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Login — OxBot Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --admin:#8b5cf6;--admin-d:#7c3aed;--admin-glow:rgba(139,92,246,.12);
+  --bg:#0a0f1a;--card:#111827;--border:#1e2d40;
+  --text:#f1f5f9;--muted:#64748b;--muted2:#94a3b8;--red:#ef4444;
+  --font-h:'Outfit',sans-serif;--font-b:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;justify-content:center;align-items:center;min-height:100vh;min-height:100dvh;position:relative}
+
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 600px 400px at 20% 30%, rgba(139,92,246,.08) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at 80% 70%, rgba(124,58,237,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 300px 300px at 50% 50%, rgba(139,92,246,.03) 0%, transparent 70%);
+  animation:bgShift 12s ease-in-out infinite alternate;
+}
+@keyframes bgShift{
+  0%{opacity:.8;transform:scale(1)}
+  100%{opacity:1;transform:scale(1.05)}
+}
+
+.particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{
+  position:absolute;width:3px;height:3px;background:var(--admin);border-radius:50%;opacity:0;
+  animation:float linear infinite;
+}
+@keyframes float{
+  0%{opacity:0;transform:translateY(100vh) scale(0)}
+  10%{opacity:.4}
+  90%{opacity:.4}
+  100%{opacity:0;transform:translateY(-10vh) scale(1)}
+}
+
+.login-wrapper{position:relative;z-index:1;width:100%;max-width:420px;padding:20px;animation:cardIn .6s cubic-bezier(.16,1,.3,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:44px 36px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 0 1px rgba(139,92,246,.05);position:relative;overflow:hidden}
+.login-box::before{
+  content:'';position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:60%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--admin),transparent);border-radius:0 0 2px 2px;
+}
+
+.login-icon{width:72px;height:72px;background:linear-gradient(135deg,var(--admin),#6d28d9);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:32px;color:#fff;box-shadow:0 10px 40px rgba(139,92,246,.35);position:relative}
+.login-icon::after{content:'';position:absolute;inset:-4px;border-radius:24px;background:linear-gradient(135deg,var(--admin),transparent,var(--admin));opacity:.15;z-index:-1;animation:iconPulse 3s ease-in-out infinite}
+@keyframes iconPulse{0%,100%{transform:scale(1);opacity:.15}50%{transform:scale(1.08);opacity:.25}}
+
+.login-box h2{font-family:var(--font-h);text-align:center;font-size:26px;font-weight:800;margin-bottom:8px;letter-spacing:-.5px}
+.login-box .subtitle{color:var(--muted2);text-align:center;font-size:13px;margin-bottom:32px;line-height:1.7}
+
+.login-field{position:relative;margin-bottom:18px}
+.login-field i.field-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;transition:.2s;pointer-events:none}
+.login-field i.toggle-pw{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;cursor:pointer;padding:4px;transition:.2s}
+.login-field i.toggle-pw:hover{color:var(--text)}
+
+.login-input{
+  width:100%;padding:14px 46px 14px 46px;background:var(--bg);border:1.5px solid var(--border);
+  border-radius:13px;color:#fff;font-size:14px;outline:none;transition:.25s;font-family:var(--font-b);
+}
+.login-input:focus{border-color:var(--admin);box-shadow:0 0 0 4px var(--admin-glow)}
+.login-input::placeholder{color:var(--muted)}
+
+.login-btn{
+  width:100%;padding:15px;background:linear-gradient(135deg,var(--admin),#6d28d9);color:#fff;
+  border:none;border-radius:13px;font-size:15px;font-weight:600;cursor:pointer;transition:.25s;
+  display:flex;justify-content:center;align-items:center;gap:9px;font-family:var(--font-b);
+  margin-top:6px;position:relative;overflow:hidden;
+}
+.login-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);opacity:0;transition:.25s}
+.login-btn:hover::before{opacity:1}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(139,92,246,.4)}
+.login-btn:active{transform:translateY(0);box-shadow:0 4px 12px rgba(139,92,246,.3)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.login-btn:disabled::before{display:none}
+
+.login-error{
+  color:var(--red);font-size:12px;text-align:center;margin-top:16px;display:none;
+  padding:10px 14px;background:rgba(239,68,68,.06);border-radius:10px;
+  border:1px solid rgba(239,68,68,.12);line-height:1.5;
+}
+.login-error.show{display:flex;align-items:center;justify-content:center;gap:8px}
+.login-error i{font-size:14px;flex-shrink:0}
+
+.login-footer{text-align:center;margin-top:28px;font-size:11px;color:var(--muted)}
+.login-footer a{color:var(--admin);text-decoration:none;font-weight:600}
+.login-footer a:hover{text-decoration:underline}
+
+.spinner-sm{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.locked-msg{text-align:center;padding:20px}
+.locked-msg i{font-size:40px;color:var(--red);display:block;margin-bottom:14px}
+.locked-msg h3{font-family:var(--font-h);font-size:18px;margin-bottom:8px}
+.locked-msg p{color:var(--muted2);font-size:12px}
+.locked-msg .timer{font-size:28px;font-weight:800;font-family:var(--font-h);color:var(--red);margin:16px 0}
+</style>
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="login-wrapper">
+  <div class="login-box">
+    <div class="login-icon"><i class="fas fa-shield-halved"></i></div>
+    <h2>Admin Access</h2>
+    <p class="subtitle">Enter your admin key to access the<br>OxBot management dashboard.</p>
+
+    <div id="loginForm">
+      <div class="login-field">
+        <i class="fas fa-key field-icon"></i>
+        <input type="password" id="adminKeyInput" class="login-input" placeholder="Enter admin key" autocomplete="off" spellcheck="false">
+        <i class="fas fa-eye toggle-pw" id="togglePw" onclick="togglePassword()"></i>
+      </div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">
+        <i class="fas fa-right-to-bracket"></i> Access Dashboard
+      </button>
+      <div class="login-error" id="loginError"><i class="fas fa-circle-exclamation"></i><span></span></div>
+    </div>
+
+    <div id="lockedForm" class="locked-msg" style="display:none">
+      <i class="fas fa-lock"></i>
+      <h3>Too Many Attempts</h3>
+      <p>Please wait before trying again</p>
+      <div class="timer" id="lockTimer">0:00</div>
+    </div>
+
+    <div class="login-footer">
+      <a href="/">← Back to OxBot</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api/admin';
+let attempts = 0;
+let lockedUntil = 0;
+let lockInterval = null;
+
+// Generate floating particles
+(function createParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.width = p.style.height = (Math.random() * 3 + 1) + 'px';
+    p.style.animationDuration = (Math.random() * 10 + 8) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    p.style.opacity = '0';
+    container.appendChild(p);
+  }
+})();
+
+// ── localStorage throughout (survives tab close / refresh) ──
+const existingToken = localStorage.getItem('admin_token');
+if (existingToken) {
+  fetch(API + '/stats', { headers: { 'x-admin-token': existingToken } })
+    .then(r => { if (r.ok) window.location.href = '/admin.html'; })
+    .catch(() => {});
+}
+
+// Check lock state
+const savedLock = localStorage.getItem('admin_lock_until');
+if (savedLock && parseInt(savedLock) > Date.now()) {
+  lockedUntil = parseInt(savedLock);
+  showLocked();
+}
+
+document.getElementById('adminKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+setTimeout(() => document.getElementById('adminKeyInput').focus(), 300);
+
+function togglePassword() {
+  const input = document.getElementById('adminKeyInput');
+  const icon  = document.getElementById('togglePw');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.replace('fa-eye', 'fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.replace('fa-eye-slash', 'fa-eye');
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('loginError');
+  el.querySelector('span').textContent = msg;
+  el.classList.add('show');
+  const box = document.querySelector('.login-box');
+  box.style.animation = 'none';
+  box.offsetHeight;
+  box.style.animation = 'shake .4s ease';
+  setTimeout(() => { el.classList.remove('show'); box.style.animation = ''; }, 5000);
+}
+
+function showLocked() {
+  document.getElementById('loginForm').style.display  = 'none';
+  document.getElementById('lockedForm').style.display = 'block';
+  updateLockTimer();
+  lockInterval = setInterval(updateLockTimer, 1000);
+}
+
+function updateLockTimer() {
+  const remaining = Math.max(0, lockedUntil - Date.now());
+  if (remaining <= 0) {
+    clearInterval(lockInterval);
+    document.getElementById('loginForm').style.display  = 'block';
+    document.getElementById('lockedForm').style.display = 'none';
+    document.getElementById('adminKeyInput').focus();
+    localStorage.removeItem('admin_lock_until');
+    attempts = 0;
+    return;
+  }
+  const secs = Math.ceil(remaining / 1000);
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  document.getElementById('lockTimer').textContent = m + ':' + String(s).padStart(2, '0');
+}
+
+async function doLogin() {
+  if (lockedUntil > Date.now()) return;
+
+  const key = document.getElementById('adminKeyInput').value.trim();
+  if (!key) return showError('Please enter the admin key.');
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-sm"></span> Verifying...';
+
+  try {
+    const r = await fetch(API + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message);
+
+    // ── Store in localStorage so token persists across tab close ──
+    localStorage.setItem('admin_token', d.token);
+    localStorage.removeItem('admin_lock_until');
+
+    btn.innerHTML = '<i class="fas fa-check"></i> Access Granted';
+    btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+
+    setTimeout(() => { window.location.href = '/admin.html'; }, 600);
+
+  } catch (e) {
+    attempts++;
+
+    if (attempts >= 5) {
+      lockedUntil = Date.now() + 60000;
+      localStorage.setItem('admin_lock_until', lockedUntil.toString());
+      showLocked();
+      return;
+    }
+
+    const remaining = 5 - attempts;
+    const suffix = remaining > 0 ? ` (${remaining} attempt${remaining > 1 ? 's' : ''} remaining)` : '';
+    showError(e.message + suffix);
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Access Dashboard';
+  }
+}
+
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = `@keyframes shake{0%,100%{transform:translateX(0)}15%,45%,75%{transform:translateX(-6px)}30%,60%,90%{transform:translateX(6px)}}`;
+document.head.appendChild(shakeStyle);
+</script>
+</body>
+</html>

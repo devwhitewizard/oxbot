@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Verify Email — OxBot</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --brand:#16a34a;--brand-d:#15803d;--brand-glow:rgba(22,163,74,.1);
+  --bg:#f8fafc;--card:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;
+  --red:#ef4444;--amber:#f59e0b;
+  --font-h:'Outfit',sans-serif;--font-b:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:24px;
+  padding:48px 40px;width:100%;max-width:440px;text-align:center;
+  box-shadow:0 20px 60px -15px rgba(0,0,0,.07);
+  animation:fadeUp .5s ease-out;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.logo{text-decoration:none;font-family:var(--font-h);font-weight:800;font-size:24px;color:var(--text);display:flex;align-items:center;gap:10px;margin-bottom:36px;justify-content:center}
+.logo-icon{width:36px;height:36px;background:var(--brand);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800}
+
+.icon-circle{
+  width:72px;height:72px;border-radius:50%;margin:0 auto 20px;
+  display:flex;align-items:center;justify-content:center;font-size:30px;
+}
+.icon-circle.loading{background:#f1f5f9;color:var(--muted);animation:pulse 1.5s ease-in-out infinite}
+.icon-circle.success{background:#ecfdf5;color:var(--brand)}
+.icon-circle.error{background:#fef2f2;color:var(--red)}
+.icon-circle.warn{background:#fffbeb;color:var(--amber)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.95)}}
+
+h1{font-family:var(--font-h);font-size:22px;font-weight:700;margin-bottom:10px;letter-spacing:-.3px}
+p.desc{color:var(--muted);font-size:14.5px;line-height:1.6;margin-bottom:28px;max-width:340px;margin-left:auto;margin-right:auto}
+
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--brand);color:#fff;padding:13px 32px;border-radius:10px;
+  border:none;font-size:15px;font-weight:600;cursor:pointer;
+  transition:all .2s;font-family:var(--font-b);text-decoration:none;
+}
+.btn:hover{background:var(--brand-d);transform:translateY(-1px);box-shadow:0 4px 12px rgba(22,163,74,.25)}
+.btn:active{transform:translateY(0);box-shadow:none}
+
+.btn-outline{
+  display:inline-flex;align-items:center;gap:8px;
+  background:transparent;color:var(--muted);padding:12px 28px;border-radius:10px;
+  border:1.5px solid var(--border);font-size:14px;font-weight:500;cursor:pointer;
+  transition:all .2s;font-family:var(--font-b);text-decoration:none;
+  margin-top:12px;
+}
+.btn-outline:hover{background:var(--bg);color:var(--text);border-color:#cbd5e1}
+
+.spinner{width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.hidden{display:none !important}
+
+@media(max-width:480px){
+  .card{padding:36px 24px;border-radius:20px}
+  h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <a href="/" class="logo">
+    <div class="logo-icon">OX</div>
+    OxBot
+  </a>
+
+  <!-- Loading state -->
+  <div id="stateLoading">
+    <div class="icon-circle loading">
+      <i class="fas fa-spinner fa-spin"></i>
+    </div>
+    <h1>Verifying your email</h1>
+    <p class="desc">Please wait a moment while we confirm your email address...</p>
+  </div>
+
+  <!-- Success state -->
+  <div id="stateSuccess" class="hidden">
+    <div class="icon-circle success">
+      <i class="fas fa-check"></i>
+    </div>
+    <h1>Email verified</h1>
+    <p class="desc">Your account is now active. You can log in and start using OxBot.</p>
+    <a href="/login" class="btn"><i class="fas fa-arrow-right"></i> Go to Login</a>
+  </div>
+
+  <!-- Already verified state -->
+  <div id="stateAlready" class="hidden">
+    <div class="icon-circle warn">
+      <i class="fas fa-info"></i>
+    </div>
+    <h1>Already verified</h1>
+    <p class="desc">Your email was already verified. No need to do anything — just log in.</p>
+    <a href="/login" class="btn"><i class="fas fa-arrow-right"></i> Go to Login</a>
+  </div>
+
+  <!-- Invalid / expired token -->
+  <div id="stateError" class="hidden">
+    <div class="icon-circle error">
+      <i class="fas fa-times"></i>
+    </div>
+    <h1 id="errorTitle">Verification failed</h1>
+    <p class="desc" id="errorDesc">The link is invalid or has expired.</p>
+    <a href="/login" class="btn-outline"><i class="fas fa-arrow-left"></i> Back to Login</a>
+  </div>
+</div>
+
+<script>
+const params    = new URLSearchParams(window.location.search);
+const token     = params.get('token');
+
+const stateLoading = document.getElementById('stateLoading');
+const stateSuccess = document.getElementById('stateSuccess');
+const stateAlready = document.getElementById('stateAlready');
+const stateError   = document.getElementById('stateError');
+const errorTitle   = document.getElementById('errorTitle');
+const errorDesc    = document.getElementById('errorDesc');
+
+function showState(el) {
+  [stateLoading, stateSuccess, stateAlready, stateError].forEach(s => s.classList.add('hidden'));
+  el.classList.remove('hidden');
+}
+
+// No token at all
+if (!token) {
+  showState(stateError);
+  errorTitle.textContent = 'No verification token';
+  errorDesc.textContent  = 'This link is missing the verification token. Make sure you copied the full link from the email.';
+} else {
+  // Call the API
+  fetch('/api/verify-email?token=' + encodeURIComponent(token))
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showState(stateSuccess);
+      } else if (data.alreadyVerified) {
+        showState(stateAlready);
+      } else {
+        showState(stateError);
+        errorTitle.textContent = 'Verification failed';
+        errorDesc.textContent  = data.message || 'The link is invalid or has expired. Try registering again.';
+      }
+    })
+    .catch(() => {
+      showState(stateError);
+      errorTitle.textContent = 'Connection error';
+      errorDesc.textContent  = 'Could not reach the server. Check your internet and try again.';
+    });
+}
+</script>
+</body>
+</html>

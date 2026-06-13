@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Register — OxBot</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --brand:#16a34a;--brand-d:#15803d;--brand-dd:#14532d;--brand-l:#bbf7d0;--brand-glow:rgba(22,163,74,.1);
+  --bg:#f1f5f0;--card:#ffffff;--text:#0c1a10;--text-2:#1e3a25;--muted:#5f7d68;--muted-l:#94b39d;
+  --border:#d4e8d8;--border-focus:#16a34a;
+  --red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;
+  --green-t:#065f46;--green-bg:#ecfdf5;--green-border:#a7f3d0;
+  --blue:#3b82f6;
+  --amber:#f59e0b;--amber-bg:#fffbeb;--amber-border:#fde68a;--amber-text:#92400e;--amber-text-2:#78350f;
+  --font-h:'Outfit',sans-serif;--font-b:'Inter',sans-serif;
+  --radius:14px;--radius-lg:24px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:var(--font-b);background:var(--bg);color:var(--text);
+  display:flex;justify-content:center;align-items:center;
+  min-height:100vh;padding:20px;position:relative;overflow:hidden;
+}
+
+body::before{
+  content:'';position:fixed;top:-220px;right:-180px;
+  width:580px;height:580px;border-radius:50%;
+  background:radial-gradient(circle,rgba(22,163,74,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+body::after{
+  content:'';position:fixed;bottom:-200px;left:-160px;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(22,163,74,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(22,163,74,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(22,163,74,.04) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 50%,black 30%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 50%,black 30%,transparent 100%);
+}
+.bg-dots{
+  position:fixed;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(22,163,74,.07) 1px,transparent 1px);
+  background-size:24px 24px;
+  mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,black 20%,transparent 80%);
+  -webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,black 20%,transparent 80%);
+}
+
+.reg-card{
+  position:relative;z-index:2;
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:44px 40px;width:100%;max-width:460px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.04),
+    0 4px 12px rgba(0,0,0,.03),
+    0 16px 48px -12px rgba(22,163,74,.08),
+    0 0 0 0 transparent;
+  animation:cardIn .55s cubic-bezier(.16,1,.3,1);
+}
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(20px) scale(.98)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.reg-card::before{
+  content:'';position:absolute;top:0;left:40px;right:40px;height:3px;
+  background:linear-gradient(90deg,transparent,var(--brand),transparent);
+  border-radius:0 0 4px 4px;opacity:.6;
+}
+
+.logo{
+  text-decoration:none;font-family:var(--font-h);font-weight:800;font-size:24px;
+  color:var(--text);display:flex;align-items:center;gap:11px;margin-bottom:32px;
+}
+.logo-icon{
+  width:38px;height:38px;background:var(--brand);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:11px;font-weight:800;letter-spacing:-.5px;
+  box-shadow:0 3px 10px rgba(22,163,74,.3);
+  transition:transform .2s,box-shadow .2s;
+}
+.logo:hover .logo-icon{transform:translateY(-1px) rotate(-2deg);box-shadow:0 5px 14px rgba(22,163,74,.35)}
+
+.heading{font-family:var(--font-h);font-size:26px;font-weight:800;margin-bottom:6px;letter-spacing:-.4px;color:var(--text)}
+.subtitle{color:var(--muted);font-size:14.5px;margin-bottom:26px;line-height:1.6}
+
+/* ── Referral Banner ── */
+.ref-banner{
+  background:linear-gradient(135deg,rgba(22,163,74,.1),rgba(22,163,74,.04));
+  border:1.5px solid rgba(22,163,74,.25);border-radius:16px;
+  padding:16px 18px;margin-bottom:22px;display:none;
+  animation:viewIn .4s cubic-bezier(.16,1,.3,1);
+}
+@keyframes viewIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.ref-banner.show{display:block}
+.ref-banner-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.ref-banner-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:var(--brand-glow);border:1.5px solid rgba(22,163,74,.3);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  color:var(--brand);font-size:15px;
+  box-shadow:0 2px 8px rgba(22,163,74,.1);
+}
+.ref-banner-who{font-size:14px;font-weight:600;color:var(--text)}
+.ref-banner-who .ref-code{
+  font-family:monospace;font-weight:700;
+  background:rgba(22,163,74,.15);color:var(--brand);
+  padding:3px 10px;border-radius:6px;font-size:12px;
+  border:1px solid rgba(22,163,74,.2);
+}
+.ref-banner-note{font-size:12.5px;color:var(--muted);padding-left:50px;line-height:1.55}
+
+/* ── Alert boxes ── */
+.msg-box{
+  font-size:13px;padding:12px 15px;border-radius:var(--radius);margin-bottom:20px;
+  display:none;align-items:flex-start;gap:10px;line-height:1.5;
+  animation:alertIn .3s ease-out;
+}
+@keyframes alertIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.msg-box.show{display:flex}
+.msg-box.error{color:var(--red);background:var(--red-bg);border:1px solid var(--red-border)}
+.msg-box.success{color:var(--green-t);background:var(--green-bg);border:1px solid var(--green-border)}
+.msg-box i{flex-shrink:0;font-size:15px;margin-top:1px}
+
+/* ── Form elements ── */
+.form-group{margin-bottom:18px}
+.form-label{
+  display:block;font-size:13px;font-weight:600;margin-bottom:8px;
+  color:var(--text-2);letter-spacing:.15px;
+}
+.form-input{
+  width:100%;padding:13px 16px;border:1.5px solid var(--border);
+  border-radius:var(--radius);font-size:14.5px;font-family:var(--font-b);
+  outline:none;transition:border-color .25s,box-shadow .25s,background .25s;
+  background:var(--bg);color:var(--text);
+}
+.form-input:focus{
+  border-color:var(--border-focus);
+  box-shadow:0 0 0 3.5px var(--brand-glow),0 1px 3px rgba(0,0,0,.04);
+  background:#fff;
+}
+.form-input::placeholder{color:var(--muted-l);font-weight:400}
+.form-input:hover:not(:focus){border-color:#b8d4be}
+
+.input-icon-wrap{position:relative}
+.input-icon-wrap .form-input{padding-left:44px}
+.input-icon-wrap i.field-icon{
+  position:absolute;left:15px;top:50%;transform:translateY(-50%);
+  color:var(--muted-l);font-size:14px;transition:color .25s;pointer-events:none;
+}
+.input-icon-wrap:focus-within i.field-icon{color:var(--brand)}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+.eye-btn{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;padding:5px;
+  color:var(--muted-l);font-size:14px;line-height:1;transition:color .2s;
+  border-radius:6px;
+}
+.eye-btn:hover{color:var(--brand);background:var(--brand-glow)}
+.form-input.has-eye{padding-right:44px}
+
+/* ── Buttons ── */
+.btn{
+  width:100%;background:var(--brand);color:#fff;padding:14px;border-radius:var(--radius);
+  border:none;font-size:15px;font-weight:600;cursor:pointer;
+  transition:all .22s cubic-bezier(.16,1,.3,1);
+  display:flex;justify-content:center;align-items:center;gap:9px;
+  font-family:var(--font-b);margin-top:8px;
+  box-shadow:0 2px 8px rgba(22,163,74,.2),inset 0 1px 0 rgba(255,255,255,.15);
+  position:relative;overflow:hidden;
+}
+.btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,transparent 50%);
+  pointer-events:none;
+}
+.btn:hover{background:var(--brand-d);transform:translateY(-1.5px);box-shadow:0 6px 20px rgba(22,163,74,.28),inset 0 1px 0 rgba(255,255,255,.15)}
+.btn:active{transform:translateY(0);box-shadow:0 1px 4px rgba(22,163,74,.2)}
+.btn:disabled{background:#a3b8a8;cursor:not-allowed;transform:none;box-shadow:none}
+.btn:disabled::after{display:none}
+
+.btn.btn-outline{
+  background:transparent;color:var(--brand);border:1.5px solid var(--brand);
+  box-shadow:none;
+}
+.btn.btn-outline::after{display:none}
+.btn.btn-outline:hover{background:var(--brand-glow);transform:translateY(-1px);box-shadow:none}
+
+.spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Terms checkbox ── */
+.terms-check{
+  display:flex;align-items:flex-start;gap:10px;
+  margin-top:18px;margin-bottom:4px;
+  font-size:12.5px;color:var(--muted);line-height:1.55;
+}
+.terms-check input[type="checkbox"]{
+  width:16px;height:16px;flex-shrink:0;margin-top:2px;
+  accent-color:var(--brand);cursor:pointer;
+}
+.terms-check a{color:var(--blue);text-decoration:none;font-weight:500;transition:color .2s}
+.terms-check a:hover{color:#2563eb;text-decoration:underline}
+
+/* ── Footer ── */
+.footer-text{margin-top:26px;text-align:center;font-size:14px;color:var(--muted);line-height:1.5}
+.footer-text a{color:var(--brand);text-decoration:none;font-weight:600;transition:color .2s;position:relative}
+.footer-text a::after{content:'';position:absolute;bottom:-1px;left:0;width:0;height:1.5px;background:var(--brand-d);transition:width .25s}
+.footer-text a:hover{color:var(--brand-d)}
+.footer-text a:hover::after{width:100%}
+
+/* ── Email Check Screen ── */
+.email-check-screen{display:none;text-align:center;animation:viewIn .5s cubic-bezier(.16,1,.3,1)}
+.email-check-screen.show{display:block}
+.email-icon-wrap{
+  width:76px;height:76px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(22,163,74,.15),rgba(22,163,74,.05));
+  border:1.5px solid rgba(22,163,74,.25);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 22px;font-size:34px;
+  box-shadow:0 8px 24px -6px rgba(22,163,74,.15);
+}
+.email-check-screen h2{font-family:var(--font-h);font-size:24px;font-weight:800;margin-bottom:8px;color:var(--text);letter-spacing:-.3px}
+.email-check-screen p{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:6px}
+.email-check-screen .sent-to{
+  font-weight:600;color:var(--text);
+  background:var(--bg);border:1.5px solid var(--border);
+  border-radius:10px;padding:10px 18px;
+  display:inline-block;margin:12px 0 22px;font-size:14px;
+}
+.divider{border:none;border-top:1px solid var(--border);margin:22px 0}
+
+.spam-note{
+  background:var(--amber-bg);border:1.5px solid var(--amber-border);
+  border-radius:12px;padding:14px 18px;text-align:left;
+  font-size:13px;color:var(--amber-text);margin-bottom:18px;
+  position:relative;overflow:hidden;
+}
+.spam-note::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--amber),transparent);
+  opacity:.5;
+}
+.spam-note strong{color:var(--amber-text)}
+
+.resend-area{font-size:13px;color:var(--muted)}
+.resend-area button{
+  background:none;border:none;color:var(--brand);font-weight:600;
+  cursor:pointer;font-size:13px;font-family:var(--font-b);
+  text-decoration:underline;padding:0;transition:color .2s;
+}
+.resend-area button:hover{color:var(--brand-d)}
+.resend-area button:disabled{color:#a3b8a8;cursor:not-allowed;text-decoration:none}
+.resend-countdown{display:none;color:var(--muted);font-size:13px}
+
+/* ── Modals ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(12,26,16,.5);z-index:1000;
+  display:none;justify-content:center;align-items:center;
+  padding:20px;animation:modalFadeIn .25s ease-out;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.modal-overlay.show{display:flex}
+@keyframes modalFadeIn{from{opacity:0}to{opacity:1}}
+
+.modal-box{
+  background:var(--card);border:1.5px solid var(--border);border-radius:20px;
+  width:100%;max-width:580px;max-height:85vh;overflow:hidden;
+  display:flex;flex-direction:column;
+  box-shadow:0 25px 60px -12px rgba(0,0,0,.2);
+  animation:modalSlideUp .3s cubic-bezier(.16,1,.3,1);
+}
+@keyframes modalSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.modal-header{
+  padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;
+  border-bottom:1px solid var(--border);padding-bottom:16px;
+}
+.modal-header h2{font-family:var(--font-h);font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.modal-close{
+  background:none;border:none;cursor:pointer;color:var(--muted);
+  font-size:18px;padding:4px;width:34px;height:34px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;
+}
+.modal-close:hover{background:var(--bg);color:var(--text)}
+
+.modal-body{
+  padding:20px 28px 28px;overflow-y:auto;flex:1;
+  font-size:13.5px;line-height:1.7;color:var(--muted);
+}
+.modal-body h3{
+  font-family:var(--font-h);font-size:15px;font-weight:700;color:var(--text);
+  margin:22px 0 8px;letter-spacing:-.2px;
+}
+.modal-body h3:first-child{margin-top:0}
+.modal-body p{margin-bottom:10px}
+.modal-body ul{margin:8px 0 14px 18px;padding:0}
+.modal-body ul li{margin-bottom:6px}
+.modal-body strong{color:var(--text)}
+.modal-body a{color:var(--blue);text-decoration:none}
+.modal-body a:hover{text-decoration:underline}
+.modal-body .highlight-red{color:var(--red);font-weight:600}
+.modal-body .highlight-amber{color:#b45309;font-weight:600}
+.modal-body .highlight-brand{color:var(--brand);font-weight:600}
+
+/* ── Responsive ── */
+@media(max-width:480px){
+  body{padding:16px}
+  .reg-card{padding:32px 24px;border-radius:20px}
+  .heading{font-size:22px}
+  .form-row{grid-template-columns:1fr}
+  .reg-card::before{left:24px;right:24px}
+  .modal-box{max-width:100%;border-radius:16px}
+  .modal-header{padding:20px 20px 14px}
+  .modal-body{padding:16px 20px 24px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-dots"></div>
+
+<div class="reg-card">
+  <a href="/" class="logo">
+    <div class="logo-icon">OX</div>
+    OxBot
+  </a>
+
+  <div id="formSection">
+    <h1 class="heading">Create your account</h1>
+    <p class="subtitle">Fill in your details to get started with OxBot.</p>
+
+    <div id="refBanner" class="ref-banner">
+      <div class="ref-banner-top">
+        <div class="ref-banner-icon"><i class="fas fa-user-plus"></i></div>
+        <div class="ref-banner-who">You were invited by <span class="ref-code" id="refCodeDisplay">—</span></div>
+      </div>
+      <div class="ref-banner-note">
+        Your inviter will earn <strong style="color:var(--brand)">10 coins</strong> once you verify your email.
+      </div>
+    </div>
+
+    <div id="msgBox" class="msg-box">
+      <i id="msgIcon" class="fas fa-exclamation-circle"></i>
+      <span id="msgText"></span>
+    </div>
+
+    <form id="regForm" autocomplete="off">
+      <div class="form-group">
+        <label class="form-label" for="name">Full Name</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-user field-icon"></i>
+          <input type="text" id="name" class="form-input" required placeholder="John Doe" autocomplete="name">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <div class="input-icon-wrap">
+            <i class="fas fa-at field-icon"></i>
+            <input type="text" id="username" class="form-input" required placeholder="johndoe" autocomplete="username" minlength="3" maxlength="20">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="phone">Phone</label>
+          <div class="input-icon-wrap">
+            <i class="fas fa-phone field-icon"></i>
+            <input type="tel" id="phone" class="form-input" required placeholder="08012345678" autocomplete="tel">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-envelope field-icon"></i>
+          <input type="email" id="email" class="form-input" required placeholder="john@example.com" autocomplete="email">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-lock field-icon"></i>
+          <input type="password" id="password" class="form-input has-eye" required placeholder="Minimum 6 characters" autocomplete="new-password" minlength="6">
+          <button type="button" class="eye-btn" id="eyeToggle" aria-label="Toggle password visibility" onclick="toggleEye('password','eyeToggle')">
+            <i class="fas fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn" id="regBtn">
+        <span class="spinner" id="btnSpinner"></span>
+        <span id="btnText">Create Account</span>
+      </button>
+    </form>
+
+    <label class="terms-check">
+      <input type="checkbox" id="termsCheckbox">
+      <span>I agree to the <a href="#" onclick="openModal('terms');return false;">Terms of Service</a> and <a href="#" onclick="openModal('privacy');return false;">Privacy Policy</a>, including the no-refund policy for activated bots.</span>
+    </label>
+
+    <p class="footer-text">Already have an account? <a href="/login">Log in</a></p>
+  </div>
+
+  <div id="emailCheckScreen" class="email-check-screen">
+    <div class="email-icon-wrap">📧</div>
+    <h2>Check your email</h2>
+    <p>We've sent a verification link to</p>
+    <div class="sent-to" id="sentToEmail">—</div>
+    <p style="font-size:13px">Click the link in the email to activate your account. It expires in <strong>24 hours</strong>.</p>
+
+    <hr class="divider">
+
+    <div class="spam-note">
+      <strong>📁 Check your spam folder</strong> if you don't see the email within a few minutes.
+    </div>
+
+    <div class="resend-area">
+      Didn't receive it?
+      <button id="resendBtn" onclick="resendVerification()">Resend email</button>
+      <span class="resend-countdown" id="resendCountdown"></span>
+    </div>
+
+    <div id="resendMsg" class="msg-box" style="margin-top:14px;margin-bottom:0"></div>
+
+    <hr class="divider">
+    <a href="/login" class="btn btn-outline" style="margin-top:0;text-decoration:none">
+      <i class="fas fa-sign-in-alt"></i> Go to Login
+    </a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TERMS OF SERVICE MODAL
+═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalTerms">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Terms of Service</h2>
+      <button class="modal-close" onclick="closeModal('terms')" aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Last updated:</strong> June 2025</p>
+
+      <h3>1. Acceptance of Terms</h3>
+      <p>By creating an account and using OxBot ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
+
+      <h3>2. Description of Service</h3>
+      <p>OxBot is an automated WhatsApp-based trading and management bot. The bot runs on <strong>your own WhatsApp session</strong> — it operates directly through your device and account. OxBot provides the automation logic; we do not host, intercept, or store any of your WhatsApp messages, contacts, or personal conversations.</p>
+
+      <h3>3. No Refund Policy</h3>
+      <p><span class="highlight-red">All payments made for bot activation, subscriptions, or coin purchases are strictly non-refundable.</span></p>
+      <ul>
+        <li>Once a bot is activated on your WhatsApp account, <strong>no refund will be issued</strong> — regardless of usage duration, results, or personal dissatisfaction.</li>
+        <li>Coin purchases (credits used within the platform) are <strong>final and non-reversible</strong>.</li>
+        <li>Subscription fees are <strong>non-refundable</strong> even if you choose to stop using the Service before the end of the billing period.</li>
+        <li>We do not guarantee profits, specific outcomes, or any financial returns from the use of the bot.</li>
+      </ul>
+
+      <h3>4. WhatsApp Restrictions & Risks</h3>
+      <p><span class="highlight-amber">WhatsApp is a third-party platform owned by Meta. OxBot interacts with WhatsApp on your behalf but has no control over WhatsApp's policies, infrastructure, or enforcement actions.</span></p>
+      <ul>
+        <li><strong>Account Ban Risk:</strong> WhatsApp may flag, restrict, or permanently ban accounts that use automated tools. <span class="highlight-red">OxBot is not responsible for any WhatsApp account bans, suspensions, or restrictions.</span> You assume full responsibility for this risk.</li>
+        <li><strong>Policy Changes:</strong> If WhatsApp updates its terms or technical infrastructure in a way that affects the bot's functionality, OxBot is not liable for any service disruption.</li>
+        <li><strong>Number Blocking:</strong> Your WhatsApp number may be blocked by other users or by WhatsApp's automated systems. This is beyond our control.</li>
+        <li><strong>Session Invalidations:</strong> WhatsApp may invalidate bot sessions at any time, requiring re-authorization. OxBot will make reasonable efforts to restore functionality but does not guarantee uninterrupted service.</li>
+      </ul>
+
+      <h3>5. Owner's Risk</h3>
+      <p><span class="highlight-red">You use OxBot entirely at your own risk.</span></p>
+      <ul>
+        <li>OxBot is <strong>not a financial advisor</strong>. Any trading decisions, signals, or automated actions performed by the bot are not financial advice.</li>
+        <li>You are solely responsible for all trades, transactions, and financial outcomes resulting from the use of the Service.</li>
+        <li>OxBot shall not be held liable for any <strong>financial losses, data loss, account compromise, or any other damages</strong> arising from the use or inability to use the Service.</li>
+        <li>You acknowledge that automated trading carries inherent risks, including but not limited to market volatility, system errors, network delays, and incorrect signal execution.</li>
+        <li>In no event shall OxBot's total liability exceed the amount you paid for the Service in the <strong>30 days</strong> preceding the claim.</li>
+      </ul>
+
+      <h3>6. Account Responsibility</h3>
+      <ul>
+        <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
+        <li>Any activity under your account is your responsibility.</li>
+        <li>OxBot reserves the right to suspend or terminate accounts that violate these Terms.</li>
+      </ul>
+
+      <h3>7. Modifications</h3>
+      <p>We may update these Terms at any time. Continued use of the Service after changes constitutes acceptance of the revised Terms.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     PRIVACY POLICY MODAL
+═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalPrivacy">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Privacy Policy</h2>
+      <button class="modal-close" onclick="closeModal('privacy')" aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Last updated:</strong> June 2025</p>
+
+      <h3>1. Information We Collect</h3>
+      <p>We only collect the following information from you:</p>
+      <ul>
+        <li><strong>Account Information:</strong> Your full name, username, email address, and phone number provided during registration.</li>
+        <li><strong>Transaction Data:</strong> Records of your coin purchases, bot activations, and subscription payments.</li>
+        <li><strong>Usage Data:</strong> Basic log data such as IP address, device type, and general interaction patterns with the OxBot platform (not with WhatsApp).</li>
+      </ul>
+      <p><span class="highlight-brand">We do NOT collect, store, log, or have access to your WhatsApp messages, chat content, contacts, media files, or any other personal WhatsApp data.</span></p>
+
+      <h3>2. How We Use Your Information</h3>
+      <ul>
+        <li>To provide, maintain, and improve the OxBot service.</li>
+        <li>To process payments and manage your account.</li>
+        <li>To send service-related notifications (verification emails, account alerts, payment receipts, etc.).</li>
+        <li>To detect and prevent fraud, abuse, or security breaches on our platform.</li>
+        <li>To communicate with you about updates, changes, or support requests.</li>
+      </ul>
+
+      <h3>3. WhatsApp Data — We Do NOT Hold It</h3>
+      <p><span class="highlight-brand">This is important: OxBot does not store, intercept, or retain any of your WhatsApp data.</span></p>
+      <ul>
+        <li>The bot runs <strong>locally on your connected session</strong>. It processes messages in real-time to perform the automation tasks you've configured, but <strong>nothing is sent back to or stored on our servers</strong>.</li>
+        <li>We do not read your chats. We do not log your conversations. We do not download your contacts or media.</li>
+        <li>Your WhatsApp data stays on your device and within WhatsApp's own systems — the same as it would without the bot.</li>
+        <li><strong>Meta/WhatsApp has its own privacy policies</strong> that govern how they handle data on their platform. We encourage you to review <a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank">WhatsApp's Privacy Policy</a> directly.</li>
+      </ul>
+
+      <h3>4. Data Sharing</h3>
+      <p>We do not sell your personal data. We may share data with:</p>
+      <ul>
+        <li><strong>Service Providers:</strong> Payment processors, hosting providers, and infrastructure partners who assist in delivering the OxBot platform — and only the data necessary for them to perform their function.</li>
+        <li><strong>Legal Requirements:</strong> If required by law, court order, or governmental regulation.</li>
+        <li><strong>Protection of Rights:</strong> To protect the rights, property, or safety of OxBot, its users, or the public.</li>
+      </ul>
+      <p><span class="highlight-brand">We never share your WhatsApp data with anyone — because we don't hold it in the first place.</span></p>
+
+      <h3>5. Data Security</h3>
+      <p>We implement reasonable security measures to protect the data we do hold (your account and transaction information). However, <span class="highlight-red">no method of transmission over the internet is 100% secure</span>, and we cannot guarantee absolute security. You are responsible for keeping your account credentials safe.</p>
+
+      <h3>6. Data Retention</h3>
+      <ul>
+        <li>Account data is retained as long as your account is active.</li>
+        <li>Transaction records are retained for a minimum of 12 months for legal and financial compliance.</li>
+        <li>You may request account deletion by contacting support, and we will remove your data subject to any legal obligations we may have to retain certain records.</li>
+      </ul>
+
+      <h3>7. Owner's Risk Disclaimer</h3>
+      <p><span class="highlight-red">By using OxBot, you accept that the bot operates on your WhatsApp at your own risk.</span> While we do not hold your WhatsApp data, the act of connecting a bot to your WhatsApp account carries inherent risks — including the possibility of WhatsApp restricting or banning your account. OxBot shall not be liable for any consequences arising from the interaction between the bot and your WhatsApp account, as outlined in our Terms of Service.</p>
+
+      <h3>8. Contact</h3>
+      <p>For privacy-related inquiries, contact us at <strong>support@oxbot.name.ng</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const urlParams    = new URLSearchParams(window.location.search);
+const referralCode = urlParams.get('ref') || '';
+
+if (referralCode) {
+  document.getElementById('refCodeDisplay').textContent = referralCode;
+  document.getElementById('refBanner').classList.add('show');
+}
+
+function toggleEye(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const icon  = document.querySelector(`#${btnId} i`);
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  icon.className = showing ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
+
+function openModal(type) {
+  const id = type === 'terms' ? 'modalTerms' : 'modalPrivacy';
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(type) {
+  const id = type === 'terms' ? 'modalTerms' : 'modalPrivacy';
+  document.getElementById(id).classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => {
+      m.classList.remove('show');
+    });
+    document.body.style.overflow = '';
+  }
+});
+
+const form     = document.getElementById('regForm');
+const msgBox   = document.getElementById('msgBox');
+const msgIcon  = document.getElementById('msgIcon');
+const msgText  = document.getElementById('msgText');
+const regBtn   = document.getElementById('regBtn');
+const spinner  = document.getElementById('btnSpinner');
+const btnText  = document.getElementById('btnText');
+const termsCb  = document.getElementById('termsCheckbox');
+
+let registeredEmail = '';
+
+function showMsg(text, isError) {
+  msgBox.className  = 'msg-box show ' + (isError ? 'error' : 'success');
+  msgIcon.className = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+  msgText.textContent = text;
+}
+
+function hideMsg() { msgBox.classList.remove('show'); }
+
+function setLoading(on) {
+  regBtn.disabled  = on;
+  spinner.style.display = on ? 'block' : 'none';
+  btnText.textContent   = on ? 'Creating account...' : 'Create Account';
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideMsg();
+
+  const name     = document.getElementById('name').value.trim();
+  const username = document.getElementById('username').value.trim().toLowerCase();
+  const phone    = document.getElementById('phone').value.trim();
+  const email    = document.getElementById('email').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+
+  if (!termsCb.checked) {
+    showMsg('You must agree to the Terms of Service and Privacy Policy to continue.', true);
+    termsCb.focus();
+    return;
+  }
+
+  if (!name || !username || !phone || !email || !password) {
+    showMsg('Please fill in all fields.', true); return;
+  }
+  if (username.length < 3) {
+    showMsg('Username must be at least 3 characters.', true); return;
+  }
+  if (!/^[a-z0-9_]+$/.test(username)) {
+    showMsg('Username can only contain letters, numbers, and underscores.', true); return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showMsg('Please enter a valid email address.', true); return;
+  }
+  if (password.length < 6) {
+    showMsg('Password must be at least 6 characters.', true); return;
+  }
+
+  setLoading(true);
+
+  try {
+    const body = { name, username, email, phone, password };
+    if (referralCode) body.referralCode = referralCode;
+
+    const res  = await fetch('/api/register', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      registeredEmail = email;
+      document.getElementById('formSection').style.display = 'none';
+      const screen = document.getElementById('emailCheckScreen');
+      screen.classList.add('show');
+      document.getElementById('sentToEmail').textContent = email;
+      startResendCooldown(60);
+    } else {
+      showMsg(data.message || 'Registration failed. Try again.', true);
+    }
+  } catch (err) {
+    showMsg('Connection failed. Please check your internet and try again.', true);
+  } finally {
+    setLoading(false);
+  }
+});
+
+let resendTimer = null;
+
+function startResendCooldown(seconds) {
+  const btn       = document.getElementById('resendBtn');
+  const countdown = document.getElementById('resendCountdown');
+  btn.style.display       = 'none';
+  countdown.style.display = 'inline';
+
+  let remaining = seconds;
+  countdown.textContent = `(resend in ${remaining}s)`;
+
+  resendTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(resendTimer);
+      countdown.style.display = 'none';
+      btn.style.display       = 'inline';
+    } else {
+      countdown.textContent = `(resend in ${remaining}s)`;
+    }
+  }, 1000);
+}
+
+async function resendVerification() {
+  const resendMsgBox = document.getElementById('resendMsg');
+  const btn = document.getElementById('resendBtn');
+
+  if (!registeredEmail) return;
+  btn.disabled = true;
+
+  try {
+    const res  = await fetch('/api/resend-verification', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email: registeredEmail }),
+    });
+    const data = await res.json();
+
+    resendMsgBox.className = 'msg-box show ' + (res.ok ? 'success' : 'error');
+    resendMsgBox.innerHTML = `<i class="fas fa-${res.ok ? 'check-circle' : 'exclamation-circle'}"></i><span>${data.message}</span>`;
+
+    if (res.ok) startResendCooldown(60);
+    else        btn.disabled = false;
+  } catch {
+    resendMsgBox.className = 'msg-box show error';
+    resendMsgBox.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>Failed to resend. Try again.</span>';
+    btn.disabled = false;
+  }
+}
+
+document.querySelectorAll('.form-input').forEach(input => {
+  input.addEventListener('input', hideMsg);
+});
+</script>
+</body>
+</html>

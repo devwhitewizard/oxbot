@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Admin — OxBot</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --admin:#8b5cf6;--admin-d:#7c3aed;--admin-glow:rgba(139,92,246,.12);
+  --brand:#16a34a;--brand-d:#15803d;--brand-glow:rgba(22,163,74,.12);
+  --bg:#0a0f1a;--card:#111827;--card2:#1a2235;--card3:#1f2937;
+  --text:#f1f5f9;--muted:#64748b;--muted2:#94a3b8;--border:#1e2d40;
+  --red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--green:#22c55e;
+  --gold:#f59e0b;--orange:#f97316;--pink:#ec4899;--cyan:#06b6d4;
+  --sidebar:250px;--font-h:'Outfit',sans-serif;--font-b:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;min-height:100vh;min-height:100dvh}
+
+.sidebar{width:var(--sidebar);background:var(--card);border-right:1px solid var(--border);height:100vh;height:100dvh;position:fixed;left:0;top:0;z-index:1000;display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.sidebar-header{padding:18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.sidebar-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--admin),#6d28d9);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:11px;flex-shrink:0;box-shadow:0 4px 12px rgba(139,92,246,.3)}
+.sidebar-title{font-family:var(--font-h);font-weight:800;font-size:17px;color:var(--text);letter-spacing:-.3px}
+.sidebar-badge{font-size:8px;background:var(--admin);color:#fff;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px;letter-spacing:.8px;vertical-align:middle}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.nav-section{padding:10px 18px 6px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-top:6px}
+.nav-item{display:flex;align-items:center;padding:11px 18px;color:var(--muted2);text-decoration:none;font-size:13px;font-weight:500;cursor:pointer;border-left:3px solid transparent;transition:.15s;gap:11px;margin:1px 0}
+.nav-item:hover{background:rgba(139,92,246,.06);color:var(--text)}
+.nav-item.active{background:var(--admin-glow);color:var(--admin);border-left-color:var(--admin);font-weight:600}
+.nav-item i{width:18px;text-align:center;font-size:14px}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center;animation:pulse-badge 2s infinite}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.7}}
+.sidebar-footer{padding:14px;border-top:1px solid var(--border)}
+.logout-btn{display:flex;align-items:center;justify-content:center;width:100%;padding:11px;background:transparent;border:1px solid rgba(239,68,68,.25);color:var(--red);border-radius:10px;font-weight:600;cursor:pointer;transition:.2s;font-size:12px;gap:8px;font-family:var(--font-b)}
+.logout-btn:hover{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.4)}
+
+.main-area{flex:1;margin-left:var(--sidebar);display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+.top-bar{background:rgba(17,24,39,.9);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:500;backdrop-filter:blur(12px)}
+.top-bar h2{font-family:var(--font-h);font-size:17px;font-weight:700;display:flex;align-items:center;gap:9px}
+.top-bar h2 i{color:var(--admin);font-size:15px}
+.menu-toggle{display:none;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px}
+.top-right{display:flex;align-items:center;gap:12px}
+.top-pill{display:flex;align-items:center;gap:7px;background:var(--card2);padding:6px 14px;border-radius:20px;font-size:11px;border:1px solid var(--border)}
+.top-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.5);animation:dot-pulse 2s infinite}
+@keyframes dot-pulse{0%,100%{box-shadow:0 0 8px rgba(34,197,94,.5)}50%{box-shadow:0 0 16px rgba(34,197,94,.8)}}
+.ws-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600}
+.ws-dot{width:8px;height:8px;border-radius:50%;transition:background .3s,box-shadow .3s}
+.ws-dot.connected{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.6)}
+.ws-dot.connecting{background:var(--yellow);box-shadow:0 0 8px rgba(245,158,11,.6);animation:dot-pulse 1s infinite}
+.ws-dot.disconnected{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.4)}
+
+.main-content{flex:1;padding:24px;max-width:1300px;margin:0 auto;width:100%}
+
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;position:relative;overflow:hidden;transition:.2s;animation:slideUp .4s ease both}
+.stat-card:hover{border-color:rgba(139,92,246,.2);transform:translateY(-2px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--sc,var(--admin));border-radius:0 2px 2px 0}
+.stat-card::after{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:var(--sc,var(--admin));opacity:.04;border-radius:50%}
+.stat-card h3{font-size:10px;color:var(--muted2);font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.stat-card .val{font-size:30px;font-weight:800;font-family:var(--font-h);color:var(--sc,var(--admin));line-height:1}
+.stat-card .sub{font-size:10px;color:var(--muted);margin-top:6px}
+
+.data-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:24px;animation:slideUp .4s ease both}
+.data-header{padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.data-header h3{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px;font-family:var(--font-h)}
+.data-header h3 i{color:var(--admin);font-size:14px}
+.data-header .count{font-size:11px;color:var(--muted);font-weight:400;font-family:var(--font-b)}
+.data-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:0 12px;transition:.2s}
+.search-box:focus-within{border-color:var(--admin);box-shadow:0 0 0 3px var(--admin-glow)}
+.search-box i{color:var(--muted);font-size:12px}
+.search-box input{background:transparent;border:none;color:#fff;font-size:12px;padding:9px 0;outline:none;width:170px;font-family:var(--font-b)}
+.search-box input::placeholder{color:var(--muted)}
+.data-table-wrap{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{padding:12px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0}
+.data-table td{padding:12px 16px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tbody tr{transition:.1s;cursor:pointer}
+.data-table tbody tr:hover td{background:rgba(139,92,246,.04)}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:7px;font-size:10px;font-weight:600;white-space:nowrap}
+.badge-green{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.18)}
+.badge-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.18)}
+.badge-yellow{background:rgba(245,158,11,.1);color:var(--yellow);border:1px solid rgba(245,158,11,.18)}
+.badge-blue{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.18)}
+.badge-purple{background:rgba(139,92,246,.1);color:var(--admin);border:1px solid rgba(139,92,246,.18)}
+.badge-gray{background:rgba(100,116,139,.1);color:var(--muted2);border:1px solid rgba(100,116,139,.18)}
+.badge-gold{background:rgba(245,158,11,.12);color:var(--gold);border:1px solid rgba(245,158,11,.25);font-weight:700}
+.badge-orange{background:rgba(249,115,22,.1);color:var(--orange);border:1px solid rgba(249,115,22,.18)}
+.badge-cyan{background:rgba(6,182,212,.1);color:var(--cyan);border:1px solid rgba(6,182,212,.18)}
+.badge-pink{background:rgba(236,72,153,.1);color:var(--pink);border:1px solid rgba(236,72,153,.18)}
+
+.btn{border:none;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;transition:.15s;font-size:11px;display:inline-flex;align-items:center;gap:5px;font-family:var(--font-b);white-space:nowrap;text-decoration:none}
+.btn-admin{background:var(--admin);color:#fff}.btn-admin:hover{background:var(--admin-d);transform:translateY(-1px)}
+.btn-green{background:var(--brand);color:#fff}.btn-green:hover{background:var(--brand-d);transform:translateY(-1px)}
+.btn-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.18)}.btn-red:hover{background:var(--red);color:#fff}
+.btn-ghost{background:transparent;color:var(--muted2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--card2);color:var(--text);border-color:var(--muted)}
+.btn-orange{background:var(--orange);color:#fff}.btn-orange:hover{opacity:.9}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{opacity:.9}
+.btn-yellow{background:var(--yellow);color:#000}.btn-yellow:hover{opacity:.9}
+.btn-sm{padding:6px 10px;font-size:10px;border-radius:7px}
+.btn-xs{padding:4px 8px;font-size:9px;border-radius:6px}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+.btn-group{display:flex;gap:4px;flex-wrap:wrap}
+
+.pending-grid{display:grid;grid-template-columns:1fr;gap:12px;padding:16px 20px}
+.pending-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;transition:.15s;animation:slideUp .3s ease both}
+.pending-card:hover{border-color:rgba(139,92,246,.25)}
+.pending-info{flex:1;min-width:200px}
+.pending-user{font-weight:700;font-size:14px;margin-bottom:5px;display:flex;align-items:center;gap:8px;font-family:var(--font-h)}
+.pending-details{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--muted2)}
+.pending-details span{display:flex;align-items:center;gap:5px}
+.pending-details i{font-size:10px;color:var(--muted)}
+.pending-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.ref-chip{font-family:'Courier New',monospace;font-size:10px;color:var(--admin);background:var(--admin-glow);padding:4px 10px;border-radius:6px;cursor:pointer;transition:.2s;border:1px solid rgba(139,92,246,.18);letter-spacing:.3px}
+.ref-chip:hover{background:var(--admin);color:#fff}
+.plan-cell{display:flex;flex-direction:column;gap:3px}
+.plan-expiry{font-size:9px;color:var(--muted);font-style:italic}
+
+.filter-bar{padding:14px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--card2)}
+.filter-select{padding:8px 32px 8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:#fff;font-size:11px;font-family:var(--font-b);outline:none;cursor:pointer;transition:.2s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2394a3b8' d='M5 7L0 2h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.filter-select:focus{border-color:var(--admin);box-shadow:0 0 0 3px var(--admin-glow)}
+.filter-select option{background:var(--card);color:#fff}
+.filter-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.filter-active-count{font-size:10px;color:var(--admin);font-weight:700;margin-left:auto}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:none;justify-content:center;align-items:center;padding:20px;backdrop-filter:blur(6px)}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:28px;max-width:460px;width:100%;animation:modalIn .25s ease;position:relative;max-height:90vh;overflow-y:auto}
+@keyframes modalIn{from{opacity:0;transform:scale(.93) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-box h3{font-family:var(--font-h);font-size:19px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.modal-box h3 i{color:var(--admin)}
+.modal-close{position:absolute;top:18px;right:18px;background:var(--card2);border:1px solid var(--border);color:var(--muted);font-size:16px;cursor:pointer;padding:6px 8px;border-radius:8px;transition:.2s}
+.modal-close:hover{color:var(--text);background:var(--card3)}
+.form-group{margin-bottom:16px}
+.form-label{display:block;margin-bottom:6px;font-size:12px;color:var(--muted2);font-weight:600}
+.form-input,.form-select{width:100%;padding:11px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:#fff;font-size:13px;outline:none;transition:.2s;font-family:var(--font-b);appearance:none;-webkit-appearance:none}
+.form-input:focus,.form-select:focus{border-color:var(--admin);box-shadow:0 0 0 3px var(--admin-glow)}
+.form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
+.form-select option{background:var(--card);color:#fff}
+.form-hint{font-size:10px;color:var(--muted);margin-top:5px}
+.form-row{display:flex;gap:12px}
+.form-row .form-group{flex:1}
+.modal-actions{display:flex;gap:10px;margin-top:22px}
+.modal-actions button{flex:1;padding:12px}
+.plan-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.plan-opt{padding:14px 12px;background:var(--card2);border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:.2s;text-align:center}
+.plan-opt:hover{border-color:rgba(139,92,246,.3)}
+.plan-opt.selected{border-color:var(--admin);background:var(--admin-glow)}
+.plan-opt .plan-icon{font-size:22px;margin-bottom:6px}
+.plan-opt .plan-name{font-size:12px;font-weight:700;font-family:var(--font-h)}
+.plan-opt .plan-sub{font-size:9px;color:var(--muted);margin-top:3px}
+
+/* ═══ TICKET MODAL ═══ */
+.ticket-modal-box{background:var(--card);border:1px solid var(--border);border-radius:18px;max-width:780px;width:100%;animation:modalIn .25s ease;position:relative;display:flex;flex-direction:column;max-height:92vh;overflow:hidden}
+.ticket-modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-shrink:0}
+.ticket-modal-header h3{font-family:var(--font-h);font-size:16px;font-weight:800;margin:0;display:flex;align-items:center;gap:9px;flex:1;min-width:0;overflow:hidden}
+.ticket-modal-header h3 i{color:var(--admin);flex-shrink:0}
+.ticket-modal-header h3 span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ticket-modal-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.ticket-modal-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.ticket-modal-footer{padding:14px 22px;border-top:1px solid var(--border);flex-shrink:0;background:var(--card2)}
+
+.tk-user-bar{padding:12px 22px;background:var(--card2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex-shrink:0}
+.tk-avatar{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--blue),#2563eb);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;font-family:var(--font-h)}
+.tk-uinfo{flex:1;min-width:0}
+.tk-uname{font-weight:700;font-size:13px;font-family:var(--font-h)}
+.tk-uemail{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk-udetails{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--muted2);margin-top:3px}
+.tk-udetails span{display:flex;align-items:center;gap:4px}
+
+.tk-scroll-wrap{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch}
+.tk-messages{padding:18px 22px;display:flex;flex-direction:column;gap:14px;min-height:100px;flex:1}
+
+.tk-msg{display:flex;gap:10px;max-width:82%;animation:msgIn .25s ease both}
+.tk-msg.user{align-self:flex-start}
+.tk-msg.admin{align-self:flex-end;flex-direction:row-reverse}
+.tk-msg.system{align-self:center;max-width:100%;justify-content:center}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.tk-msg-avatar{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff;flex-shrink:0;font-family:var(--font-h)}
+.tk-msg.user .tk-msg-avatar{background:linear-gradient(135deg,var(--blue),#2563eb)}
+.tk-msg.admin .tk-msg-avatar{background:linear-gradient(135deg,var(--admin),#6d28d9)}
+.tk-msg-content{flex:1;min-width:0}
+.tk-msg-bubble{border-radius:14px;padding:12px 16px;font-size:12.5px;line-height:1.65;word-break:break-word;white-space:pre-wrap}
+.tk-msg.user .tk-msg-bubble{background:var(--card2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.tk-msg.admin .tk-msg-bubble{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2);border-bottom-right-radius:4px}
+.tk-msg.system .tk-msg-bubble{background:transparent;border:none;color:var(--muted);font-size:10px;font-style:italic;text-align:center;padding:4px}
+.tk-msg-time{font-size:9px;color:var(--muted);margin-top:4px;padding:0 4px}
+.tk-msg.admin .tk-msg-time{text-align:right}
+.tk-msg-sender{font-size:10px;font-weight:700;margin-bottom:3px}
+.tk-msg.user .tk-msg-sender{color:var(--blue)}
+.tk-msg.admin .tk-msg-sender{color:var(--admin);text-align:right}
+
+.tk-link{color:var(--cyan);text-decoration:underline;text-underline-offset:2px;cursor:pointer;transition:color .15s}
+.tk-link:hover{color:#67e8f9}
+.tk-img-preview{max-width:220px;max-height:180px;border-radius:8px;margin-top:8px;cursor:pointer;border:1px solid var(--border);transition:transform .2s;display:block}
+.tk-img-preview:hover{transform:scale(1.02)}
+.tk-file-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);color:var(--cyan);padding:6px 12px;border-radius:8px;font-size:11px;margin-top:6px;cursor:pointer;transition:.15s}
+.tk-file-chip:hover{background:rgba(6,182,212,.2)}
+
+/* ═══ USER TYPING INDICATOR — LEFT SIDE, BLUE, OUTSIDE tk-messages ═══ */
+.tk-typing-zone{padding:4px 22px 6px;flex-shrink:0;min-height:0}
+.tk-typing{display:none;align-self:flex-start;gap:10px;align-items:center}
+.tk-typing.visible{display:flex;animation:typingSlideIn .2s ease}
+@keyframes typingSlideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.tk-typing-avatar{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--blue),#2563eb);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff;flex-shrink:0;font-family:var(--font-h)}
+.tk-typing-body{display:flex;flex-direction:column;gap:2px}
+.tk-typing-label{font-size:9px;color:var(--blue);font-weight:700;padding-left:4px;opacity:.8}
+.tk-typing-dots{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);border-bottom-left-radius:4px;border-radius:14px;padding:10px 16px}
+.tk-typing-dots span{width:7px;height:7px;background:var(--blue);border-radius:50%;animation:typingBounce .6s ease-in-out infinite}
+.tk-typing-dots span:nth-child(2){animation-delay:.15s}
+.tk-typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes typingBounce{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
+
+/* Typing source badge (WS vs POLL) */
+.tk-typing-source{font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:6px;vertical-align:middle;letter-spacing:.3px}
+.tk-typing-source.ws{background:rgba(34,197,94,.15);color:var(--green)}
+.tk-typing-source.poll{background:rgba(245,158,11,.15);color:var(--yellow)}
+
+.tk-reply-area{display:flex;gap:10px;align-items:flex-end}
+.tk-reply-area textarea{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px 16px;color:#fff;font-size:12.5px;font-family:var(--font-b);outline:none;resize:none;min-height:46px;max-height:140px;transition:.2s;line-height:1.5}
+.tk-reply-area textarea:focus{border-color:var(--admin);box-shadow:0 0 0 3px var(--admin-glow)}
+.tk-reply-area textarea::placeholder{color:var(--muted)}
+.tk-send-btn{width:46px;height:46px;border-radius:12px;background:var(--admin);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.2s;flex-shrink:0}
+.tk-send-btn:hover{background:var(--admin-d);transform:scale(1.05)}
+.tk-send-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.tk-reply-hint{font-size:9px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between;align-items:center}
+.tk-reply-hint .ws-live{display:flex;align-items:center;gap:4px}
+.tk-reply-hint .ws-live .wld{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,.5);animation:dot-pulse 2s infinite}
+.tk-reply-hint .ws-live .wld.offline{background:var(--red);box-shadow:0 0 6px rgba(239,68,68,.3);animation:none}
+
+.tk-extras{padding:14px 22px;border-top:1px solid var(--border);background:rgba(0,0,0,.15);display:flex;gap:20px;flex-wrap:wrap;flex-shrink:0}
+.tk-extra-group{flex:1;min-width:180px}
+.tk-extra-group h4{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;font-weight:700}
+.tk-extra-item{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.03)}
+.tk-extra-item:last-child{border:none}
+.tk-extra-item .label{color:var(--muted2)}
+.tk-extra-item .value{font-weight:600;color:var(--text)}
+
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--card);border:1px solid var(--border);color:var(--text);padding:14px 20px;border-radius:12px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:10px;opacity:0;transform:translateX(40px);transition:.35s cubic-bezier(.4,0,.2,1);pointer-events:none;box-shadow:0 12px 32px rgba(0,0,0,.4);max-width:360px}
+.toast.show{opacity:1;transform:translateX(0);pointer-events:auto}
+.toast.success{border-color:rgba(34,197,94,.35)}.toast.success i{color:var(--green)}
+.toast.error{border-color:rgba(239,68,68,.35)}.toast.error i{color:var(--red)}
+.toast.info{border-color:rgba(59,130,246,.35)}.toast.info i{color:var(--blue)}
+
+.empty-state{padding:50px 20px;text-align:center;color:var(--muted)}
+.empty-state i{font-size:36px;opacity:.25;display:block;margin-bottom:14px}
+.empty-state p{font-size:13px}
+.loading-spinner{text-align:center;padding:40px}
+.spinner-ring{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--admin);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.section{display:none;animation:fadeIn .2s}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.sidebar-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:999;backdrop-filter:blur(4px)}
+.sidebar-overlay.open{display:block}
+
+.user-info-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.user-avatar{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--admin),#6d28d9);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0;font-family:var(--font-h)}
+.user-meta{flex:1;min-width:0}
+.user-meta .name{font-weight:700;font-size:13px;font-family:var(--font-h)}
+.user-meta .email{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-meta .meta-row{display:flex;gap:10px;margin-top:3px;font-size:10px;color:var(--muted2)}
+
+.console-wrap{background:#060d14;border-top:1px solid var(--border)}
+.console-topbar{background:#0d1824;padding:8px 14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #1a2a3a}
+.console-dot{width:9px;height:9px;border-radius:50%}
+.console-box{padding:14px;height:500px;overflow-y:auto;font-family:'Courier New',monospace;font-size:11px;line-height:1.9;-webkit-overflow-scrolling:touch}
+.console-row{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.console-time{color:#2a4a6a;flex-shrink:0;font-size:10px}
+.console-user{background:rgba(139,92,246,.15);color:var(--admin);padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;flex-shrink:0}
+.console-where-group{color:#60a5fa;font-size:9px;font-weight:700;flex-shrink:0;padding:2px 5px;background:rgba(59,130,246,.1);border-radius:3px}
+.console-where-dm{color:#34d399;font-size:9px;font-weight:700;flex-shrink:0;padding:2px 5px;background:rgba(52,211,153,.1);border-radius:3px}
+.console-cmd{font-weight:800;flex-shrink:0;font-size:11px}
+.console-full{color:#475569;font-size:10px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.online-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:16px}
+.online-card{background:var(--card2);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;animation:slideUp .3s ease;transition:.2s}
+.online-card:hover{border-color:rgba(34,197,94,.4);transform:translateY(-2px)}
+.online-avatar{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#15803d);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0;position:relative}
+.online-live-dot{position:absolute;bottom:-2px;right:-2px;width:12px;height:12px;background:var(--green);border-radius:50%;border:2px solid var(--card2);box-shadow:0 0 8px rgba(34,197,94,.6)}
+.online-info{flex:1;min-width:0}
+.online-name{font-weight:700;font-size:13px;font-family:var(--font-h)}
+.online-page{font-size:10px;color:var(--muted2);margin-top:2px}
+.online-ago{font-size:9px;color:var(--muted);margin-top:2px}
+.online-indicator{display:flex;flex-direction:column;align-items:center;gap:4px}
+.online-pulse{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px rgba(34,197,94,.8);animation:dot-pulse 2s infinite}
+.online-label{font-size:9px;color:var(--green);font-weight:700}
+
+.priority-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+.priority-dot.high{background:var(--red);box-shadow:0 0 6px rgba(239,68,68,.5)}
+.priority-dot.medium{background:var(--yellow);box-shadow:0 0 6px rgba(245,158,11,.5)}
+.priority-dot.low{background:var(--muted)}
+
+.tk-subject{font-weight:600;font-size:12px;color:var(--text);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk-subject-sub{font-size:9px;color:var(--muted);margin-top:2px}
+.tk-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 6px rgba(59,130,246,.5);display:inline-block;margin-right:6px;flex-shrink:0;animation:dot-pulse 2s infinite}
+@keyframes newMsgFlash{0%{background:rgba(59,130,246,.08)}100%{background:transparent}}
+.tk-msg.flash{animation:msgIn .3s ease, newMsgFlash 1.5s ease}
+
+@media(min-width:769px){
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+  .pending-grid{grid-template-columns:1fr 1fr}
+  .tk-stats-grid{grid-template-columns:repeat(5,1fr)!important}
+}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .main-area{margin-left:0}
+  .menu-toggle{display:block}
+  .pending-card{flex-direction:column;align-items:flex-start}
+  .pending-actions{width:100%;justify-content:flex-end}
+  .search-box input{width:120px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .plan-options{grid-template-columns:1fr 1fr}
+  .form-row{flex-direction:column;gap:0}
+  .top-bar{padding:12px 16px}
+  .main-content{padding:16px}
+  .pending-grid{grid-template-columns:1fr}
+  .console-box{height:350px}
+  .filter-bar{padding:10px 14px}
+  .ticket-modal-box{max-height:95vh;border-radius:14px}
+  .ticket-modal-header{padding:14px 16px}
+  .ticket-modal-footer{padding:12px 16px}
+  .tk-user-bar{padding:10px 16px}
+  .tk-messages{padding:14px 16px}
+  .tk-typing-zone{padding:4px 16px 6px}
+  .tk-msg{max-width:90%}
+  .tk-extras{padding:10px 16px}
+  .tk-stats-grid{grid-template-columns:repeat(2,1fr)!important}
+  .ws-status-text{display:none}
+}
+@media(max-width:400px){
+  .plan-options{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr}
+  .tk-stats-grid{grid-template-columns:1fr!important}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">OX</div>
+    <div class="sidebar-title">OxBot<span class="sidebar-badge">ADMIN</span></div>
+  </div>
+  <div class="nav-scroll">
+    <div class="nav-section">Overview</div>
+    <a class="nav-item active" onclick="go('dashboard',this)"><i class="fas fa-chart-pie"></i> Dashboard</a>
+    <div class="nav-section">Management</div>
+    <a class="nav-item" onclick="go('pending',this)"><i class="fas fa-clock"></i> Pending Pro <span class="nav-badge" id="pendingBadge" style="display:none">0</span></a>
+    <a class="nav-item" onclick="go('users',this)"><i class="fas fa-users"></i> Users</a>
+    <a class="nav-item" onclick="go('subscriptions',this)"><i class="fas fa-crown"></i> Subscriptions</a>
+    <a class="nav-item" onclick="go('deposits',this)"><i class="fas fa-wallet"></i> Deposits</a>
+    <a class="nav-item" onclick="go('tickets',this)"><i class="fas fa-headset"></i> Tickets <span class="nav-badge" id="ticketsBadge" style="display:none;background:var(--blue)">0</span></a>
+    <div class="nav-section">Monitoring</div>
+    <a class="nav-item" onclick="go('console',this)"><i class="fas fa-terminal"></i> Live Console <span class="nav-badge" id="consoleBadge" style="display:none;background:var(--admin)">0</span></a>
+    <a class="nav-item" onclick="go('online',this)"><i class="fas fa-satellite-dish"></i> Online Users <span class="nav-badge" id="onlineBadge" style="display:none;background:var(--green)">0</span></a>
+  </div>
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</aside>
+
+<div class="main-area">
+  <header class="top-bar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+      <h2 id="pageTitle"><i class="fas fa-chart-pie"></i> Dashboard</h2>
+    </div>
+    <div class="top-right">
+      <div class="ws-status">
+        <div class="ws-dot connecting" id="wsDot"></div>
+        <span class="ws-status-text" id="wsLabel" style="color:var(--yellow);font-size:11px">Connecting...</span>
+      </div>
+      <div class="top-pill"><div class="dot"></div><span style="color:var(--muted2);font-size:11px">Online</span></div>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <section id="sec-dashboard" class="section active">
+      <div class="stats-grid">
+        <div class="stat-card" style="--sc:var(--admin);animation-delay:0s"><h3>Total Users</h3><div class="val" id="statUsers">—</div><div class="sub">registered accounts</div></div>
+        <div class="stat-card" style="--sc:var(--green);animation-delay:.05s"><h3>Active Bots</h3><div class="val" id="statBots" style="color:var(--green)">—</div><div class="sub">currently running</div></div>
+        <div class="stat-card" style="--sc:var(--gold);animation-delay:.1s"><h3>Active Pro</h3><div class="val" id="statPro" style="color:var(--gold)">—</div><div class="sub">paid subscribers</div></div>
+        <div class="stat-card" style="--sc:var(--yellow);animation-delay:.15s"><h3>Pending Pro</h3><div class="val" id="statPending" style="color:var(--yellow)">—</div><div class="sub">awaiting activation</div></div>
+        <div class="stat-card" style="--sc:var(--blue);animation-delay:.2s"><h3>Total Coins</h3><div class="val" id="statCoins" style="color:var(--blue)">—</div><div class="sub">across all users</div></div>
+        <div class="stat-card" style="--sc:var(--red);animation-delay:.25s"><h3>Blocked</h3><div class="val" id="statBlocked" style="color:var(--red)">—</div><div class="sub">banned accounts</div></div>
+      </div>
+      <div class="data-card" style="animation-delay:.3s">
+        <div class="data-header"><h3><i class="fas fa-clock"></i> Recent Pending Requests</h3><button class="btn btn-ghost btn-sm" onclick="go('pending',null)">View All <i class="fas fa-arrow-right" style="font-size:9px"></i></button></div>
+        <div id="dashPending"><div class="loading-spinner"><div class="spinner-ring"></div></div></div>
+      </div>
+    </section>
+
+    <section id="sec-pending" class="section">
+      <div class="data-card">
+        <div class="data-header"><h3><i class="fas fa-clock"></i> Pending Pro Requests</h3><div class="data-actions"><button class="btn btn-ghost btn-sm" onclick="loadPending()"><i class="fas fa-sync-alt"></i> Refresh</button></div></div>
+        <div id="pendingList"><div class="loading-spinner"><div class="spinner-ring"></div></div></div>
+      </div>
+    </section>
+
+    <section id="sec-users" class="section">
+      <div class="data-card">
+        <div class="data-header"><h3><i class="fas fa-users"></i> All Users <span class="count" id="userCount"></span></h3><div class="data-actions"><div class="search-box"><i class="fas fa-search"></i><input type="text" id="userSearch" placeholder="Search name, email, phone..." oninput="filterUsers()"></div><button class="btn btn-ghost btn-sm" onclick="loadUsers()" title="Refresh"><i class="fas fa-sync-alt"></i></button></div></div>
+        <div class="data-table-wrap" id="usersTableWrap"><div class="loading-spinner"><div class="spinner-ring"></div></div></div>
+      </div>
+    </section>
+
+    <section id="sec-subscriptions" class="section">
+      <div class="data-card">
+        <div class="data-header"><h3><i class="fas fa-crown"></i> All Subscriptions</h3><div class="data-actions"><button class="btn btn-ghost btn-sm" onclick="loadSubs()"><i class="fas fa-sync-alt"></i> Refresh</button></div></div>
+        <div class="data-table-wrap" id="subsTableWrap"><div class="loading-spinner"><div class="spinner-ring"></div></div></div>
+      </div>
+    </section>
+
+    <section id="sec-deposits" class="section">
+      <div class="data-card">
+        <div class="data-header"><h3><i class="fas fa-wallet"></i> All Deposits</h3><div class="data-actions"><button class="btn btn-ghost btn-sm" onclick="loadDeposits()"><i class="fas fa-sync-alt"></i> Refresh</button></div></div>
+        <div class="data-table-wrap" id="depositsTableWrap"><div class="loading-spinner"><div class="spinner-ring"></div></div></div>
+      </div>
+    </section>
+
+    <section id="sec-tickets" class="section">
+      <div class="stats-grid tk-stats-grid" style="margin-bottom:20px">
+        <div class="stat-card" style="--sc:var(--green);animation-delay:0s"><h3>Open</h3><div class="val" id="tkStatOpen" style="color:var(--green)">—</div><div class="sub">awaiting reply</div></div>
+        <div class="stat-card" style="--sc:var(--blue);animation-delay:.04s"><h3>Replied</h3><div class="val" id="tkStatReplied" style="color:var(--blue)">—</div><div class="sub">admin responded</div></div>
+        <div class="stat-card" style="--sc:var(--muted2);animation-delay:.08s"><h3>Closed</h3><div class="val" id="tkStatClosed">—</div><div class="sub">resolved</div></div>
+        <div class="stat-card" style="--sc:var(--admin);animation-delay:.12s"><h3>Total</h3><div class="val" id="tkStatTotal" style="color:var(--admin)">—</div><div class="sub">all tickets</div></div>
+        <div class="stat-card" style="--sc:var(--cyan);animation-delay:.16s"><h3>Avg Response</h3><div class="val" id="tkStatAvg" style="color:var(--cyan)">—</div><div class="sub">minutes</div></div>
+      </div>
+      <div class="data-card" style="animation-delay:.2s">
+        <div class="data-header"><h3><i class="fas fa-headset"></i> Support Tickets <span class="count" id="ticketCount"></span></h3><div class="data-actions"><button class="btn btn-ghost btn-sm" onclick="loadTickets()"><i class="fas fa-sync-alt"></i> Refresh</button></div></div>
+        <div class="filter-bar">
+          <span class="filter-label">Status</span>
+          <select class="filter-select" id="tkFilterStatus" onchange="loadTickets()"><option value="all">All Status</option><option value="open">Open</option><option value="replied">Replied</option><option value="closed">Closed</option></select>
+          <span class="filter-label">Category</span>
+          <select class="filter-select" id="tkFilterCategory" onchange="loadTickets()"><option value="all">All Categories</option><option value="account">Account</option><option value="payment">Payment</option><option value="bot">Bot Issues</option><option value="pro">Pro Subscription</option><option value="bug">Bug Report</option><option value="feature">Feature Request</option><option value="other">Other</option></select>
+          <div class="search-box" style="flex:1;min-width:160px"><i class="fas fa-search"></i><input type="text" id="tkSearch" placeholder="Search ticket #, subject, user..." oninput="debounceTicketSearch()"></div>
+          <span class="filter-active-count" id="tkFilterCount"></span>
+        </div>
+        <div class="data-table-wrap" id="ticketsTableWrap"><div class="loading-spinner"><div class="spinner-ring"></div></div></div>
+      </div>
+    </section>
+
+    <section id="sec-console" class="section">
+      <div class="data-card">
+        <div class="data-header"><h3><i class="fas fa-terminal"></i> Live Command Console</h3><div class="data-actions"><div class="search-box"><i class="fas fa-search"></i><input type="text" id="consoleSearch" placeholder="Filter by user or command..." oninput="filterConsole()"></div><button class="btn btn-ghost btn-sm" onclick="loadAdminConsole()"><i class="fas fa-sync-alt"></i></button><button class="btn btn-red btn-sm" onclick="clearConsoleFilter()"><i class="fas fa-times"></i> Clear</button></div></div>
+        <div class="console-wrap">
+          <div class="console-topbar"><div class="console-dot" style="background:#ff5f57"></div><div class="console-dot" style="background:#febc2e"></div><div class="console-dot" style="background:#28c840"></div><span style="font-size:10px;color:#2a4a6a;margin-left:8px">admin-console · live via WebSocket</span><span id="consoleCount" style="margin-left:auto;font-size:10px;color:var(--muted)">0 commands</span></div>
+          <div class="console-box" id="adminConsoleBox"><span style="color:#1a3a5a">$ waiting for commands from users...</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-online" class="section">
+      <div class="data-card">
+        <div class="data-header"><h3><i class="fas fa-satellite-dish" style="color:var(--green)"></i> Online Users</h3><div class="data-actions"><span id="onlineCountLabel" style="font-size:11px;color:var(--muted2);font-weight:600">0 online</span><button class="btn btn-ghost btn-sm" onclick="loadOnlineUsers()"><i class="fas fa-sync-alt"></i> Refresh</button></div></div>
+        <div id="onlineUsersList"><div class="loading-spinner"><div class="spinner-ring"></div></div></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- TOP UP MODAL -->
+<div class="modal-overlay" id="topupModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('topupModal')"><i class="fas fa-xmark"></i></button>
+    <h3><i class="fas fa-coins"></i> Top Up Balance</h3>
+    <div class="user-info-card" id="topupUserInfo"></div>
+    <div class="form-group"><label class="form-label">Coins to add</label><input type="number" id="topupAmount" class="form-input" placeholder="e.g. 100" min="1"></div>
+    <div class="form-group"><label class="form-label">Reason (optional)</label><input type="text" id="topupReason" class="form-input" placeholder="e.g. Support compensation"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('topupModal')">Cancel</button><button class="btn btn-green" onclick="doTopup()"><i class="fas fa-plus"></i> Add Coins</button></div>
+  </div>
+</div>
+
+<!-- CHANGE PLAN MODAL -->
+<div class="modal-overlay" id="planModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('planModal')"><i class="fas fa-xmark"></i></button>
+    <h3><i class="fas fa-crown"></i> Change Plan</h3>
+    <div class="user-info-card" id="planUserInfo"></div>
+    <label class="form-label">Select Plan</label>
+    <div class="plan-options">
+      <div class="plan-opt" data-plan="free" onclick="selectPlanOpt('free')"><div class="plan-icon">🆓</div><div class="plan-name">Free</div><div class="plan-sub">No subscription</div></div>
+      <div class="plan-opt" data-plan="half" onclick="selectPlanOpt('half')"><div class="plan-icon">🚀</div><div class="plan-name">Starter</div><div class="plan-sub">5 bots</div></div>
+      <div class="plan-opt" data-plan="full" onclick="selectPlanOpt('full')"><div class="plan-icon">⭐</div><div class="plan-name">Premium</div><div class="plan-sub">8 bots</div></div>
+    </div>
+    <div class="form-group" id="daysGroup" style="display:none"><label class="form-label">Duration (days)</label><input type="number" id="planDays" class="form-input" placeholder="e.g. 30" min="1" value="30"><div class="form-hint">Existing same-plan subscription will be extended.</div></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('planModal')">Cancel</button><button class="btn btn-admin" id="planChangeBtn" onclick="doChangePlan()"><i class="fas fa-check"></i> Apply Plan</button></div>
+  </div>
+</div>
+
+<!-- DEDUCT MODAL -->
+<div class="modal-overlay" id="deductModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('deductModal')"><i class="fas fa-xmark"></i></button>
+    <h3><i class="fas fa-minus-circle" style="color:var(--red)"></i> Deduct Coins</h3>
+    <div class="user-info-card" id="deductUserInfo"></div>
+    <div class="form-group"><label class="form-label">Coins to remove</label><input type="number" id="deductAmount" class="form-input" placeholder="e.g. 50" min="1"></div>
+    <div class="form-group"><label class="form-label">Reason (optional)</label><input type="text" id="deductReason" class="form-input" placeholder="e.g. Violation penalty"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('deductModal')">Cancel</button><button class="btn btn-red" onclick="doDeduct()"><i class="fas fa-minus"></i> Deduct Coins</button></div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box" style="max-width:400px;text-align:center">
+    <button class="modal-close" onclick="closeModal('confirmModal')"><i class="fas fa-xmark"></i></button>
+    <div style="font-size:44px;margin-bottom:14px" id="confirmIcon">⚠️</div>
+    <h3 style="justify-content:center" id="confirmTitle">Are you sure?</h3>
+    <p style="font-size:12px;color:var(--muted2);line-height:1.7;margin-bottom:22px;text-align:center" id="confirmMsg">—</p>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button><button class="btn btn-red" id="confirmBtn">Confirm</button></div>
+  </div>
+</div>
+
+<!-- IMAGE LIGHTBOX -->
+<div class="modal-overlay" id="imgLightbox" style="z-index:100001;background:rgba(0,0,0,.92);cursor:zoom-out" onclick="closeModal('imgLightbox')">
+  <img id="imgLightboxImg" style="max-width:92vw;max-height:90vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)" src="" alt="Preview">
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TICKET DETAIL MODAL
+     Typing indicator is OUTSIDE tk-messages (in tk-typing-zone)
+     so innerHTML re-renders never destroy it.
+     Dual detection: WebSocket (instant) + REST poll (fallback)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="ticketDetailModal">
+  <div class="ticket-modal-box">
+    <div class="ticket-modal-header">
+      <h3><i class="fas fa-headset"></i> <span id="tkDetailSubject">Loading...</span></h3>
+      <div class="ticket-modal-meta" id="tkDetailMeta"></div>
+      <button class="modal-close" onclick="closeModal('ticketDetailModal')" style="position:static;flex-shrink:0"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="ticket-modal-body">
+      <div class="tk-user-bar" id="tkDetailUser"></div>
+
+      <!-- Scrollable messages wrapper -->
+      <div class="tk-scroll-wrap" id="tkScrollWrap">
+        <div class="tk-messages" id="tkDetailMessages">
+          <div class="loading-spinner"><div class="spinner-ring"></div></div>
+        </div>
+      </div>
+
+      <!-- USER TYPING INDICATOR — always exists here, never destroyed -->
+      <div class="tk-typing-zone">
+        <div class="tk-typing" id="tkTyping">
+          <div class="tk-typing-avatar" id="tkTypingAvatar">U</div>
+          <div class="tk-typing-body">
+            <div class="tk-typing-label" id="tkTypingLabel">User is typing... <span class="tk-typing-source ws" id="tkTypingSource">LIVE</span></div>
+            <div class="tk-typing-dots"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tk-extras" id="tkDetailExtras" style="display:none"></div>
+    </div>
+    <div class="ticket-modal-footer" id="tkDetailFooter">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center" id="tkDetailActions"></div>
+      <div class="tk-reply-area">
+        <textarea id="tkReplyText" placeholder="Type your reply to the user..." rows="1" oninput="autoResizeTk(this);handleAdminTyping(this)" onkeydown="handleReplyKey(event)"></textarea>
+        <button class="tk-send-btn" id="tkSendBtn" onclick="sendTicketReply()" title="Send Reply"><i class="fas fa-paper-plane"></i></button>
+      </div>
+      <div class="tk-reply-hint">
+        <span>Enter to send · Shift+Enter for new line</span>
+        <span class="ws-live"><span class="wld" id="replyWsDot"></span> <span id="replyWsLabel">Live</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONFIG & STATE
+   ═══════════════════════════════════════════════════════ */
+var API = '/api/admin';
+var token = localStorage.getItem('admin_token');
+var allUsers = [];
+var topupUserId = null, planUserId = null, deductUserId = null;
+var selectedPlanKey = null;
+var allConsoleLogs = [];
+var allTickets = [];
+var currentTicketId = null;
+var currentTicketUsername = 'User';
+var currentTicketUserInitial = 'U';
+var ticketSearchTimer = null;
+var adminTypingStopTimer = null;
+
+/* ── WebSocket state ── */
+var ws = null;
+var wsReconnectTimer = null;
+var wsReconnectAttempts = 0;
+var wsConnected = false;
+
+/* ── Typing poll state (REST fallback) ── */
+var typingPollTimer = null;
+var typingPollActive = false;
+var userTypingHideTimer = null;
+var lastKnownTypingState = false;
+
+var TITLES = {
+  dashboard:'<i class="fas fa-chart-pie"></i> Dashboard',
+  pending:'<i class="fas fa-clock"></i> Pending Pro',
+  users:'<i class="fas fa-users"></i> Users',
+  subscriptions:'<i class="fas fa-crown"></i> Subscriptions',
+  deposits:'<i class="fas fa-wallet"></i> Deposits',
+  tickets:'<i class="fas fa-headset"></i> Support Tickets',
+  console:'<i class="fas fa-terminal"></i> Live Console',
+  online:'<i class="fas fa-satellite-dish"></i> Online Users',
+};
+
+var TICKET_CATEGORIES = {
+  account:{label:'Account Issues',badge:'badge-blue',icon:'fa-user-circle'},
+  payment:{label:'Payment Issues',badge:'badge-gold',icon:'fa-credit-card'},
+  bot:{label:'Bot Issues',badge:'badge-purple',icon:'fa-robot'},
+  pro:{label:'Pro Subscription',badge:'badge-orange',icon:'fa-crown'},
+  bug:{label:'Bug Report',badge:'badge-red',icon:'fa-bug'},
+  feature:{label:'Feature Request',badge:'badge-cyan',icon:'fa-lightbulb'},
+  other:{label:'Other',badge:'badge-gray',icon:'fa-ellipsis-h'},
+};
+
+var IMG_EXTS = ['jpg','jpeg','png','gif','webp','bmp','svg','avif'];
+var VID_EXTS = ['mp4','webm','mov','avi'];
+var AUD_EXTS = ['mp3','ogg','wav','m4a'];
+
+/* ═══════════════════════════════════════════════════════
+   AUTH GATE
+   ═══════════════════════════════════════════════════════ */
+(async function(){
+  if(!token) return window.location.href='/admin-login.html';
+  try{
+    var r = await fetch(API+'/stats',{headers:{'x-admin-token':token}});
+    if(r.status===401||r.status===403){localStorage.removeItem('admin_token');return window.location.href='/admin-login.html';}
+    if(!r.ok) throw new Error('Server error');
+    init();
+  }catch(e){
+    console.warn('[GATE]',e.message);
+    init();
+  }
+})();
+
+/* ═══════════════════════════════════════════════════════
+   API HELPER
+   ═══════════════════════════════════════════════════════ */
+async function api(path,opts){
+  opts=opts||{};
+  var r=await fetch(API+path,{
+    method:opts.method||'GET',
+    headers:Object.assign({'Content-Type':'application/json','x-admin-token':token},opts.headers||{}),
+    body:opts.body||undefined
+  });
+  if(r.status===401||r.status===403){localStorage.removeItem('admin_token');window.location.href='/admin-login.html';throw new Error('Session expired');}
+  var d=await r.json();
+  if(!r.ok) throw new Error(d.message||'Request failed');
+  return d;
+}
+
+/* ═══════════════════════════════════════════════════════
+   WEBSOCKET — Auto-detect, connect, reconnect with backoff
+   ═══════════════════════════════════════════════════════ */
+function getWsUrl(){
+  var loc=window.location;
+  var proto=loc.protocol==='https:'?'wss:':'ws:';
+  return proto+'//'+loc.host+'/ws/admin?token='+encodeURIComponent(token);
+}
+
+function connectWS(){
+  if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING)) return;
+  updateWsUI('connecting');
+  try{ws=new WebSocket(getWsUrl());}catch(e){console.error('[WS] create fail:',e);scheduleReconnect();return;}
+
+  ws.onopen=function(){
+    wsConnected=true;wsReconnectAttempts=0;updateWsUI('connected');
+    console.log('[WS] Connected');
+    if(currentTicketId) wsSend({type:'ticket:join',ticket_id:currentTicketId});
+    // If WS connects while typing poll is running, we can slow the poll down
+    // (poll becomes backup-only, WS is primary)
+  };
+  ws.onmessage=function(evt){
+    try{handleWsMessage(JSON.parse(evt.data));}catch(e){}
+  };
+  ws.onclose=function(){
+    wsConnected=false;updateWsUI('disconnected');scheduleReconnect();
+  };
+  ws.onerror=function(){wsConnected=false;};
+}
+
+function wsSend(data){
+  if(ws&&ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(data));
+}
+
+function scheduleReconnect(){
+  if(wsReconnectTimer) return;
+  wsReconnectAttempts++;
+  var delay=Math.min(1000*Math.pow(2,wsReconnectAttempts-1),30000);
+  wsReconnectTimer=setTimeout(function(){wsReconnectTimer=null;connectWS();},delay);
+}
+
+function updateWsUI(state){
+  var dot=document.getElementById('wsDot'),label=document.getElementById('wsLabel');
+  var rdot=document.getElementById('replyWsDot'),rlabel=document.getElementById('replyWsLabel');
+  dot.className='ws-dot '+state;
+  if(state==='connected'){label.textContent='Live';label.style.color='var(--green)';if(rdot){rdot.className='wld';}if(rlabel)rlabel.textContent='Live';}
+  else if(state==='connecting'){label.textContent='Connecting...';label.style.color='var(--yellow)';if(rdot){rdot.className='wld offline';}if(rlabel)rlabel.textContent='Reconnecting';}
+  else{label.textContent='Offline';label.style.color='var(--red)';if(rdot){rdot.className='wld offline';}if(rlabel)rlabel.textContent='Offline';}
+}
+
+/* ═══════════════════════════════════════════════════════
+   WEBSOCKET MESSAGE HANDLER
+   ═══════════════════════════════════════════════════════ */
+function handleWsMessage(msg){
+  switch(msg.type){
+
+    case 'ticket:user_typing':
+      if(msg.ticket_id==currentTicketId){
+        showUserTyping(msg.username||currentTicketUsername, 'ws');
+      }
+      break;
+
+    case 'ticket:user_stop_typing':
+      if(msg.ticket_id==currentTicketId) hideUserTyping();
+      break;
+
+    case 'ticket:new_message':
+      if(msg.ticket_id==currentTicketId) appendIncomingMessage(msg.message);
+      else toast('New message in ticket #'+(msg.ticket_number||msg.ticket_id),false,'info');
+      refreshTicketListIfVisible();
+      refreshTicketStatsIfVisible();
+      break;
+
+    case 'console:command':
+      allConsoleLogs.unshift(msg.data);
+      if(allConsoleLogs.length>500) allConsoleLogs.length=500;
+      var as=document.querySelector('.section.active');
+      if(as&&as.id==='sec-console') filterConsole();
+      var cb=document.getElementById('consoleBadge');
+      cb.textContent=Math.min(allConsoleLogs.length,99);cb.style.display='inline-flex';
+      break;
+
+    case 'user:online':
+      var ob=document.getElementById('onlineBadge'),c=parseInt(ob.textContent)||0;
+      ob.textContent=c+1;ob.style.display='inline-flex';
+      var as2=document.querySelector('.section.active');
+      if(as2&&as2.id==='sec-online') loadOnlineUsers();
+      break;
+
+    case 'user:offline':
+      var ob2=document.getElementById('onlineBadge'),c2=parseInt(ob2.textContent)||0;
+      ob2.textContent=Math.max(0,c2-1);
+      if(c2<=1) ob2.style.display='none';
+      var as3=document.querySelector('.section.active');
+      if(as3&&as3.id==='sec-online') loadOnlineUsers();
+      break;
+
+    case 'stats:update':
+      if(msg.data){
+        var s=msg.data;
+        var els={statUsers:s.total_users,statBots:s.active_bots,statPro:s.active_pro,statPending:s.pending_pro,statBlocked:s.blocked_users};
+        for(var k in els){var el=document.getElementById(k);if(el&&els[k]!==undefined) el.textContent=els[k];}
+        var el5=document.getElementById('statCoins');if(el5&&s.total_coins!==undefined) el5.textContent=Number(s.total_coins).toLocaleString();
+        var pb=document.getElementById('pendingBadge');
+        if(s.pending_pro>0){pb.textContent=s.pending_pro;pb.style.display='inline-flex';}else pb.style.display='none';
+      }
+      break;
+
+    case 'subscription:pending':
+      toast('New Pro request from @'+(msg.username||'user'),false,'info');
+      var as4=document.querySelector('.section.active');
+      if(as4&&as4.id==='sec-pending') loadPending();
+      if(as4&&as4.id==='sec-dashboard') loadDashPending();
+      break;
+
+    case 'deposit:pending':
+      toast('New deposit from @'+(msg.username||'user')+' — ₦'+Number(msg.amount||0).toLocaleString(),false,'info');
+      break;
+
+    case 'ticket:status_changed':
+      refreshTicketListIfVisible();refreshTicketStatsIfVisible();
+      break;
+
+    case 'ticket:created':
+      toast('New ticket from @'+(msg.username||'user'),false,'info');
+      refreshTicketListIfVisible();refreshTicketStatsIfVisible();
+      break;
+  }
+}
+
+function refreshTicketListIfVisible(){var a=document.querySelector('.section.active');if(a&&a.id==='sec-tickets') loadTickets();}
+function refreshTicketStatsIfVisible(){var a=document.querySelector('.section.active');if(a&&a.id==='sec-tickets') loadTicketStats();}
+
+/* ═══════════════════════════════════════════════════════
+   TYPING INDICATOR — Dual detection
+   Primary: WebSocket (instant, zero latency)
+   Fallback: REST poll every 2.5s (always works even if WS is down)
+   
+   The indicator lives in tk-typing-zone which is OUTSIDE
+   tk-messages, so message re-renders never touch it.
+   ═══════════════════════════════════════════════════════ */
+
+function showUserTyping(username, source){
+  var el = document.getElementById('tkTyping');
+  var label = document.getElementById('tkTypingLabel');
+  var avatar = document.getElementById('tkTypingAvatar');
+  var sourceBadge = document.getElementById('tkTypingSource');
+
+  // Set the user info
+  currentTicketUsername = username || currentTicketUsername;
+  var initials = (username || 'U')[0].toUpperCase();
+  avatar.textContent = initials;
+
+  // Show source badge: "LIVE" for WebSocket, "POLL" for REST fallback
+  if(source === 'ws'){
+    label.innerHTML = esc(username || 'User') + ' is typing... <span class="tk-typing-source ws">LIVE</span>';
+  }else{
+    label.innerHTML = esc(username || 'User') + ' is typing... <span class="tk-typing-source poll">POLL</span>';
+  }
+
+  // Show the indicator
+  if(!el.classList.contains('visible')){
+    el.classList.add('visible');
+  }
+
+  // Reset auto-hide timer (hide after 5s of no refresh)
+  clearTimeout(userTypingHideTimer);
+  userTypingHideTimer = setTimeout(function(){
+    hideUserTyping();
+  }, 5000);
+
+  // Scroll chat to bottom so indicator is visible
+  scrollChatToBottom();
+}
+
+function hideUserTyping(){
+  clearTimeout(userTypingHideTimer);
+  document.getElementById('tkTyping').classList.remove('visible');
+}
+
+function scrollChatToBottom(){
+  var sw = document.getElementById('tkScrollWrap');
+  if(sw) setTimeout(function(){sw.scrollTop = sw.scrollHeight;}, 30);
+}
+
+/* ── REST polling fallback for typing status ── */
+function startTypingPoll(){
+  stopTypingPoll();
+  typingPollActive = true;
+  typingPollTimer = setInterval(pollTypingStatus, 2500);
+}
+
+function stopTypingPoll(){
+  typingPollActive = false;
+  if(typingPollTimer){clearInterval(typingPollTimer);typingPollTimer = null;}
+  hideUserTyping();
+}
+
+async function pollTypingStatus(){
+  if(!currentTicketId || !typingPollActive) return;
+  try{
+    var r = await fetch(API+'/tickets/'+currentTicketId+'/typing-status',{
+      headers:{'x-admin-token':token}
+    });
+    if(!r.ok) return;
+    var d = await r.json();
+
+    // If WebSocket is connected and just handled typing, the poll is just backup
+    // Only show via poll if WS didn't already show it
+    if(d.user_typing){
+      if(!document.getElementById('tkTyping').classList.contains('visible')){
+        // WS didn't catch it — show via poll
+        showUserTyping(d.username || currentTicketUsername, 'poll');
+      }else{
+        // Already visible (probably from WS) — just refresh the timer
+        clearTimeout(userTypingHideTimer);
+        userTypingHideTimer = setTimeout(hideUserTyping, 5000);
+      }
+      lastKnownTypingState = true;
+    }else{
+      if(lastKnownTypingState){
+        // Was typing, now stopped — hide
+        hideUserTyping();
+        lastKnownTypingState = false;
+      }
+    }
+  }catch(e){
+    // Silent fail — don't break the chat
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ADMIN TYPING → sent to user via WebSocket + REST
+   ═══════════════════════════════════════════════════════ */
+function handleAdminTyping(textarea){
+  var text = textarea.value.trim();
+  // Send via WebSocket (instant)
+  if(text.length > 0){
+    wsSend({type:'ticket:admin_typing', ticket_id:currentTicketId});
+  }else{
+    wsSend({type:'ticket:admin_stop_typing', ticket_id:currentTicketId});
+  }
+  // Also send via REST as fallback (server can deduplicate)
+  if(currentTicketId){
+    fetch(API+'/tickets/'+currentTicketId+'/typing',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':token},
+      body:JSON.stringify({typing: text.length > 0})
+    }).catch(function(){});
+  }
+  // Auto-stop after 2.5s of no input
+  clearTimeout(adminTypingStopTimer);
+  adminTypingStopTimer = setTimeout(function(){
+    wsSend({type:'ticket:admin_stop_typing', ticket_id:currentTicketId});
+    if(currentTicketId){
+      fetch(API+'/tickets/'+currentTicketId+'/typing',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-admin-token':token},
+        body:JSON.stringify({typing:false})
+      }).catch(function(){});
+    }
+  }, 2500);
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════ */
+async function init(){
+  try{await loadDashboard();}catch(e){console.error('[INIT]',e.message);}
+  connectWS();
+}
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════ */
+async function go(id,el){
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  var sec=document.getElementById('sec-'+id);if(!sec)return;sec.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  if(el)el.classList.add('active');
+  else document.querySelectorAll('.nav-item').forEach(function(n){if((n.getAttribute('onclick')||'').indexOf("'"+id+"'")!==-1)n.classList.add('active');});
+  document.getElementById('pageTitle').innerHTML=TITLES[id]||id;
+  closeSidebar();
+  if(id==='dashboard')loadDashboard();
+  if(id==='pending')loadPending();
+  if(id==='users')loadUsers();
+  if(id==='subscriptions')loadSubs();
+  if(id==='deposits')loadDeposits();
+  if(id==='tickets'){await loadTicketStats();await loadTickets();}
+  if(id==='console')loadAdminConsole();
+  if(id==='online')loadOnlineUsers();
+}
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('overlay').classList.add('open');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
+
+/* ═══════════════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════════════ */
+function toast(msg,err,type){
+  var c=document.getElementById('toastContainer'),t=document.createElement('div');
+  var tType=type||(err?'error':'success');
+  t.className='toast '+tType;
+  var icon=tType==='error'?'times-circle':tType==='info'?'info-circle':'check-circle';
+  t.innerHTML='<i class="fas fa-'+icon+'"></i><span>'+esc(msg)+'</span>';
+  c.appendChild(t);
+  requestAnimationFrame(function(){requestAnimationFrame(function(){t.classList.add('show');});});
+  setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove();},400);},3500);
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODAL HELPERS
+   ═══════════════════════════════════════════════════════ */
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  if(id==='ticketDetailModal'){
+    if(currentTicketId) wsSend({type:'ticket:leave',ticket_id:currentTicketId});
+    stopTypingPoll();
+    currentTicketId=null;
+    hideUserTyping();
+  }
+}
+document.querySelectorAll('.modal-overlay').forEach(function(m){
+  m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('open');});
+});
+
+/* ═══════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════ */
+function esc(s){var d=document.createElement('div');d.textContent=String(s??'');return d.innerHTML;}
+function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return d;}}
+function fmtShort(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});}catch(e){return d;}}
+function timeAgo(d){if(!d)return'';var s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';}
+function copyText(t){navigator.clipboard.writeText(t).then(function(){toast('Copied!');}).catch(function(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');document.body.removeChild(a);toast('Copied!');});}
+function planBadge(p){var m={free:['badge-gray','🆓 Free'],half:['badge-orange','🚀 Starter'],full:['badge-gold','⭐ Premium'],basic:['badge-blue','⚡ Basic'],expired:['badge-red','⏰ Expired']};var v=m[p]||['badge-gray',p||'Free'];return'<span class="badge '+v[0]+'">'+v[1]+'</span>';}
+function statusBadge(s){var m={active:['badge-green','● Active'],pending:['badge-yellow','● Pending'],expired:['badge-red','● Expired'],cancelled:['badge-gray','● Cancelled'],confirmed:['badge-green','● Confirmed'],rejected:['badge-red','● Rejected'],inactive:['badge-gray','● Inactive']};var v=m[s]||['badge-gray','● '+s];return'<span class="badge '+v[0]+'">'+v[1]+'</span>';}
+function ticketStatusBadge(s){var m={open:['badge-green','● Open'],replied:['badge-blue','● Replied'],closed:['badge-gray','● Resolved']};var v=m[s]||['badge-gray','● '+s];return'<span class="badge '+v[0]+'">'+v[1]+'</span>';}
+function ticketCategoryBadge(c){var cat=TICKET_CATEGORIES[c]||TICKET_CATEGORIES.other;return'<span class="badge '+cat.badge+'"><i class="fas '+cat.icon+'" style="font-size:9px"></i> '+cat.label+'</span>';}
+function priorityBadge(p){if(!p)p='low';var m={low:['<span class="priority-dot low"></span>Low','var(--muted2)'],medium:['<span class="priority-dot medium"></span>Medium','var(--yellow)'],high:['<span class="priority-dot high"></span>High','var(--red)']};var v=m[p]||m.low;return'<span style="font-size:10px;font-weight:600;color:'+v[1]+';display:inline-flex;align-items:center">'+v[0]+'</span>';}
+function userCardHTML(u){return'<div class="user-avatar">'+(u.username||'U')[0].toUpperCase()+'</div><div class="user-meta"><div class="name">@'+esc(u.username)+'</div><div class="email">'+esc(u.email||'—')+'</div><div class="meta-row"><span><i class="fas fa-coins" style="color:var(--gold)"></i> '+Number(u.balance||0).toLocaleString()+' coins</span><span>Plan: <strong style="color:'+(u.current_plan==='full'?'var(--gold)':u.current_plan==='half'?'var(--orange)':'var(--muted)')+'">'+(u.current_plan||'free')+'</strong></span></div></div>';}
+function autoResizeTk(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px';}
+
+/* ═══════════════════════════════════════════════════════
+   LINK / IMAGE DETECTION IN MESSAGES
+   ═══════════════════════════════════════════════════════ */
+function getFileExtension(url){
+  try{var p=new URL(url,'https://x.com').pathname;var ext=p.split('.').pop().toLowerCase().split('?')[0].split('#')[0];return ext;}
+  catch(e){var parts=url.split('.');if(parts.length>1)return parts.pop().toLowerCase().split('?')[0];return '';}
+}
+function processMessageLinks(text){
+  if(!text) return '';
+  var urlRegex=/(https?:\/\/[^\s<>"']+)/g;
+  var result='',lastIndex=0,match;
+  while((match=urlRegex.exec(text))!==null){
+    result+=esc(text.substring(lastIndex,match.index));
+    var url=match[1].replace(/([.,;!?\)]+)$/,'');
+    var ext=getFileExtension(url);
+    if(IMG_EXTS.indexOf(ext)!==-1){
+      result+='<a href="'+esc(url)+'" target="_blank" rel="noopener" class="tk-link" onclick="event.stopPropagation()">'+esc(url)+'</a>';
+      result+='<br><img src="'+esc(url)+'" class="tk-img-preview" onclick="event.stopPropagation();openImageLightbox(\''+esc(url).replace(/'/g,"\\'")+'\')" alt="Image" onerror="this.style.display=\'none\'" loading="lazy">';
+    }else if(VID_EXTS.indexOf(ext)!==-1){
+      var fn=url.split('/').pop().split('?')[0];
+      result+='<div class="tk-file-chip" onclick="event.stopPropagation();window.open(\''+esc(url).replace(/'/g,"\\'")+'\',\'_blank\')"><i class="fas fa-play-circle"></i> '+esc(fn||'Video')+'</div>';
+    }else if(AUD_EXTS.indexOf(ext)!==-1){
+      var fn2=url.split('/').pop().split('?')[0];
+      result+='<div class="tk-file-chip" onclick="event.stopPropagation();window.open(\''+esc(url).replace(/'/g,"\\'")+'\',\'_blank\')"><i class="fas fa-headphones"></i> '+esc(fn2||'Audio')+'</div>';
+    }else{
+      var disp=url.length>50?url.substring(0,50)+'...':url;
+      result+='<a href="'+esc(url)+'" target="_blank" rel="noopener" class="tk-link" onclick="event.stopPropagation()">'+esc(disp)+'</a>';
+    }
+    lastIndex=match.index+match[0].length;
+  }
+  result+=esc(text.substring(lastIndex));
+  return result;
+}
+function openImageLightbox(url){document.getElementById('imgLightboxImg').src=url;openModal('imgLightbox');}
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════════════════════ */
+async function loadDashboard(){
+  var s=await api('/stats');
+  document.getElementById('statUsers').textContent=s.total_users||0;
+  document.getElementById('statBots').textContent=s.active_bots||0;
+  document.getElementById('statPro').textContent=s.active_pro||0;
+  document.getElementById('statPending').textContent=s.pending_pro||0;
+  document.getElementById('statCoins').textContent=Number(s.total_coins||0).toLocaleString();
+  document.getElementById('statBlocked').textContent=s.blocked_users||0;
+  var pb=document.getElementById('pendingBadge');
+  if(s.pending_pro>0){pb.textContent=s.pending_pro;pb.style.display='inline-flex';}else pb.style.display='none';
+  loadDashPending();
+}
+async function loadDashPending(){
+  var el=document.getElementById('dashPending');
+  try{
+    var rows=await api('/subscriptions/pending');
+    if(!rows.length){el.innerHTML='<div class="empty-state"><i class="fas fa-check-circle"></i><p>No pending requests — all clear!</p></div>';return;}
+    el.innerHTML='<div class="pending-grid">'+rows.slice(0,4).map(function(r,i){
+      return'<div class="pending-card" style="animation-delay:'+(i*.06)+'s"><div class="pending-info"><div class="pending-user">@'+esc(r.username)+' '+planBadge(r.plan)+'</div><div class="pending-details"><span><i class="fas fa-envelope"></i> '+esc(r.email||'—')+'</span><span><i class="fas fa-dollar-sign"></i> $'+(r.amount||0)+' <small>(₦'+Number(r.naira||0).toLocaleString()+')</small></span><span><i class="fas fa-clock"></i> '+fmtDate(r.created_at)+'</span></div></div><div class="pending-actions"><span class="ref-chip" onclick="event.stopPropagation();copyText(\''+esc(r.reference)+'\')">'+esc(r.reference)+'</span><button class="btn btn-red btn-xs" onclick="event.stopPropagation();cancelSub(\''+esc(r.reference)+'\',\'@'+esc(r.username)+'\')" title="Cancel"><i class="fas fa-xmark"></i></button><button class="btn btn-green btn-sm" onclick="event.stopPropagation();activateSub(\''+esc(r.reference)+'\',\'@'+esc(r.username)+'\')"><i class="fas fa-check"></i> Activate</button></div></div>';
+    }).join('')+'</div>';
+  }catch(e){el.innerHTML='<div class="empty-state" style="color:var(--red)"><p>Failed to load pending</p></div>';}
+}
+
+/* ═══════════════════════════════════════════════════════
+   PENDING / ACTIVATE / CANCEL
+   ═══════════════════════════════════════════════════════ */
+async function loadPending(){
+  var el=document.getElementById('pendingList');el.innerHTML='<div class="loading-spinner"><div class="spinner-ring"></div></div>';
+  try{
+    var rows=await api('/subscriptions/pending');
+    if(!rows.length){el.innerHTML='<div class="empty-state"><i class="fas fa-check-circle"></i><p>No pending requests</p></div>';return;}
+    el.innerHTML='<div class="pending-grid">'+rows.map(function(r,i){
+      return'<div class="pending-card" style="animation-delay:'+(i*.04)+'s"><div class="pending-info"><div class="pending-user">@'+esc(r.username)+' '+planBadge(r.plan)+'</div><div class="pending-details"><span><i class="fas fa-user"></i> '+esc(r.name||'—')+'</span><span><i class="fas fa-envelope"></i> '+esc(r.email||'—')+'</span><span><i class="fas fa-phone"></i> '+esc(r.phone||'—')+'</span><span><i class="fas fa-dollar-sign"></i> $'+(r.amount||0)+' (₦'+Number(r.naira||0).toLocaleString()+')</span><span><i class="fas fa-calendar"></i> '+fmtDate(r.created_at)+'</span></div></div><div class="pending-actions"><span class="ref-chip" onclick="event.stopPropagation();copyText(\''+esc(r.reference)+'\')">'+esc(r.reference)+'</span><button class="btn btn-red btn-sm" onclick="event.stopPropagation();cancelSub(\''+esc(r.reference)+'\',\'@'+esc(r.username)+'\')"><i class="fas fa-xmark"></i> Cancel</button><button class="btn btn-green btn-sm" onclick="event.stopPropagation();activateSub(\''+esc(r.reference)+'\',\'@'+esc(r.username)+'\')"><i class="fas fa-check"></i> Activate</button></div></div>';
+    }).join('')+'</div>';
+  }catch(e){el.innerHTML='<div class="empty-state" style="color:var(--red)"><p>Failed to load</p></div>';}
+}
+async function activateSub(ref,username){
+  document.getElementById('confirmIcon').textContent='✅';document.getElementById('confirmTitle').textContent='Activate Pro?';
+  document.getElementById('confirmMsg').innerHTML='Activate <strong>'+esc(username)+'</strong>\'s subscription?<br><code style="background:var(--admin-glow);padding:3px 8px;border-radius:5px;font-size:11px;display:inline-block;margin-top:6px">'+esc(ref)+'</code>';
+  document.getElementById('confirmBtn').className='btn btn-green';document.getElementById('confirmBtn').textContent='Activate';
+  document.getElementById('confirmBtn').onclick=async function(){closeModal('confirmModal');try{await api('/subscriptions/activate',{method:'POST',body:JSON.stringify({reference:ref})});toast('Pro activated for '+username);loadPending();loadDashboard();}catch(e){toast(e.message,true);}};
+  openModal('confirmModal');
+}
+async function cancelSub(ref,username){
+  document.getElementById('confirmIcon').textContent='❌';document.getElementById('confirmTitle').textContent='Cancel Request?';
+  document.getElementById('confirmMsg').innerHTML='Cancel <strong>'+esc(username)+'</strong>\'s pro request?<br><span style="font-size:11px;color:var(--red)">This cannot be undone.</span>';
+  document.getElementById('confirmBtn').className='btn btn-red';document.getElementById('confirmBtn').textContent='Cancel Request';
+  document.getElementById('confirmBtn').onclick=async function(){closeModal('confirmModal');try{await api('/subscriptions/'+ref+'/cancel',{method:'POST'});toast('Request cancelled for '+username);loadPending();loadDashboard();}catch(e){toast(e.message,true);}};
+  openModal('confirmModal');
+}
+
+/* ═══════════════════════════════════════════════════════
+   USERS
+   ═══════════════════════════════════════════════════════ */
+async function loadUsers(){
+  var el=document.getElementById('usersTableWrap');el.innerHTML='<div class="loading-spinner"><div class="spinner-ring"></div></div>';
+  try{allUsers=await api('/users');document.getElementById('userCount').textContent='('+allUsers.length+')';renderUsers(allUsers);}
+  catch(e){el.innerHTML='<div class="empty-state" style="color:var(--red)"><i class="fas fa-exclamation-triangle"></i><p>'+esc(e.message)+'</p></div>';}
+}
+function renderUsers(users){
+  var el=document.getElementById('usersTableWrap');
+  if(!users.length){el.innerHTML='<div class="empty-state"><i class="fas fa-users"></i><p>No users found</p></div>';return;}
+  el.innerHTML='<table class="data-table"><thead><tr><th>User</th><th>Balance</th><th>Plan</th><th>Bots</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+users.map(function(u){
+    var exp=u.plan_expires?fmtShort(u.plan_expires):'';
+    return'<tr><td><div style="font-weight:700;font-size:13px;font-family:var(--font-h)">@'+esc(u.username)+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">'+esc(u.email||'—')+'</div>'+(u.phone?'<div style="font-size:10px;color:var(--muted)">'+esc(u.phone)+'</div>':'')+'</td><td><span style="font-weight:700;color:var(--gold);font-size:14px">'+Number(u.balance||0).toLocaleString()+'</span> <span style="font-size:9px;color:var(--muted)">coins</span></td><td><div class="plan-cell">'+planBadge(u.current_plan)+(exp?'<div class="plan-expiry">→ '+exp+'</div>':'')+'</div></td><td><span style="color:var(--green);font-weight:700;font-size:14px">'+(u.active_bots||0)+'</span><span style="font-size:10px;color:var(--muted)"> / '+(u.total_bots||0)+'</span></td><td style="font-size:11px;color:var(--muted2);white-space:nowrap">'+fmtShort(u.created_at)+'</td><td>'+(u.blocked?'<span class="badge badge-red"><i class="fas fa-ban"></i> Blocked</span>':'<span class="badge badge-green"><i class="fas fa-check"></i> Active</span>')+'</td><td><div class="btn-group"><button class="btn btn-admin btn-xs" onclick="event.stopPropagation();openPlanModal('+u.id+')" title="Change Plan"><i class="fas fa-crown"></i></button><button class="btn btn-green btn-xs" onclick="event.stopPropagation();openTopup('+u.id+')" title="Add Coins"><i class="fas fa-plus"></i></button><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openDeduct('+u.id+')" title="Deduct Coins"><i class="fas fa-minus"></i></button>'+(u.blocked?'<button class="btn btn-blue btn-xs" onclick="event.stopPropagation();unblockUser('+u.id+',\'@'+esc(u.username)+'\')" title="Unblock"><i class="fas fa-unlock"></i></button>':'<button class="btn btn-red btn-xs" onclick="event.stopPropagation();blockUser('+u.id+',\'@'+esc(u.username)+'\')" title="Block"><i class="fas fa-ban"></i></button>')+'</div></td></tr>';
+  }).join('')+'</tbody></table>';
+}
+function filterUsers(){
+  var q=document.getElementById('userSearch').value.toLowerCase().trim();
+  if(!q) return renderUsers(allUsers);
+  renderUsers(allUsers.filter(function(u){return(u.username||'').toLowerCase().indexOf(q)!==-1||(u.email||'').toLowerCase().indexOf(q)!==-1||(u.name||'').toLowerCase().indexOf(q)!==-1||(u.phone||'').indexOf(q)!==-1||String(u.id).indexOf(q)!==-1||(u.current_plan||'free').indexOf(q)!==-1;}));
+}
+
+/* ═══════════════════════════════════════════════════════
+   TOPUP / DEDUCT / PLAN
+   ═══════════════════════════════════════════════════════ */
+function openTopup(id){var u=allUsers.find(function(x){return x.id===id;});if(!u)return;topupUserId=id;document.getElementById('topupUserInfo').innerHTML=userCardHTML(u);document.getElementById('topupAmount').value='';document.getElementById('topupReason').value='';openModal('topupModal');setTimeout(function(){document.getElementById('topupAmount').focus();},200);}
+async function doTopup(){var a=parseInt(document.getElementById('topupAmount').value);if(!a||a<1)return toast('Enter a valid coin amount',true);try{await api('/topup',{method:'POST',body:JSON.stringify({user_id:topupUserId,coins:a,reason:document.getElementById('topupReason').value.trim()})});toast('Added '+a.toLocaleString()+' coins');closeModal('topupModal');loadUsers();loadDashboard();}catch(e){toast(e.message,true);}}
+function openDeduct(id){var u=allUsers.find(function(x){return x.id===id;});if(!u)return;deductUserId=id;document.getElementById('deductUserInfo').innerHTML=userCardHTML(u);document.getElementById('deductAmount').value='';document.getElementById('deductReason').value='';openModal('deductModal');setTimeout(function(){document.getElementById('deductAmount').focus();},200);}
+async function doDeduct(){var a=parseInt(document.getElementById('deductAmount').value);if(!a||a<1)return toast('Enter a valid amount',true);try{await api('/deduct',{method:'POST',body:JSON.stringify({user_id:deductUserId,coins:a,reason:document.getElementById('deductReason').value.trim()})});toast('Deducted '+a.toLocaleString()+' coins');closeModal('deductModal');loadUsers();loadDashboard();}catch(e){toast(e.message,true);}}
+function openPlanModal(id){var u=allUsers.find(function(x){return x.id===id;});if(!u)return;planUserId=id;selectedPlanKey=null;document.getElementById('planUserInfo').innerHTML=userCardHTML(u);document.getElementById('daysGroup').style.display='none';document.getElementById('planDays').value=30;document.querySelectorAll('.plan-opt').forEach(function(el){el.classList.remove('selected');});openModal('planModal');}
+function selectPlanOpt(p){selectedPlanKey=p;document.querySelectorAll('.plan-opt').forEach(function(el){el.classList.toggle('selected',el.dataset.plan===p);});document.getElementById('daysGroup').style.display=p==='free'?'none':'block';}
+async function doChangePlan(){if(!selectedPlanKey)return toast('Please select a plan',true);var days=parseInt(document.getElementById('planDays').value)||30;var btn=document.getElementById('planChangeBtn');btn.disabled=true;btn.innerHTML='<div class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;margin-right:6px"></div> Applying...';try{var body={plan:selectedPlanKey};if(selectedPlanKey!=='free')body.days=days;var r=await api('/users/'+planUserId+'/plan',{method:'POST',body:JSON.stringify(body)});toast(r.message||'Plan changed to '+selectedPlanKey);closeModal('planModal');loadUsers();loadDashboard();}catch(e){toast(e.message,true);}btn.disabled=false;btn.innerHTML='<i class="fas fa-check"></i> Apply Plan';}
+async function blockUser(id,username){document.getElementById('confirmIcon').textContent='🚫';document.getElementById('confirmTitle').textContent='Block User?';document.getElementById('confirmMsg').innerHTML='Block <strong>'+esc(username)+'</strong>?<br><span style="font-size:11px;color:var(--red)">All their active bots will be stopped immediately.</span>';document.getElementById('confirmBtn').className='btn btn-red';document.getElementById('confirmBtn').textContent='Block';document.getElementById('confirmBtn').onclick=async function(){closeModal('confirmModal');try{await api('/users/'+id+'/block',{method:'POST'});toast('Blocked '+username);loadUsers();loadDashboard();}catch(e){toast(e.message,true);}};openModal('confirmModal');}
+async function unblockUser(id,username){try{await api('/users/'+id+'/unblock',{method:'POST'});toast('Unblocked '+username);loadUsers();loadDashboard();}catch(e){toast(e.message,true);}}
+
+/* ═══════════════════════════════════════════════════════
+   SUBSCRIPTIONS & DEPOSITS
+   ═══════════════════════════════════════════════════════ */
+async function loadSubs(){
+  var el=document.getElementById('subsTableWrap');el.innerHTML='<div class="loading-spinner"><div class="spinner-ring"></div></div>';
+  try{var rows=await api('/subscriptions');if(!rows.length){el.innerHTML='<div class="empty-state"><i class="fas fa-crown"></i><p>No subscriptions yet</p></div>';return;}
+  el.innerHTML='<table class="data-table"><thead><tr><th>User</th><th>Plan</th><th>Amount</th><th>Status</th><th>Started</th><th>Expires</th><th>Ref</th></tr></thead><tbody>'+rows.map(function(s){return'<tr><td><div style="font-weight:700;font-size:12px;font-family:var(--font-h)">@'+esc(s.username)+'</div><div style="font-size:10px;color:var(--muted)">'+esc(s.email||'—')+'</div></td><td>'+planBadge(s.plan)+'</td><td style="font-weight:600">$'+(s.amount||0)+' <span style="font-size:9px;color:var(--muted)">(₦'+Number(s.naira||0).toLocaleString()+')</span></td><td>'+statusBadge(s.status)+(s.status==='active'&&s.days_left!=null?'<div style="font-size:9px;color:var(--muted);margin-top:3px">'+s.days_left+' day'+(s.days_left!==1?'s':'')+' left</div>':'')+'</td><td style="font-size:11px;color:var(--muted2);white-space:nowrap">'+fmtShort(s.started_at)+'</td><td style="font-size:11px;color:var(--muted2);white-space:nowrap">'+fmtShort(s.expires_at)+'</td><td><span class="ref-chip" onclick="event.stopPropagation();copyText(\''+esc(s.reference)+'\')">'+esc(s.reference.substring(0,18))+'…</span></td></tr>';}).join('')+'</tbody></table>';}catch(e){el.innerHTML='<div class="empty-state" style="color:var(--red)"><p>'+esc(e.message)+'</p></div>';}
+}
+async function loadDeposits(){
+  var el=document.getElementById('depositsTableWrap');el.innerHTML='<div class="loading-spinner"><div class="spinner-ring"></div></div>';
+  try{var rows=await api('/deposits');if(!rows.length){el.innerHTML='<div class="empty-state"><i class="fas fa-wallet"></i><p>No deposits yet</p></div>';return;}
+  el.innerHTML='<table class="data-table"><thead><tr><th>User</th><th>Amount</th><th>Coins</th><th>Ref</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>'+rows.map(function(d){return'<tr><td><div style="font-weight:700;font-size:12px;font-family:var(--font-h)">@'+esc(d.username)+'</div></td><td style="font-weight:700">₦'+Number(d.amount||0).toLocaleString()+'</td><td style="color:var(--gold);font-weight:700">'+(d.coins||0)+'</td><td><span class="ref-chip" onclick="event.stopPropagation();copyText(\''+esc(d.reference)+'\')">'+esc(d.reference.substring(0,16))+'…</span></td><td>'+statusBadge(d.status)+(d.status==='pending'&&d.paid_at?'<div style="font-size:9px;color:var(--yellow);font-weight:700;margin-top:3px">USER PAID ✓</div>':'')+'</td><td style="font-size:11px;white-space:nowrap">'+fmtShort(d.created_at)+(d.paid_at?'<div style="color:var(--yellow);font-size:9px;margin-top:2px;font-weight:700">⚡ PAID '+fmtShort(d.paid_at)+'</div>':'')+'</td><td>'+(d.status==='pending'?'<div class="btn-group"><button class="btn btn-green btn-xs" onclick="event.stopPropagation();confirmDeposit(\''+esc(d.reference)+'\','+(d.coins||0)+',\'@'+esc(d.username)+'\')" title="Confirm"><i class="fas fa-check"></i></button><button class="btn btn-red btn-xs" onclick="event.stopPropagation();rejectDeposit(\''+esc(d.reference)+'\',\'@'+esc(d.username)+'\')" title="Reject"><i class="fas fa-xmark"></i></button></div>':'—')+'</td></tr>';}).join('')+'</tbody></table>';}catch(e){el.innerHTML='<div class="empty-state" style="color:var(--red)"><p>'+esc(e.message)+'</p></div>';}
+}
+async function confirmDeposit(ref,coins,username){document.getElementById('confirmIcon').textContent='💰';document.getElementById('confirmTitle').textContent='Confirm Deposit?';document.getElementById('confirmMsg').innerHTML='Credit <strong style="color:var(--gold)">'+coins.toLocaleString()+' coins</strong> to <strong>'+esc(username)+'</strong>?<br><code style="background:var(--brand-glow);padding:3px 8px;border-radius:5px;font-size:11px;display:inline-block;margin-top:6px">'+esc(ref)+'</code>';document.getElementById('confirmBtn').className='btn btn-green';document.getElementById('confirmBtn').textContent='Confirm';document.getElementById('confirmBtn').onclick=async function(){closeModal('confirmModal');try{await api('/deposits/confirm',{method:'POST',body:JSON.stringify({reference:ref})});toast('Credited '+coins+' coins to '+username);loadDeposits();loadDashboard();}catch(e){toast(e.message,true);}};openModal('confirmModal');}
+async function rejectDeposit(ref,username){document.getElementById('confirmIcon').textContent='❌';document.getElementById('confirmTitle').textContent='Reject Deposit?';document.getElementById('confirmMsg').innerHTML='Reject <strong>'+esc(username)+'</strong>\'s deposit?<br><span style="font-size:11px;color:var(--red)">No coins will be credited.</span>';document.getElementById('confirmBtn').className='btn btn-red';document.getElementById('confirmBtn').textContent='Reject';document.getElementById('confirmBtn').onclick=async function(){closeModal('confirmModal');try{await api('/deposits/reject',{method:'POST',body:JSON.stringify({reference:ref})});toast('Deposit rejected for '+username);loadDeposits();}catch(e){toast(e.message,true);}};openModal('confirmModal');}
+
+/* ═══════════════════════════════════════════════════════
+   TICKET STATS & LIST
+   ═══════════════════════════════════════════════════════ */
+async function loadTicketStats(){
+  try{var s=await api('/ticket-stats');var bs={};if(Array.isArray(s.by_status))s.by_status.forEach(function(r){bs[r.status]=parseInt(r.count)||0;});var oc=(bs.open||0)+(bs.replied||0);document.getElementById('tkStatOpen').textContent=bs.open||0;document.getElementById('tkStatReplied').textContent=bs.replied||0;document.getElementById('tkStatClosed').textContent=bs.closed||0;document.getElementById('tkStatTotal').textContent=oc+(bs.closed||0);document.getElementById('tkStatAvg').textContent=parseInt(s.avg_response_minutes)||0;var b=document.getElementById('ticketsBadge');if(oc>0){b.textContent=oc;b.style.display='inline-flex';}else b.style.display='none';}catch(e){var ai=document.querySelector('.section.active');if(ai&&ai.id==='sec-tickets')toast('Failed: '+e.message,true);}}
+async function loadTickets(){
+  var el=document.getElementById('ticketsTableWrap');el.innerHTML='<div class="loading-spinner"><div class="spinner-ring"></div></div>';
+  var st=document.getElementById('tkFilterStatus').value,cat=document.getElementById('tkFilterCategory').value,se=document.getElementById('tkSearch').value.trim();
+  var p=new URLSearchParams();if(st&&st!=='all')p.set('status',st);if(cat&&cat!=='all')p.set('category',cat);if(se)p.set('search',se);
+  try{allTickets=await api('/tickets?'+p.toString());document.getElementById('ticketCount').textContent='('+allTickets.length+')';document.getElementById('tkFilterCount').textContent=allTickets.length+' ticket'+(allTickets.length!==1?'s':'');renderTickets(allTickets);}catch(e){el.innerHTML='<div class="empty-state" style="color:var(--red)"><i class="fas fa-exclamation-triangle"></i><p>'+esc(e.message)+'</p></div>';}
+}
+function renderTickets(tickets){
+  var el=document.getElementById('ticketsTableWrap');if(!tickets.length){el.innerHTML='<div class="empty-state"><i class="fas fa-headset"></i><p>No tickets found</p></div>';return;}
+  el.innerHTML='<table class="data-table"><thead><tr><th>Ticket</th><th>User</th><th>Category</th><th>Priority</th><th>Messages</th><th>Status</th><th>Updated</th></tr></thead><tbody>'+tickets.map(function(t){
+    var ci=TICKET_CATEGORIES[t.category]||TICKET_CATEGORIES.other;
+    var unread=t.has_unread?'<span class="tk-unread-dot"></span>':'';
+    return'<tr onclick="openTicketDetail('+t.id+')"><td><div style="display:flex;align-items:center"><span style="font-weight:700;font-size:12px;color:var(--admin);font-family:\'Courier New\',monospace">#'+esc(t.ticket_number)+'</span>'+unread+'</div><div class="tk-subject">'+esc(t.subject)+'</div><div class="tk-subject-sub">'+esc(t.category_label||ci.label)+'</div></td><td><div style="font-weight:600;font-size:12px;font-family:var(--font-h)">@'+esc(t.username)+'</div><div style="font-size:10px;color:var(--muted)">'+esc(t.email||'—')+'</div></td><td>'+ticketCategoryBadge(t.category)+'</td><td>'+priorityBadge(t.priority)+'</td><td><span style="font-weight:700;font-size:14px;color:var(--text)">'+(t.message_count||0)+'</span> <span style="font-size:9px;color:var(--muted)">msg'+((t.message_count||0)!==1?'s':'')+'</span></td><td>'+ticketStatusBadge(t.status)+'</td><td style="font-size:10px;color:var(--muted2);white-space:nowrap"><div>'+timeAgo(t.updated_at)+'</div><div style="font-size:9px;color:var(--muted);margin-top:1px">'+fmtShort(t.updated_at)+'</div></td></tr>';
+  }).join('')+'</tbody></table>';
+}
+function debounceTicketSearch(){clearTimeout(ticketSearchTimer);ticketSearchTimer=setTimeout(loadTickets,350);}
+
+/* ═══════════════════════════════════════════════════════
+   TICKET DETAIL — OPEN
+   Starts BOTH WebSocket room join AND REST typing poll
+   ═══════════════════════════════════════════════════════ */
+async function openTicketDetail(id){
+  currentTicketId = id;
+  lastKnownTypingState = false;
+  document.getElementById('tkDetailSubject').textContent = 'Loading...';
+  document.getElementById('tkDetailMeta').innerHTML = '';
+  document.getElementById('tkDetailUser').innerHTML = '';
+  document.getElementById('tkDetailMessages').innerHTML = '<div class="loading-spinner"><div class="spinner-ring"></div></div>';
+  document.getElementById('tkDetailExtras').style.display = 'none';
+  document.getElementById('tkDetailActions').innerHTML = '';
+  document.getElementById('tkReplyText').value = '';
+  document.getElementById('tkReplyText').style.height = 'auto';
+  document.getElementById('tkDetailFooter').style.display = 'block';
+  hideUserTyping();
+  openModal('ticketDetailModal');
+
+  // Join ticket room via WebSocket (for instant typing events + new messages)
+  wsSend({type:'ticket:join', ticket_id:id});
+
+  // ALSO start REST typing poll as fallback (works even without WS)
+  startTypingPoll();
+
+  try{
+    var t = await api('/tickets/'+id);
+    currentTicketUsername = t.username || 'User';
+    currentTicketUserInitial = (t.username || 'U')[0].toUpperCase();
+
+    document.getElementById('tkDetailSubject').textContent = '#'+t.ticket_number+' — '+t.subject;
+    document.getElementById('tkDetailMeta').innerHTML = ticketStatusBadge(t.status)+' '+ticketCategoryBadge(t.category)+' '+priorityBadge(t.priority);
+
+    document.getElementById('tkDetailUser').innerHTML = '<div class="tk-avatar">'+currentTicketUserInitial+'</div><div class="tk-uinfo"><div class="tk-uname">@'+esc(t.username)+(t.user_name?' <span style="font-weight:400;color:var(--muted2);font-size:11px">('+esc(t.user_name)+')</span>':'')+'</div><div class="tk-uemail">'+esc(t.email||'—')+(t.phone?' · '+esc(t.phone):'')+'</div><div class="tk-udetails"><span><i class="fas fa-coins" style="color:var(--gold)"></i> '+Number(t.balance||0).toLocaleString()+' coins</span><span><i class="fas fa-calendar" style="color:var(--muted)"></i> Joined '+fmtShort(t.user_created_at)+'</span><span><i class="fas fa-headset" style="color:var(--blue)"></i> Created '+fmtDate(t.created_at)+'</span></div></div>';
+
+    renderMessages(t.messages || []);
+    scrollChatToBottom();
+
+    // Set typing indicator avatar & label
+    document.getElementById('tkTypingAvatar').textContent = currentTicketUserInitial;
+    document.getElementById('tkTypingLabel').innerHTML = esc(currentTicketUsername) + ' is typing... <span class="tk-typing-source ws">LIVE</span>';
+
+    // User extras
+    var bots=t.user_bots||[],pro=t.user_pro;
+    if(bots.length||pro){
+      document.getElementById('tkDetailExtras').style.display='flex';
+      var xh='';
+      if(bots.length){xh+='<div class="tk-extra-group"><h4><i class="fas fa-robot" style="margin-right:4px"></i> Bots ('+bots.length+')</h4>';bots.forEach(function(b){xh+='<div class="tk-extra-item"><span class="label">'+esc(b.bot_name||b.session_id)+'</span><span class="value">'+statusBadge(b.status)+(b.expires_at?' <span style="font-size:9px;color:var(--muted);margin-left:6px">→ '+fmtShort(b.expires_at)+'</span>':'')+'</span></div>';});xh+='</div>';}
+      if(pro){xh+='<div class="tk-extra-group"><h4><i class="fas fa-crown" style="margin-right:4px"></i> Pro</h4><div class="tk-extra-item"><span class="label">Plan</span><span class="value">'+planBadge(pro.plan)+'</span></div><div class="tk-extra-item"><span class="label">Status</span><span class="value">'+statusBadge(pro.status)+'</span></div><div class="tk-extra-item"><span class="label">Expires</span><span class="value">'+fmtDate(pro.expires_at)+'</span></div></div>';}
+      document.getElementById('tkDetailExtras').innerHTML=xh;
+    }else document.getElementById('tkDetailExtras').style.display='none';
+
+    renderTicketActions(t);
+  }catch(e){
+    document.getElementById('tkDetailMessages').innerHTML='<div class="empty-state" style="color:var(--red)"><i class="fas fa-exclamation-triangle"></i><p>'+esc(e.message)+'</p></div>';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   RENDER MESSAGES (with link/image detection)
+   ═══════════════════════════════════════════════════════ */
+function renderMessages(msgs){
+  var mc=document.getElementById('tkDetailMessages');
+  if(!msgs.length){mc.innerHTML='<div class="empty-state" style="padding:30px"><i class="fas fa-comment-slash"></i><p>No messages yet</p></div>';return;}
+  mc.innerHTML=msgs.map(function(m,i){
+    if(m.sender_type==='system') return '<div class="tk-msg system" style="animation-delay:'+(i*.03)+'s"><div class="tk-msg-bubble">'+esc(m.message)+'</div></div>';
+    var isA=m.sender_type==='admin',av=isA?'S':(m.sender_name||'U')[0].toUpperCase();
+    return '<div class="tk-msg '+m.sender_type+'" style="animation-delay:'+(i*.03)+'s"><div class="tk-msg-avatar">'+av+'</div><div class="tk-msg-content"><div class="tk-msg-sender">'+esc(m.sender_name||(isA?'Support Team':'User'))+'</div><div class="tk-msg-bubble">'+processMessageLinks(m.message)+'</div><div class="tk-msg-time">'+fmtDate(m.created_at)+'</div></div></div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════
+   APPEND INCOMING MESSAGE (WebSocket, no full reload)
+   ═══════════════════════════════════════════════════════ */
+function appendIncomingMessage(msgData){
+  var mc=document.getElementById('tkDetailMessages');
+  var emptyState=mc.querySelector('.empty-state');if(emptyState)emptyState.remove();
+  var isA=msgData.sender_type==='admin',av=isA?'S':(msgData.sender_name||currentTicketUserInitial)[0].toUpperCase();
+  var div=document.createElement('div');
+  div.className='tk-msg '+(msgData.sender_type||'user')+' flash';
+  div.innerHTML='<div class="tk-msg-avatar">'+av+'</div><div class="tk-msg-content"><div class="tk-msg-sender">'+esc(msgData.sender_name||(isA?'Support Team':'User'))+'</div><div class="tk-msg-bubble">'+processMessageLinks(msgData.message)+'</div><div class="tk-msg-time">'+fmtDate(msgData.created_at)+'</div></div>';
+  mc.appendChild(div);
+  scrollChatToBottom();
+  hideUserTyping(); // User sent the message, stop typing
+}
+
+/* ═══════════════════════════════════════════════════════
+   TICKET ACTIONS
+   ═══════════════════════════════════════════════════════ */
+function renderTicketActions(t){
+  var el=document.getElementById('tkDetailActions'),ft=document.getElementById('tkDetailFooter'),h='';
+  if(t.status==='closed'){h+='<button class="btn btn-blue btn-sm" onclick="reopenTicket('+t.id+')"><i class="fas fa-undo"></i> Reopen</button>';ft.style.display='none';}
+  else{ft.style.display='block';h+='<button class="btn btn-green btn-sm" onclick="resolveTicket('+t.id+')"><i class="fas fa-check-circle"></i> Resolve</button>';}
+  h+='<select class="filter-select" style="font-size:10px;padding:6px 28px 6px 10px" onchange="changePriority('+t.id+',this.value)"><option value="low"'+(t.priority==='low'?' selected':'')+'>🟢 Low</option><option value="medium"'+(t.priority==='medium'?' selected':'')+'>🟡 Medium</option><option value="high"'+(t.priority==='high'?' selected':'')+'>🔴 High</option></select>';
+  h+='<span style="margin-left:auto;font-size:10px;color:var(--muted);font-family:\'Courier New\',monospace">ID: '+t.id+'</span>';
+  el.innerHTML=h;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SEND REPLY
+   ═══════════════════════════════════════════════════════ */
+function handleReplyKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTicketReply();}}
+async function sendTicketReply(){
+  var textarea=document.getElementById('tkReplyText');var message=textarea.value.trim();
+  if(!message||message.length<3) return toast('Reply must be at least 3 characters',true);
+  if(!currentTicketId) return;
+  clearTimeout(adminTypingStopTimer);
+  wsSend({type:'ticket:admin_stop_typing',ticket_id:currentTicketId});
+  if(currentTicketId) fetch(API+'/tickets/'+currentTicketId+'/typing',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':token},body:JSON.stringify({typing:false})}).catch(function(){});
+  var btn=document.getElementById('tkSendBtn');btn.disabled=true;btn.innerHTML='<div class="spinner-ring" style="width:14px;height:14px;border-width:2px;border-top-color:#fff"></div>';
+  try{
+    var result=await api('/tickets/'+currentTicketId+'/reply',{method:'POST',body:JSON.stringify({message:message})});
+    toast('Reply sent!');
+    textarea.value='';textarea.style.height='auto';
+    var sentMsg=result.message||{sender_type:'admin',sender_name:'Support Team',message:message,created_at:new Date().toISOString()};
+    appendIncomingMessage(sentMsg);
+    loadTickets().catch(function(){});loadTicketStats().catch(function(){});
+  }catch(e){toast(e.message,true);}
+  btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i>';
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESOLVE / REOPEN / PRIORITY
+   ═══════════════════════════════════════════════════════ */
+async function resolveTicket(id){document.getElementById('confirmIcon').textContent='✅';document.getElementById('confirmTitle').textContent='Resolve Ticket?';document.getElementById('confirmMsg').innerHTML='Mark as <strong style="color:var(--green)">resolved</strong>?<br><span style="font-size:11px;color:var(--muted2)">User will be notified.</span>';document.getElementById('confirmBtn').className='btn btn-green';document.getElementById('confirmBtn').textContent='Resolve';document.getElementById('confirmBtn').onclick=async function(){closeModal('confirmModal');try{await api('/tickets/'+id+'/close',{method:'POST'});toast('Ticket resolved');await openTicketDetail(id);loadTickets().catch(function(){});loadTicketStats().catch(function(){});}catch(e){toast(e.message,true);}};openModal('confirmModal');}
+async function reopenTicket(id){document.getElementById('confirmIcon').textContent='🔓';document.getElementById('confirmTitle').textContent='Reopen Ticket?';document.getElementById('confirmMsg').innerHTML='Reopen? Status → <strong style="color:var(--blue)">Open</strong>.';document.getElementById('confirmBtn').className='btn btn-blue';document.getElementById('confirmBtn').textContent='Reopen';document.getElementById('confirmBtn').onclick=async function(){closeModal('confirmModal');try{await api('/tickets/'+id+'/reopen',{method:'POST'});toast('Ticket reopened');await openTicketDetail(id);loadTickets().catch(function(){});loadTicketStats().catch(function(){});}catch(e){toast(e.message,true);}};openModal('confirmModal');}
+async function changePriority(id,p){try{await api('/tickets/'+id+'/priority',{method:'POST',body:JSON.stringify({priority:p})});toast('Priority → '+p);if(currentTicketId===id){var t=allTickets.find(function(x){return x.id===id;});if(t){t.priority=p;renderTicketActions(t);}}}catch(e){toast(e.message,true);}}
+
+/* ═══════════════════════════════════════════════════════
+   CONSOLE
+   ═══════════════════════════════════════════════════════ */
+async function loadAdminConsole(){
+  try{var rows=await api('/live-console');allConsoleLogs=rows;document.getElementById('consoleCount').textContent=rows.length+' commands';renderConsole(rows);}catch(e){document.getElementById('adminConsoleBox').innerHTML='<span style="color:var(--red)">Failed: '+esc(e.message)+'</span>';}
+}
+function renderConsole(logs){
+  var box=document.getElementById('adminConsoleBox');if(!logs.length){box.innerHTML='<span style="color:#1a3a5a">$ no commands yet</span>';return;}
+  var html=logs.map(function(l){var msg=l.message||'',un=l.username||'?',tm=l.time||'';var cm=msg.match(/→\s*([.!]\S+)/),cmd=cm?cm[1]:'',cc='#c084fc';if(cmd.includes('sticker'))cc='#60a5fa';else if(cmd.includes('help'))cc='#34d399';else if(cmd.includes('menu'))cc='#fbbf24';else if(cmd.includes('play')||cmd.includes('song'))cc='#f472b6';else if(cmd.includes('kick')||cmd.includes('ban'))cc='#f87171';else if(cmd.includes('info'))cc='#06b6d4';else if(cmd.includes('dl')||cmd.includes('download'))cc='#fb923c';var ig=msg.includes('👥'),wc=ig?'console-where-group':'console-where-dm',wt=ig?'GROUP':'DM';return'<div class="console-row"><span class="console-time">['+esc(tm)+']</span><span class="console-user">@'+esc(un)+'</span><span class="'+wc+'">'+wt+'</span><span class="console-cmd" style="color:'+cc+'">'+esc(cmd||'?')+'</span><span class="console-full">'+esc(msg.replace('[CMD]','').trim())+'</span></div>';}).join('');
+  var atb=box.scrollHeight-box.scrollTop-box.clientHeight<60;box.innerHTML=html;if(atb)box.scrollTop=box.scrollHeight;
+}
+function filterConsole(){var q=document.getElementById('consoleSearch').value.toLowerCase().trim();if(!q)return renderConsole(allConsoleLogs);renderConsole(allConsoleLogs.filter(function(l){return(l.username||'').toLowerCase().indexOf(q)!==-1||(l.message||'').toLowerCase().indexOf(q)!==-1;}));}
+function clearConsoleFilter(){document.getElementById('consoleSearch').value='';renderConsole(allConsoleLogs);}
+
+/* ═══════════════════════════════════════════════════════
+   ONLINE USERS
+   ═══════════════════════════════════════════════════════ */
+async function loadOnlineUsers(){
+  var el=document.getElementById('onlineUsersList');
+  try{var users=await api('/online-users');var b=document.getElementById('onlineBadge'),lb=document.getElementById('onlineCountLabel');lb.textContent=users.length+' online';if(users.length>0){b.textContent=users.length;b.style.display='inline-flex';}else b.style.display='none';if(!users.length){el.innerHTML='<div class="empty-state"><i class="fas fa-moon"></i><p>No users online right now</p></div>';return;}
+  el.innerHTML='<div class="online-grid">'+users.map(function(u){var ini=(u.username||'?')[0].toUpperCase(),ago=Math.round((Date.now()-u.lastSeen)/1000),pg=(u.page||'dashboard').replace('s-','').replace(/-/g,' '),at=ago<5?'just now':ago<60?ago+'s ago':Math.round(ago/60)+'m ago';return'<div class="online-card"><div class="online-avatar">'+ini+'<div class="online-live-dot"></div></div><div class="online-info"><div class="online-name">@'+esc(u.username)+'</div><div class="online-page"><i class="fas fa-eye" style="font-size:9px;color:var(--brand)"></i> '+esc(pg)+'</div><div class="online-ago"><i class="fas fa-clock" style="font-size:8px"></i> active '+at+'</div></div><div class="online-indicator"><div class="online-pulse"></div><span class="online-label">LIVE</span></div></div>';}).join('')+'</div>';}catch(e){el.innerHTML='<div class="empty-state" style="color:var(--red)"><p>'+esc(e.message)+'</p></div>';}
+}
+
+/* ═══════════════════════════════════════════════════════
+   KEYBOARD & LOGOUT
+   ═══════════════════════════════════════════════════════ */
+function doLogout(){
+  if(ws){try{ws.close();}catch(e){}}
+  stopTypingPoll();
+  localStorage.removeItem('admin_token');
+  window.location.href='/admin-login.html';
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){if(e.target.id==='tkReplyText')return;document.querySelectorAll('.modal-overlay.open').forEach(function(m){m.classList.remove('open');});closeSidebar();}
+});
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&(!ws||ws.readyState!==WebSocket.OPEN)) connectWS();
+});
+</script>
+</body>
+</html> 

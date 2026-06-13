@@ -1,0 +1,9 @@
+node_modules/
+sessions/
+temp/
+tmp/
+publicmkdir/
+*.log
+npm-debug.log*
+.env
+.DS_Store

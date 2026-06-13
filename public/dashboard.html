@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Dashboard — OxBot</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --brand:#16a34a;--brand-d:#15803d;--brand-glow:rgba(22,163,74,.15);
+  --bg:#0a0f1a;--card:#111827;--card2:#1a2235;
+  --text:#f1f5f9;--muted:#64748b;--muted2:#94a3b8;--border:#1e2d40;
+  --red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--sidebar:260px;
+  --gold:#f59e0b;--gold-glow:rgba(245,158,11,.15);
+  --font-h:'Outfit',sans-serif;--font-b:'Inter',sans-serif;
+  --free-color:#64748b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{overflow-x:hidden;}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;min-height:100vh;min-height:100dvh;}
+
+.sidebar{width:var(--sidebar);background:var(--card);border-right:1px solid var(--border);height:100vh;height:100dvh;position:fixed;left:0;top:0;z-index:1000;display:flex;flex-direction:column;transition:transform .3s ease;}
+.sidebar-header{padding:18px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);}
+.logo-icon{width:36px;height:36px;background:var(--brand);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;font-family:var(--font-h);flex-shrink:0;}
+.logo-text{font-family:var(--font-h);font-weight:800;font-size:20px;letter-spacing:-.3px;}
+.nav-scroll{flex:1;overflow-y:auto;padding:10px 0;-webkit-overflow-scrolling:touch;}
+.nav-section{padding:6px 16px 4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-top:6px;}
+.nav-item{display:flex;align-items:center;padding:12px 16px;color:var(--muted2);text-decoration:none;font-size:13px;font-weight:500;cursor:pointer;border-left:3px solid transparent;transition:all .18s;gap:10px;}
+.nav-item:hover{background:rgba(22,163,74,.07);color:var(--text);}
+.nav-item.active{background:var(--brand-glow);color:var(--brand);border-left-color:var(--brand);}
+.nav-item.pro-nav{color:var(--gold);}
+.nav-item.pro-nav:hover{background:rgba(245,158,11,.07);}
+.nav-item.pro-nav.active{background:rgba(245,158,11,.12);border-left-color:var(--gold);}
+.nav-item i{width:18px;text-align:center;font-size:14px;}
+.nav-badge{margin-left:auto;background:var(--brand);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.nav-badge.gold{background:var(--gold);color:#000;}
+.nav-badge.free{background:var(--free-color);color:#fff;}
+.nav-badge.red{background:var(--red);color:#fff;}
+
+.sidebar-footer{padding:12px;border-top:1px solid var(--border);}
+.user-chip{display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border-radius:10px;margin-bottom:10px;}
+.user-avatar{width:32px;height:32px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0;}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-bal{font-size:11px;color:var(--brand);}
+.plan-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:6px;letter-spacing:.3px;vertical-align:middle;}
+.plan-badge.pro-gold{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;}
+.plan-badge.pro-starter{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;}
+.plan-badge.free-tag{background:var(--free-color);color:#fff;}
+.plan-badge.expired-tag{background:var(--red);color:#fff;}
+.logout-btn{display:flex;align-items:center;justify-content:center;width:100%;padding:10px;background:transparent;border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:8px;font-weight:600;cursor:pointer;transition:.2s;font-size:12px;gap:8px;}
+.logout-btn:hover{background:rgba(239,68,68,.1);}
+.support-link{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:10px;background:var(--card2);border-radius:8px;color:var(--muted2);font-size:11px;text-decoration:none;transition:.2s;cursor:pointer;}
+.support-link:hover{background:var(--brand-glow);color:var(--brand);}
+.support-link i{color:var(--brand);font-size:13px;}
+
+.main-area{flex:1;margin-left:var(--sidebar);display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
+.top-nav{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:500;}
+.menu-toggle{display:none;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px;}
+.top-nav-right{display:flex;align-items:center;gap:12px;}
+.bot-pill{display:flex;align-items:center;gap:6px;background:var(--card2);padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border);}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;}
+.status-dot.online{background:var(--brand);box-shadow:0 0 0 3px rgba(22,163,74,.2);}
+
+.main-content{flex:1;padding:16px;max-width:980px;margin:0 auto;width:100%;}
+.section{display:none;animation:fadeIn .25s ease;}
+.section.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:18px;}
+.page-header h2{font-family:var(--font-h);font-size:20px;font-weight:700;letter-spacing:-.3px;}
+.page-header p{color:var(--muted2);font-size:12px;margin-top:3px;}
+
+.grid-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent-color,var(--brand));}
+.stat-card h3{font-size:10px;color:var(--muted2);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.stat-card .value{font-size:22px;font-weight:800;font-family:var(--font-h);color:var(--accent-color,var(--brand));}
+.stat-card .sub{font-size:10px;color:var(--muted);margin-top:3px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+.card-title{font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-title i{color:var(--brand);}
+
+.form-group{margin-bottom:14px;}
+.form-label{display:block;margin-bottom:6px;font-size:12px;color:var(--muted2);font-weight:500;}
+.form-input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:#fff;outline:none;font-size:13px;transition:.2s;font-family:var(--font-b);}
+.form-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-glow);}
+.form-input::placeholder{color:var(--muted);}
+.form-input.big{min-height:100px;padding:12px;font-family:monospace;font-size:12px;line-height:1.5;resize:vertical;word-break:break-all;}
+.form-input:disabled{opacity:.5;cursor:not-allowed;}
+.form-hint{font-size:10px;color:var(--muted);margin-top:4px;}
+select.form-input{cursor:pointer;}
+select.form-input option{background:var(--card2);color:var(--text);}
+
+.btn{border:none;padding:11px 18px;border-radius:8px;font-weight:600;cursor:pointer;transition:.2s;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+.btn-primary{background:var(--brand);color:#fff;width:100%;}
+.btn-primary:hover{background:var(--brand-d);}
+.btn-primary:disabled{background:#1e3a2a;color:#4b7a5e;cursor:not-allowed;}
+.btn-sm{padding:8px 12px;font-size:11px;width:auto;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{background:var(--card2);}
+.btn-ghost{background:transparent;border:none;color:var(--muted2);padding:6px 10px;}
+.btn-ghost:hover{color:var(--text);}
+
+/* ── UPTIME TIMER ── */
+.uptime-badge{display:inline-flex;align-items:center;gap:5px;font-family:monospace;font-size:11px;font-weight:700;color:var(--brand);background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2);padding:3px 8px;border-radius:5px;margin-top:5px;}
+.uptime-badge i{font-size:9px;animation:pulse 2s infinite;}
+
+/* ── DEPOSIT TABS ── */
+.dep-tabs{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:3px;margin-bottom:16px;}
+.dep-tab{flex:1;padding:9px;text-align:center;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s;color:var(--muted2);border:none;background:transparent;}
+.dep-tab.active{background:var(--brand);color:#fff;}
+.dep-tab:not(.active):hover{background:var(--card2);color:var(--text);}
+
+.wallet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.wallet-option{background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;}
+.wallet-option:hover{border-color:rgba(22,163,74,.3);}
+.wallet-option.selected{border-color:var(--brand);background:rgba(22,163,74,.08);}
+.wallet-icon{font-size:24px;margin-bottom:4px;}
+.wallet-name{font-size:13px;font-weight:700;}
+.wallet-network{font-size:10px;color:var(--muted);margin-top:2px;}
+.wallet-address-box{background:var(--bg);border:1px solid rgba(22,163,74,.3);border-radius:10px;padding:14px;margin-top:14px;}
+.wallet-addr-row{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.wallet-addr-text{flex:1;font-family:monospace;font-size:11px;color:var(--brand);word-break:break-all;background:rgba(22,163,74,.06);padding:8px 10px;border-radius:6px;border:1px solid rgba(22,163,74,.15);}
+.wallet-copy-btn{flex-shrink:0;background:var(--brand);color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;transition:.2s;}
+.wallet-copy-btn:hover{background:var(--brand-d);}
+
+.mode-tabs{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:3px;margin-bottom:16px;}
+.mode-tab{flex:1;padding:9px;text-align:center;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s;color:var(--muted2);border:none;background:transparent;}
+.mode-tab.active{background:var(--brand);color:#fff;}
+.mode-tab:not(.active):hover{background:var(--card2);color:var(--text);}
+.qr-wrapper{display:flex;flex-direction:column;align-items:center;padding:20px 16px;background:var(--bg);border:1px dashed var(--brand);border-radius:12px;margin-top:16px;gap:14px;}
+.qr-box{background:#fff;padding:12px;border-radius:8px;display:inline-flex;}
+.qr-label{font-size:12px;color:var(--muted2);text-align:center;line-height:1.7;}
+.qr-label strong{color:var(--brand);}
+.qr-timer{background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2);color:var(--brand);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;font-family:monospace;}
+.code-display{background:var(--bg);border:1px dashed var(--brand);border-radius:12px;padding:20px 16px;text-align:center;margin-top:16px;}
+.code-num{font-size:28px;font-weight:800;letter-spacing:6px;color:var(--brand);font-family:monospace;cursor:pointer;user-select:all;transition:.2s;}
+.code-num:hover{color:#22c55e;}
+.code-hint{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.8;}
+.pair-steps{margin-top:14px;background:var(--card2);border-radius:8px;padding:12px 14px;text-align:left;}
+.pair-steps p{font-size:11px;font-weight:600;color:var(--muted2);margin-bottom:6px;}
+.pair-steps ol{padding-left:16px;color:var(--muted2);font-size:11px;line-height:2;}
+.pair-steps ol li strong{color:var(--text);}
+.btn-copy-code{margin-top:12px;background:var(--brand-glow);border:1px solid rgba(22,163,74,.3);color:var(--brand);padding:9px 18px;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px;transition:.2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-copy-code:hover{background:var(--brand);color:#fff;}
+.pair-progress{display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(22,163,74,.07);border:1px solid rgba(22,163,74,.15);border-radius:8px;margin-top:14px;}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pair-progress-text{font-size:12px;color:var(--muted2);}
+.pair-progress-text span{color:var(--brand);font-weight:600;}
+.state-box{padding:20px 16px;border-radius:10px;text-align:center;margin-top:16px;}
+.state-box.success{background:rgba(22,163,74,.07);border:1px solid rgba(22,163,74,.2);}
+.state-box.error{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);}
+.state-box i{font-size:36px;margin-bottom:10px;display:block;}
+.state-box.success i{color:var(--brand);}
+.state-box.error i{color:var(--red);}
+.state-box h3{font-size:15px;font-weight:700;margin-bottom:4px;}
+.state-box.success h3{color:var(--brand);}
+.state-box.error h3{color:var(--red);}
+.state-box p{font-size:12px;color:var(--muted2);line-height:1.7;}
+
+.phone-row{display:flex;gap:8px;}
+.phone-flag{padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--muted2);font-size:12px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+
+.server-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.server-option{background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;}
+.server-option:hover{border-color:rgba(22,163,74,.3);background:var(--brand-glow);}
+.server-option.selected{border-color:var(--brand);background:rgba(22,163,74,.1);box-shadow:0 0 16px rgba(22,163,74,.15);}
+.server-flag{font-size:26px;margin-bottom:4px;}
+.server-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.server-loc{font-size:11px;color:var(--muted2);margin-bottom:4px;}
+.server-ping{font-size:10px;color:var(--brand);font-family:monospace;background:rgba(22,163,74,.1);padding:2px 8px;border-radius:10px;display:inline-block;}
+
+.active-bot-item{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.active-bot-item.connected{border-color:rgba(22,163,74,.3);background:rgba(22,163,74,.04);}
+.status-circle{width:10px;height:10px;border-radius:50%;background:var(--red);}
+.status-circle.online{background:var(--brand);box-shadow:0 0 6px rgba(22,163,74,.5);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.btn-deactivate{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);padding:8px 14px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:.2s;}
+.btn-deactivate:hover{background:var(--red);color:#fff;}
+.btn-start{background:var(--brand-glow);border:1px solid rgba(22,163,74,.3);color:var(--brand);padding:8px 14px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-start:hover{background:var(--brand);color:#fff;}
+.btn-delete{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);color:var(--muted);padding:6px 10px;border-radius:6px;font-size:10px;font-weight:500;cursor:pointer;transition:.2s;margin-left:4px;}
+.btn-delete:hover{background:var(--red);color:#fff;border-color:var(--red);}
+.session-badge{font-family:monospace;color:var(--brand);background:rgba(22,163,74,.1);padding:3px 6px;border-radius:4px;font-size:10px;word-break:break-all;}
+.bot-limit-badge{font-size:9px;background:rgba(245,158,11,.15);color:var(--gold);padding:2px 6px;border-radius:4px;font-weight:600;margin-left:6px;}
+
+.sess-status{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;font-size:11px;font-weight:500;margin-top:6px;}
+.sess-status.valid{background:rgba(22,163,74,.1);color:var(--brand);border:1px solid rgba(22,163,74,.2);}
+.sess-status.invalid{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.sess-status.checking{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+
+.cost-box{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;}
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;}
+.cost-label{font-size:12px;color:var(--muted2);}
+.cost-val{font-size:13px;font-weight:600;color:var(--text);}
+.cost-val.brand{color:var(--brand);}
+
+.rate-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
+.rate-chip{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:.2s;}
+.rate-chip:hover,.rate-chip.sel{border-color:var(--brand);background:var(--brand-glow);}
+.rate-chip .r-amount{font-size:15px;font-weight:700;color:var(--text);}
+.rate-chip .r-coin{font-size:10px;color:var(--brand);margin-top:2px;}
+.bank-box{background:var(--bg);border:1px solid rgba(22,163,74,.3);border-radius:10px;padding:14px;margin-top:14px;}
+.bank-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.bank-row:last-child{border-bottom:none;}
+.bank-label{font-size:11px;color:var(--muted);}
+.bank-val{font-size:12px;font-weight:600;}
+.ref-chip{background:rgba(22,163,74,.12);color:var(--brand);padding:3px 8px;border-radius:5px;font-family:monospace;font-size:11px;font-weight:600;word-break:break-all;}
+.dep-pending-notice{display:flex;gap:10px;align-items:flex-start;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:12px 14px;margin-top:14px;}
+.dep-pending-notice i{color:var(--yellow);flex-shrink:0;margin-top:2px;font-size:14px;}
+.dep-pending-notice p{font-size:11px;color:var(--muted2);line-height:1.7;}
+.dep-pending-notice strong{color:var(--text);}
+.dep-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card2);border-radius:8px;margin-bottom:6px;font-size:12px;}
+
+.console-wrap{background:#060d14;border:1px solid #1a2a3a;border-radius:10px;overflow:hidden;}
+.console-header{background:#0d1824;padding:8px 12px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #1a2a3a;}
+.console-dot{width:9px;height:9px;border-radius:50%;}
+.console-box{padding:12px;height:350px;overflow-y:auto;font-family:'Courier New',monospace;font-size:11px;line-height:1.6;-webkit-overflow-scrolling:touch;}
+.log-time{color:#2a4a6a;margin-right:6px;}
+.log-msg{color:#94a3b8;}
+.log-msg.success{color:#22c55e;}
+.log-msg.error{color:#f87171;}
+.log-msg.warn{color:#fbbf24;}
+.log-msg.info{color:#60a5fa;}
+.log-msg.cmd{color:#c084fc;font-weight:600;}
+
+.ref-hero{background:linear-gradient(135deg,rgba(22,163,74,.12),rgba(22,163,74,.04));border:1px solid rgba(22,163,74,.25);border-radius:14px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
+.ref-hero::before{content:'';position:absolute;right:-20px;top:-20px;width:100px;height:100px;border-radius:50%;background:rgba(22,163,74,.07);}
+.ref-hero-title{font-family:var(--font-h);font-size:16px;font-weight:700;margin-bottom:4px;}
+.ref-hero-sub{font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:16px;}
+.ref-link-box{display:flex;gap:6px;align-items:center;background:var(--bg);border:1px solid rgba(22,163,74,.3);border-radius:8px;padding:8px 10px;}
+.ref-link-text{flex:1;font-family:monospace;font-size:11px;color:var(--brand);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ref-copy-btn{flex-shrink:0;background:var(--brand);color:#fff;border:none;padding:7px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:5px;}
+.ref-copy-btn:hover{background:var(--brand-d);}
+.ref-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.ref-stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.ref-stat-val{font-family:var(--font-h);font-size:22px;font-weight:800;color:var(--brand);margin-bottom:2px;}
+.ref-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.ref-table-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.ref-table-head{display:grid;grid-template-columns:1fr 1fr 80px;padding:10px 14px;background:var(--card2);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);}
+.ref-table-row{display:grid;grid-template-columns:1fr 1fr 80px;padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);transition:.15s;align-items:center;}
+.ref-table-row:last-child{border-bottom:none;}
+.ref-table-row:hover{background:rgba(22,163,74,.04);}
+.ref-user-info{display:flex;align-items:center;gap:8px;}
+.ref-avatar{width:26px;height:26px;background:var(--brand-glow);border:1px solid rgba(22,163,74,.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--brand);flex-shrink:0;}
+.ref-username{font-weight:500;font-size:12px;}
+.ref-name{font-size:10px;color:var(--muted);margin-top:1px;}
+.ref-date{font-size:11px;color:var(--muted);}
+.ref-empty{padding:30px;text-align:center;color:var(--muted);}
+.ref-empty i{font-size:28px;display:block;margin-bottom:8px;opacity:.3;}
+.reward-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;}
+.reward-badge.given{background:rgba(22,163,74,.15);color:var(--brand);}
+.reward-badge.pending{background:rgba(245,158,11,.15);color:var(--yellow);}
+
+.how-steps{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.how-step{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.how-num{width:28px;height:28px;background:var(--brand-glow);border:1px solid rgba(22,163,74,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--brand);font-weight:700;font-size:12px;}
+.how-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.how-desc{font-size:10.5px;color:var(--muted);line-height:1.5;}
+
+.pro-hero{background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.04));border:1px solid rgba(245,158,11,.3);border-radius:14px;padding:20px;margin-bottom:18px;position:relative;overflow:hidden;}
+.pro-hero::before{content:'';position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(245,158,11,.07);}
+.pro-hero-crown{font-size:28px;margin-bottom:6px;}
+.pro-hero-title{font-family:var(--font-h);font-size:18px;font-weight:800;color:var(--gold);margin-bottom:4px;}
+.pro-hero-sub{font-size:12px;color:var(--muted2);line-height:1.6;}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.plan-card{background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:18px 14px;cursor:pointer;transition:all .22s;position:relative;text-align:center;}
+.plan-card:hover{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04);}
+.plan-card.selected{border-color:var(--gold);background:rgba(245,158,11,.08);box-shadow:0 0 20px rgba(245,158,11,.15);}
+.plan-card.popular::before{content:'BEST VALUE';position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-size:9px;font-weight:800;padding:2px 10px;border-radius:0 0 6px 6px;letter-spacing:.5px;}
+.plan-card.basic-tag::before{content:'STARTER';position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;font-size:9px;font-weight:800;padding:2px 10px;border-radius:0 0 6px 6px;letter-spacing:.5px;}
+.plan-duration{font-size:11px;color:var(--muted2);font-weight:500;margin-bottom:6px;}
+.plan-price{font-family:var(--font-h);font-size:30px;font-weight:800;color:var(--gold);line-height:1;}
+.plan-price sup{font-size:14px;vertical-align:top;margin-top:5px;display:inline-block;}
+.plan-price sub{font-size:12px;color:var(--muted2);font-weight:400;}
+.plan-bots{display:inline-block;background:rgba(245,158,11,.15);color:var(--gold);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-top:8px;}
+.plan-features{margin-top:14px;text-align:left;}
+.plan-feat{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted2);padding:4px 0;}
+.plan-feat i{color:var(--gold);font-size:10px;flex-shrink:0;}
+.plan-feat.disabled{opacity:.4;text-decoration:line-through;}
+.plan-feat.disabled i{color:var(--muted);}
+.pro-status-box{padding:16px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:14px;}
+.pro-status-box.active-pro{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);}
+.pro-status-box.expired-pro{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);}
+.pro-status-box.no-pro{background:var(--card2);border:1px solid var(--border);}
+.pro-status-icon{font-size:28px;flex-shrink:0;}
+.pro-status-info h4{font-size:14px;font-weight:700;margin-bottom:2px;}
+.pro-status-info p{font-size:11px;color:var(--muted2);line-height:1.6;}
+.pro-status-info .expires{font-size:11px;font-weight:600;color:var(--gold);margin-top:3px;}
+.pro-status-info .expired-text{font-size:11px;font-weight:600;color:var(--red);margin-top:3px;}
+.pro-status-info .plan-type{font-size:11px;font-weight:600;color:var(--gold);margin-top:3px;background:rgba(245,158,11,.12);display:inline-block;padding:2px 8px;border-radius:4px;}
+.pro-lock-notice{display:flex;gap:10px;align-items:flex-start;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px;margin-bottom:16px;}
+.pro-lock-notice i{color:var(--red);font-size:18px;flex-shrink:0;margin-top:1px;}
+.pro-lock-notice div h4{font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px;}
+.pro-lock-notice div p{font-size:11px;color:var(--muted2);line-height:1.7;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#d97706);color:#000;font-weight:700;border:none;width:100%;}
+.btn-gold:hover{background:linear-gradient(135deg,#fbbf24,var(--gold));}
+.btn-gold:disabled{background:#2a2010;color:#5a4a20;cursor:not-allowed;}
+.selected-plan-summary{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;}
+.selected-plan-summary .sum-row{display:flex;justify-content:space-between;padding:3px 0;}
+.selected-plan-summary .sum-val{font-weight:600;color:var(--gold);}
+
+.faq-item{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;}
+.faq-head{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;cursor:pointer;background:var(--card2);transition:.2s;user-select:none;}
+.faq-head:hover{background:rgba(22,163,74,.06);}
+.faq-head.open{background:rgba(22,163,74,.08);border-bottom:1px solid var(--border);}
+.faq-q{font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.faq-q i{color:var(--brand);font-size:12px;flex-shrink:0;}
+.faq-toggle{color:var(--muted);font-size:11px;transition:transform .2s;flex-shrink:0;}
+.faq-head.open .faq-toggle{transform:rotate(180deg);color:var(--brand);}
+.faq-body{display:none;padding:13px 14px;font-size:12px;color:var(--muted2);line-height:1.8;background:var(--card);}
+.faq-body.open{display:block;}
+.faq-body strong{color:var(--text);}
+.faq-body a{color:var(--brand);}
+.faq-body code{background:rgba(22,163,74,.1);color:var(--brand);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px;}
+.faq-body ol,.faq-body ul{padding-left:18px;margin-top:6px;}
+.faq-body li{margin-bottom:4px;}
+
+.know-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.know-item{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.know-icon{font-size:22px;margin-bottom:8px;}
+.know-title{font-size:12px;font-weight:700;margin-bottom:4px;color:var(--text);}
+.know-desc{font-size:11px;color:var(--muted2);line-height:1.6;}
+.tip-banner{display:flex;gap:10px;align-items:flex-start;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:13px 14px;margin-bottom:12px;}
+.tip-banner i{color:var(--blue);flex-shrink:0;font-size:15px;margin-top:1px;}
+.tip-banner p{font-size:12px;color:var(--muted2);line-height:1.7;}
+.tip-banner strong{color:var(--text);}
+
+.sidebar-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:999;}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);z-index:9999;background:#1a2235;border:1px solid rgba(22,163,74,.4);color:var(--brand);padding:10px 16px;border-radius:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;opacity:0;transition:.3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+.alert-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:10000;display:none;align-items:center;justify-content:center;padding:16px;}
+.alert-overlay.open{display:flex;}
+.alert-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:380px;width:100%;text-align:center;animation:alertIn .2s ease;}
+@keyframes alertIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.alert-icon{font-size:40px;margin-bottom:12px;display:block;}
+.alert-title{font-family:var(--font-h);font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.alert-msg{font-size:12px;color:var(--muted2);line-height:1.7;margin-bottom:20px;text-align:left;}
+.alert-msg strong{color:var(--text);}
+.alert-btns{display:flex;gap:8px;}
+.alert-btns button{flex:1;padding:11px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;border:none;transition:.2s;}
+.alert-btn-cancel{background:var(--card2);color:var(--muted2);border:1px solid var(--border) !important;}
+.alert-btn-cancel:hover{background:var(--border);color:var(--text);}
+.alert-btn-danger{background:var(--red);color:#fff;}
+.alert-btn-danger:hover{background:#dc2626;}
+.alert-btn-ok{background:var(--brand);color:#fff;}
+.alert-btn-ok:hover{background:var(--brand-d);}
+.confirm-input{width:100%;padding:10px 12px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:#fff;outline:none;font-size:13px;text-align:center;font-family:monospace;letter-spacing:2px;margin-top:8px;transition:.2s;}
+.confirm-input:focus{border-color:var(--red);}
+
+.limit-notice{display:flex;gap:10px;align-items:flex-start;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:14px;margin-bottom:16px;}
+.limit-notice i{color:var(--gold);font-size:18px;flex-shrink:0;margin-top:1px;}
+.limit-notice div h4{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:4px;}
+.limit-notice div p{font-size:11px;color:var(--muted2);line-height:1.7;}
+
+/* ── TICKET SYSTEM ── */
+.ticket-hero{background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.04));border:1px solid rgba(59,130,246,.25);border-radius:14px;padding:20px;margin-bottom:16px;}
+.ticket-hero-title{font-family:var(--font-h);font-size:16px;font-weight:700;margin-bottom:4px;}
+.ticket-hero-sub{font-size:12px;color:var(--muted2);line-height:1.6;}
+.ticket-list-head{display:grid;grid-template-columns:100px 1fr 80px 80px 70px;padding:10px 14px;background:var(--card2);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);}
+.ticket-list-row{display:grid;grid-template-columns:100px 1fr 80px 80px 70px;padding:12px 14px;font-size:12px;border-bottom:1px solid var(--border);align-items:center;transition:.15s;cursor:pointer;}
+.ticket-list-row:last-child{border-bottom:none;}
+.ticket-list-row:hover{background:rgba(59,130,246,.04);}
+.ticket-num{font-family:monospace;font-size:11px;color:var(--blue);font-weight:700;}
+.ticket-subject{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ticket-status-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;}
+.ticket-status-badge.open{background:rgba(59,130,246,.15);color:var(--blue);}
+.ticket-status-badge.replied{background:rgba(22,163,74,.15);color:var(--brand);}
+.ticket-status-badge.closed{background:rgba(100,116,139,.15);color:var(--muted2);}
+.ticket-status-badge.pending{background:rgba(245,158,11,.15);color:var(--yellow);}
+.ticket-cat-badge{display:inline-flex;align-items:center;font-size:10px;padding:2px 7px;border-radius:4px;background:var(--card2);border:1px solid var(--border);color:var(--muted2);}
+.ticket-view-btn{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:var(--blue);padding:5px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;transition:.2s;}
+.ticket-view-btn:hover{background:var(--blue);color:#fff;}
+.ticket-empty{padding:40px;text-align:center;color:var(--muted);}
+.ticket-empty i{font-size:32px;display:block;margin-bottom:12px;opacity:.2;}
+
+
+/* ── FREE TRIAL EXPIRED OVERLAY ── */
+.trial-expired-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px;}
+.trial-expired-overlay.show{display:flex;}
+.trial-expired-box{background:var(--card);border:2px solid var(--red);border-radius:16px;padding:28px 24px;max-width:400px;width:100%;text-align:center;}
+.trial-expired-box .icon{font-size:48px;margin-bottom:12px;display:block;}
+.trial-expired-box h2{font-family:var(--font-h);font-size:20px;font-weight:800;color:var(--red);margin-bottom:8px;}
+.trial-expired-box p{font-size:12px;color:var(--muted2);line-height:1.7;margin-bottom:20px;}
+
+@media(min-width:769px){
+  .main-content{padding:24px;}
+  .grid-cards{grid-template-columns:repeat(4,1fr);}
+  .stat-card .value{font-size:28px;}
+  .rate-grid{grid-template-columns:repeat(4,1fr);}
+  .how-steps{grid-template-columns:repeat(4,1fr);}
+  .ref-stats-grid{grid-template-columns:repeat(3,1fr);}
+  .console-box{height:500px;}
+  .code-num{font-size:36px;letter-spacing:8px;}
+  .toast{bottom:24px;left:auto;right:24px;transform:translateY(80px);}
+  .toast.show{transform:translateY(0);}
+  .know-grid{grid-template-columns:repeat(3,1fr);}
+  .wallet-grid{grid-template-columns:repeat(4,1fr);}
+}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-overlay.open{display:block;}
+  .main-area{margin-left:0;}
+  .menu-toggle{display:block;}
+  .phone-row{flex-direction:column;}
+  .server-grid{grid-template-columns:1fr;}
+  .plan-grid{grid-template-columns:1fr;}
+  .page-header h2{font-size:18px;}
+  .top-nav{padding:10px 12px;}
+  .top-nav-right span:last-child{display:none;}
+  .ticket-list-head,.ticket-list-row{grid-template-columns:90px 1fr 70px 60px;}
+  .ticket-list-head span:nth-child(3),.ticket-list-row>*:nth-child(3){display:none;}
+}
+
+/* Ticket detail modal */
+.ticket-detail-box{background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;animation:alertIn .2s ease;}
+.ticket-messages-wrap{display:flex;flex-direction:column;gap:12px;max-height:340px;overflow-y:auto;padding:4px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;}
+.ticket-msg-row{display:flex;flex-direction:column;max-width:82%;animation:slideUp .15s ease both;}
+.ticket-msg-row.admin{align-self:flex-start;}
+.ticket-msg-row.user{align-self:flex-end;}
+.ticket-msg-bubble{padding:11px 14px;border-radius:14px;font-size:12px;line-height:1.7;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap;position:relative;}
+.ticket-msg-bubble.admin{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);border-bottom-left-radius:4px;color:var(--text);}
+.ticket-msg-bubble.user{background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.18);border-bottom-right-radius:4px;color:var(--text);}
+.ticket-msg-bubble a{color:var(--blue);text-decoration:underline;text-underline-offset:2px;word-break:break-all;}
+.ticket-msg-bubble a:hover{color:#60a5fa;}
+.ticket-msg-meta{font-size:9px;color:var(--muted);margin-bottom:5px;font-weight:600;display:flex;align-items:center;gap:5px;}
+.ticket-msg-row.admin .ticket-msg-meta{justify-content:flex-start;}
+.ticket-msg-row.user .ticket-msg-meta{justify-content:flex-end;}
+.ticket-msg-time{font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
+.ticket-msg-row.user .ticket-msg-time{text-align:right;}
+
+/* Typing indicator */
+.ticket-typing{display:none;align-self:flex-start;max-width:82%;animation:slideUp .15s ease both;}
+.ticket-typing.visible{display:flex;flex-direction:column;}
+.ticket-typing-meta{font-size:9px;color:var(--muted);margin-bottom:5px;font-weight:600;display:flex;align-items:center;gap:5px;}
+.ticket-typing-bubble{display:flex;align-items:center;gap:5px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);border-radius:14px;border-bottom-left-radius:4px;padding:13px 18px;}
+.ticket-typing-bubble span{width:7px;height:7px;background:var(--blue);border-radius:50%;animation:tkTypeBounce .6s ease-in-out infinite;}
+.ticket-typing-bubble span:nth-child(2){animation-delay:.15s;}
+.ticket-typing-bubble span:nth-child(3){animation-delay:.3s;}
+@keyframes tkTypeBounce{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.ticket-reply-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:14px;}
+.ticket-reply-box textarea{min-height:80px;resize:vertical;max-height:160px;}
+.tk-admin-typing{display:none;align-self:flex-start;padding:0 4px;animation:slideUp .15s ease both}
+.tk-admin-typing.visible{display:flex;flex-direction:column;align-items:flex-start}
+.tk-admin-typing-meta{font-size:9px;color:var(--blue);margin-bottom:5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.tk-admin-typing-bubble{display:flex;align-items:center;gap:4px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);border-radius:14px;border-bottom-left-radius:4px;padding:12px 16px}
+.tk-admin-typing-bubble span{width:7px;height:7px;background:var(--blue);border-radius:50%;animation:tkTypeBounce .6s ease-in-out infinite}
+.tk-admin-typing-bubble span:nth-child(2){animation-delay:.15s}
+.tk-admin-typing-bubble span:nth-child(3){animation-delay:.3s}
+@keyframes tkTypeBounce{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg">Copied!</span></div>
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- FREE TRIAL EXPIRED OVERLAY -->
+<div class="trial-expired-overlay" id="trialExpiredOverlay">
+  <div class="trial-expired-box">
+    <span class="icon">🔒</span>
+    <h2>Free Trial Expired</h2>
+    <p>Your <strong>2-day free trial</strong> has ended.<br>Upgrade to a Pro plan to continue using OxBot and add/manage bots.</p>
+    <button class="btn btn-gold" onclick="document.getElementById('trialExpiredOverlay').classList.remove('show'); go('s-pro',null);" style="width:100%;margin-bottom:8px;"><i class="fas fa-crown"></i> Upgrade to Pro</button>
+    <button onclick="document.getElementById('trialExpiredOverlay').classList.remove('show')" style="width:100%;padding:10px;background:transparent;border:1px solid var(--border);color:var(--muted2);border-radius:8px;font-size:12px;cursor:pointer;">View Dashboard Only</button>
+  </div>
+</div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header"><div class="logo-icon">OX</div><div class="logo-text">OxBot</div></div>
+  <div class="nav-scroll">
+    <div class="nav-section">Main</div>
+    <a class="nav-item active" id="nav-s-home" onclick="go('s-home',this)"><i class="fas fa-home"></i> Dashboard</a>
+    <a class="nav-item" id="nav-s-addbot" onclick="go('s-addbot',this)"><i class="fas fa-plus-circle"></i> Add Bot</a>
+    <a class="nav-item" id="nav-s-pair" onclick="go('s-pair',this)"><i class="fas fa-link"></i> Pair Device</a>
+    <div class="nav-section">Bot</div>
+    <a class="nav-item" id="nav-s-mybots" onclick="go('s-mybots',this)"><i class="fas fa-robot"></i> My Bots <span class="nav-badge" id="botCountBadge" style="display:none">0</span></a>
+    <a class="nav-item" id="nav-s-console" onclick="go('s-console',this)"><i class="fas fa-terminal"></i> Console</a>
+    <div class="nav-section">Account</div>
+    <a class="nav-item" id="nav-s-deposit" onclick="go('s-deposit',this)"><i class="fas fa-wallet"></i> Deposit</a>
+    <a class="nav-item pro-nav" id="nav-s-pro" onclick="go('s-pro',this)"><i class="fas fa-crown"></i> Pro <span class="nav-badge gold" id="proBadge" style="display:none">PRO</span></a>
+    <a class="nav-item" id="nav-s-referral" onclick="go('s-referral',this)"><i class="fas fa-users"></i> Referrals <span class="nav-badge" id="refBadge" style="display:none">0</span></a>
+    <a class="nav-item" id="nav-s-tickets" onclick="go('s-tickets',this)"><i class="fas fa-ticket-alt"></i> Support Tickets <span class="nav-badge red" id="ticketBadge" style="display:none">0</span></a>
+    <a class="nav-item" id="nav-s-faq" onclick="go('s-faq',this)"><i class="fas fa-question-circle"></i> Help & FAQ</a>
+    <a class="nav-item" id="nav-s-settings" onclick="go('s-settings',this)"><i class="fas fa-cog"></i> Settings</a>
+  </div>
+  <div class="nav-section">Console</div>
+<a class="nav-item" id="nav-s-telegram" href="/console-telegram.php">
+  <i class="fab fa-telegram"></i> Telegram Bot
+  <span class="nav-badge" style="background:var(--purple);">NEW</span>
+</a>
+  <div class="sidebar-footer">
+    <a class="support-link" href="mailto:support@zestpay.com.ng"><i class="fas fa-headset"></i> <span>support@zestpay.com.ng</span></a>
+    <div class="user-chip">
+      <div class="user-avatar" id="sideAvatar">?</div>
+      <div class="user-info">
+        <div class="user-name" id="sideUser">Loading...</div>
+        <div class="user-bal"><i class="fas fa-coins" style="font-size:9px"></i> <span id="sideBal">0</span> coins</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="confirmLogout()"><i class="fas fa-sign-out-alt"></i> Log Out</button>
+  </div>
+</aside>
+
+<div class="main-area">
+  <header class="top-nav">
+    <div style="display:flex;align-items:center;gap:10px;"><button class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></button><span id="pageTitle" style="font-weight:600;font-size:14px;">Dashboard</span></div>
+    <div class="top-nav-right">
+      <div class="bot-pill"><div class="status-dot" id="botDot"></div><span id="botStatus" style="color:var(--muted2);font-size:10px;">...</span></div>
+      <span style="font-size:12px;color:var(--muted2);">Hi, <strong id="navUser" style="color:var(--text);">—</strong></span>
+    </div>
+  </header>
+
+  <div class="main-content">
+
+    <!-- HOME -->
+    <section id="s-home" class="section active">
+      <div class="page-header"><h2>Overview</h2><p>Your bot dashboard at a glance</p></div>
+      <div class="grid-cards">
+        <div class="stat-card" style="--accent-color:var(--brand)"><h3>Balance</h3><div class="value"><span id="homeBal">0</span></div><div class="sub">coins</div></div>
+        <div class="stat-card" style="--accent-color:#22c55e"><h3>Active</h3><div class="value" style="color:#22c55e"><span id="homeActive">0</span></div><div class="sub">bots online</div></div>
+        <div class="stat-card" style="--accent-color:var(--red)"><h3>Inactive</h3><div class="value" style="color:var(--red)"><span id="homeInactive">0</span></div><div class="sub">bots stopped</div></div>
+        <div class="stat-card" style="--accent-color:#3b82f6"><h3>Referrals</h3><div class="value" style="color:#3b82f6"><span id="homeRefs">0</span></div><div class="sub">invited users</div></div>
+      </div>
+      <div class="card"><div class="card-title"><i class="fas fa-lightbulb"></i> Quick Start</div>
+        <div class="how-steps">
+          <div class="how-step"><div class="how-num">1</div><div class="how-title">Pair</div><div class="how-desc">Link WhatsApp via QR or Code</div></div>
+          <div class="how-step"><div class="how-num">2</div><div class="how-title">Add Bot</div><div class="how-desc">Paste session ID in Add Bot</div></div>
+          <div class="how-step"><div class="how-num">3</div><div class="how-title">Use</div><div class="how-desc">Send <strong>.help</strong> in any chat</div></div>
+          <div class="how-step"><div class="how-num">4</div><div class="how-title">Earn</div><div class="how-desc">Refer friends for 10 coins each</div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;"><div class="card-title"><i class="fas fa-robot"></i> Active Bots <button class="btn btn-sm btn-outline" onclick="loadActiveBots()" style="margin-left:auto;"><i class="fas fa-sync-alt"></i></button></div><div id="homeActiveBots"><p style="color:var(--muted);font-size:12px;">Loading...</p></div></div>
+    </section>
+
+    <!-- ADD BOT -->
+    <section id="s-addbot" class="section">
+      <div class="page-header"><h2>Add Bot</h2><p>Paste session ID to connect your bot</p></div>
+      <div id="addBotProLock" class="pro-lock-notice" style="display:none">
+        <i class="fas fa-lock"></i>
+        <div><h4>Access Restricted</h4><p id="addBotLockMsg">You cannot add bots right now.</p></div>
+      </div>
+      <div class="card" id="addBotForm">
+        <div class="card-title"><i class="fas fa-plug"></i> New Bot Connection</div>
+        <div class="form-group">
+          <label class="form-label">Session ID</label>
+          <textarea id="actSessionId" class="form-input big" placeholder="Paste your session string here...&#10;e.g. oxbot_2348012345678::::eyJyZWdpc3..." oninput="liveValidate(this.value)" autocomplete="off" spellcheck="false"></textarea>
+          <div id="sessStatus"></div>
+          <p class="form-hint">Starts with <code style="background:rgba(22,163,74,.1);color:var(--brand);padding:1px 4px;border-radius:3px;font-size:10px;">oxbot_</code> — get one from Pair Device</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bot Name</label>
+          <input type="text" id="actBotName" class="form-input" placeholder="My Bot" oninput="checkActBtn()" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Server</label>
+          <div class="server-grid">
+            <div class="server-option" onclick="pickServer('Server 1 (NG)',this)">
+              <div class="server-flag">⚡</div><div class="server-name">OxBot Server 1</div>
+              <div class="server-loc">Nigeria</div><div class="server-ping">~45ms</div>
+            </div>
+            <div class="server-option" onclick="pickServer('Server 2 (US)',this)">
+              <div class="server-flag">🌐</div><div class="server-name">OxBot Server 2</div>
+              <div class="server-loc">United States</div><div class="server-ping">~120ms</div>
+            </div>
+          </div>
+          <input type="hidden" id="actServer" value="">
+        </div>
+        <div class="cost-box">
+          <div class="cost-row"><span class="cost-label">Cost</span><span class="cost-val brand">20 coins</span></div>
+          <div class="cost-row"><span class="cost-label">Your Balance</span><span class="cost-val" id="actBal">0 coins</span></div>
+          <div class="cost-row"><span class="cost-label">Current Plan</span><span class="cost-val" id="actPlanName">—</span></div>
+          <div class="cost-row"><span class="cost-label">Bot Limit</span><span class="cost-val" id="actBotLimit">—</span></div>
+          <div class="cost-row"><span class="cost-label">Bot Duration</span><span class="cost-val" id="actBotDuration" style="color:var(--gold)">—</span></div>
+        </div>
+        <button class="btn btn-primary" id="actBtn" onclick="doAddBot()" disabled><i class="fas fa-robot"></i> Add Bot (−20 coins)</button>
+        <div id="actStatus" style="display:none;margin-top:16px;"></div>
+      </div>
+    </section>
+
+    <!-- PAIR DEVICE -->
+    <section id="s-pair" class="section">
+      <div class="page-header"><h2>Pair Device</h2><p>Link WhatsApp to get your session ID</p></div>
+      <div class="tip-banner" style="margin-bottom:14px;">
+        <i class="fas fa-info-circle"></i>
+        <p><strong>Session ID is sent to your WhatsApp.</strong> After pairing, check your WhatsApp messages. The session ID will appear in your chat. Then go to <strong>Add Bot</strong> and paste it.</p>
+      </div>
+      <div class="card">
+        <div class="mode-tabs">
+          <button class="mode-tab active" onclick="setPairMode('qr',this)"><i class="fas fa-qrcode"></i> QR Code</button>
+          <button class="mode-tab" onclick="setPairMode('code',this)"><i class="fas fa-keyboard"></i> Phone Code</button>
+        </div>
+        <div id="qrMode">
+          <div class="form-group"><label class="form-label">WhatsApp Number (for delivery)</label><div class="phone-row"><div class="phone-flag">🇳🇬 +234</div><input type="tel" id="qrPhone" class="form-input" placeholder="8012345678" inputmode="numeric"/></div></div>
+          <button class="btn btn-primary" id="qrBtn" onclick="doQR()"><i class="fas fa-qrcode"></i> Generate QR Code</button>
+          <div id="qrResult"></div>
+        </div>
+        <div id="codeMode" style="display:none;">
+          <div class="form-group"><label class="form-label">WhatsApp Number</label><div class="phone-row"><div class="phone-flag">🇳🇬 +234</div><input type="tel" id="pairPhone" class="form-input" placeholder="8012345678" inputmode="numeric"/></div><p class="form-hint">Other countries: enter full international number (e.g. 447911123456)</p></div>
+          <button class="btn btn-primary" id="pairBtn" onclick="doPair()"><i class="fas fa-link"></i> Get Pairing Code</button>
+          <div id="pairProgress" style="display:none;"><div class="pair-progress"><div class="spinner"></div><div class="pair-progress-text" id="pairProgressText"><span>Connecting</span>...</div></div></div>
+          <div id="pairResult"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MY BOTS -->
+    <section id="s-mybots" class="section">
+      <div class="page-header"><h2>My Bots</h2><p>Manage and monitor your connected bots</p></div>
+      <div id="botList"><div class="card" style="color:var(--muted);text-align:center;padding:30px;">Loading...</div></div>
+    </section>
+
+    <!-- DEPOSIT -->
+    <section id="s-deposit" class="section">
+      <div class="page-header"><h2>Deposit</h2><p>Fund your account with coins</p></div>
+      <div class="dep-tabs">
+        <button class="dep-tab active" id="depTabBank" onclick="switchDepTab('bank',this)"><i class="fas fa-university"></i> Bank Transfer</button>
+        <button class="dep-tab" id="depTabCrypto" onclick="switchDepTab('crypto',this)"><i class="fas fa-coins"></i> Crypto / USDT</button>
+      </div>
+      <div id="depBankSection">
+        <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:14px;margin-bottom:16px;">
+          <i class="fas fa-globe" style="color:var(--blue);font-size:18px;flex-shrink:0;margin-top:1px;"></i>
+          <div><h4 style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px;">Other Currencies Accepted</h4><p style="font-size:11px;color:var(--muted2);line-height:1.7;">USD, GBP, EUR? Contact <a href="mailto:support@zestpay.com.ng" style="color:var(--blue);font-weight:600;">support@zestpay.com.ng</a></p></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="fas fa-coins"></i> Choose Package</div>
+          <div class="rate-grid">
+            <div class="rate-chip" onclick="selectRate(20,this)"><div class="r-amount">20</div><div class="r-coin">coins · ₦100</div></div>
+            <div class="rate-chip" onclick="selectRate(100,this)"><div class="r-amount">100</div><div class="r-coin">coins · ₦500</div></div>
+            <div class="rate-chip" onclick="selectRate(200,this)"><div class="r-amount">200</div><div class="r-coin">coins · ₦1,000</div></div>
+            <div class="rate-chip" onclick="selectRate(400,this)"><div class="r-amount">400</div><div class="r-coin">coins · ₦2,000</div></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Or enter custom coins</label>
+            <input type="number" id="depCoins" class="form-input" placeholder="Min 20 coins" min="20" oninput="previewAmount()"/>
+            <p class="form-hint">Amount to pay: <strong id="depAmountPreview" style="color:var(--brand);">—</strong></p>
+          </div>
+          <button class="btn btn-primary" onclick="initiateDeposit()"><i class="fas fa-arrow-right"></i> Get Payment Details</button>
+          <div id="bankDetails" style="display:none;">
+            <div class="bank-box">
+              <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:var(--muted2);">Transfer exactly to:</div>
+              <div class="bank-row"><span class="bank-label">Bank</span><span class="bank-val" id="dBankName">—</span></div>
+              <div class="bank-row"><span class="bank-label">Account No</span><span class="bank-val" id="dAccNum">—</span></div>
+              <div class="bank-row"><span class="bank-label">Account Name</span><span class="bank-val" id="dAccHolder">—</span></div>
+              <div class="bank-row"><span class="bank-label">Reference</span><span class="ref-chip" id="dRef" style="cursor:pointer;" onclick="copyDepRef()">—</span></div>
+              <div class="bank-row"><span class="bank-label">Amount</span><span class="bank-val" style="color:var(--brand)" id="dAmount">—</span></div>
+            </div>
+            <div class="dep-pending-notice"><i class="fas fa-clock"></i><p><strong>Transfer the exact amount shown.</strong><br>Use the reference when paying. Coins credited within 5–15 mins after confirmation.</p></div>
+            <div id="paidBtnWrap" style="margin-top:12px;">
+              <button class="btn btn-primary" id="paidBtn" onclick="markAsPaid()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;font-weight:700;">
+                <i class="fas fa-check-circle"></i> I Have Paid — Notify Admin
+              </button>
+            </div>
+            <div id="paidConfirm" style="display:none;margin-top:10px;padding:12px 14px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:8px;font-size:12px;color:var(--brand);">
+              <i class="fas fa-check-circle"></i> <strong>Payment notification sent!</strong> Admin will confirm your coins within 15 minutes.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="depCryptoSection" style="display:none;">
+        <div class="dep-pending-notice" style="margin-bottom:14px;">
+          <i class="fas fa-info-circle" style="color:var(--blue)"></i>
+          <p><strong>How crypto deposit works:</strong><br>1. Choose your network below<br>2. Send USDT to the address shown<br>3. Email <a href="mailto:support@zestpay.com.ng" style="color:var(--brand)">support@zestpay.com.ng</a> with your transaction hash + username<br>4. Coins credited within 30 minutes</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="fas fa-network-wired"></i> Select Network</div>
+          <div class="wallet-grid">
+            <div class="wallet-option" onclick="selectWallet('trc20',this)"><div class="wallet-icon">🔴</div><div class="wallet-name">USDT</div><div class="wallet-network">TRC-20 (Tron)</div></div>
+            <div class="wallet-option" onclick="selectWallet('bep20',this)"><div class="wallet-icon">🟡</div><div class="wallet-name">USDT</div><div class="wallet-network">BEP-20 (BNB Chain)</div></div>
+            <div class="wallet-option" onclick="selectWallet('erc20',this)"><div class="wallet-icon">🔵</div><div class="wallet-name">USDT</div><div class="wallet-network">ERC-20 (Ethereum)</div></div>
+            <div class="wallet-option" onclick="selectWallet('sol',this)"><div class="wallet-icon">🟣</div><div class="wallet-name">USDT</div><div class="wallet-network">SPL (Solana)</div></div>
+          </div>
+          <div id="walletAddressBox" style="display:none;" class="wallet-address-box">
+            <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Send <strong style="color:var(--text)">USDT</strong> only to this address (<span id="walletNetworkLabel" style="color:var(--brand);font-weight:600;"></span>):</div>
+            <div class="wallet-addr-row"><div class="wallet-addr-text" id="walletAddressText">—</div><button class="wallet-copy-btn" onclick="copyWalletAddress()"><i class="fas fa-copy"></i></button></div>
+            <div style="margin-top:12px;text-align:center;" id="cryptoQRBox"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title"><i class="fas fa-history"></i> Transaction History</div><div id="depHistoryList"><p style="color:var(--muted);font-size:12px;">Loading...</p></div></div>
+    </section>
+
+    <!-- PRO -->
+    <section id="s-pro" class="section">
+      <div class="page-header"><h2>Pro Plans</h2><p>Unlock full OxBot features with premium access</p></div>
+      <div id="proStatusBox"></div>
+      <div class="pro-hero"><div class="pro-hero-crown">👑</div><div class="pro-hero-title">OxBot Pro</div><div class="pro-hero-sub">Unrestricted access. Non-stop bot uptime. Priority support. Faster command responses.</div></div>
+      <div class="plan-grid">
+        <div class="plan-card basic-tag" id="plan-half" onclick="selectPlan('half',this)">
+          <div class="plan-duration">1 Month Access</div><div class="plan-price"><sup>$</sup>1.50</div><div class="plan-bots">🤖 Up to 5 Bots</div>
+          <div class="plan-features">
+            <div class="plan-feat"><i class="fas fa-check"></i> Full dashboard access</div>
+            <div class="plan-feat"><i class="fas fa-check"></i> Connect up to 5 bots</div>
+            <div class="plan-feat"><i class="fas fa-check"></i> 1.5 Months bot duration</div>
+            <div class="plan-feat"><i class="fas fa-check"></i> All basic commands</div>
+            <div class="plan-feat disabled"><i class="fas fa-times"></i> Fast command priority</div>
+            <div class="plan-feat disabled"><i class="fas fa-times"></i> Up to 8 bots</div>
+          </div>
+        </div>
+        <div class="plan-card popular" id="plan-full" onclick="selectPlan('full',this)">
+          <div class="plan-duration">1 Month Access</div><div class="plan-price"><sup>$</sup>3.00</div><div class="plan-bots">🤖 Up to 8 Bots</div>
+          <div class="plan-features">
+            <div class="plan-feat"><i class="fas fa-check"></i> Full dashboard access</div>
+            <div class="plan-feat"><i class="fas fa-check"></i> Connect up to 8 bots</div>
+            <div class="plan-feat"><i class="fas fa-check"></i> 1 Month bot duration</div>
+            <div class="plan-feat"><i class="fas fa-check"></i> <strong>Fast command priority</strong></div>
+            <div class="plan-feat"><i class="fas fa-check"></i> Priority support</div>
+            <div class="plan-feat"><i class="fas fa-check"></i> All commands unlocked</div>
+          </div>
+        </div>
+      </div>
+      <div id="planSummary" style="display:none;" class="selected-plan-summary">
+        <div class="sum-row"><span style="color:var(--muted2)">Plan</span><span class="sum-val" id="sumPlan">—</span></div>
+        <div class="sum-row"><span style="color:var(--muted2)">Duration</span><span class="sum-val" id="sumDur">—</span></div>
+        <div class="sum-row"><span style="color:var(--muted2)">Bot Limit</span><span class="sum-val" id="sumBots">—</span></div>
+        <div class="sum-row"><span style="color:var(--muted2)">Bot Duration</span><span class="sum-val" id="sumBotDur">—</span></div>
+        <div class="sum-row"><span style="color:var(--muted2)">Price</span><span class="sum-val" id="sumPrice">—</span></div>
+        <div class="sum-row"><span style="color:var(--muted2)">Expires</span><span class="sum-val" id="sumExp">—</span></div>
+      </div>
+      <button class="btn btn-gold" id="proBuyBtn" onclick="buyPro()" disabled><i class="fas fa-crown"></i> Activate Pro Plan</button>
+      <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;">Payment via bank transfer. Admin activates within 1 hour.</p>
+      <div id="proPayDetails" style="display:none;margin-top:14px;">
+        <div class="bank-box">
+          <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:var(--gold)">Transfer to activate Pro:</div>
+          <div class="bank-row"><span class="bank-label">Bank</span><span class="bank-val" id="proBankName">—</span></div>
+          <div class="bank-row"><span class="bank-label">Account No</span><span class="bank-val" id="proAccNum">—</span></div>
+          <div class="bank-row"><span class="bank-label">Account Name</span><span class="bank-val" id="proAccHolder">—</span></div>
+          <div class="bank-row"><span class="bank-label">Reference</span><span class="ref-chip" id="proRef">—</span></div>
+          <div class="bank-row"><span class="bank-label">Amount</span><span class="bank-val" style="color:var(--gold)" id="proAmount">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONSOLE -->
+    <section id="s-console" class="section">
+      <div class="page-header"><h2>Console</h2><p>Real-time bot activity logs</p></div>
+      <div class="console-wrap">
+        <div class="console-header">
+          <div class="console-dot" style="background:#ff5f57"></div>
+          <div class="console-dot" style="background:#febc2e"></div>
+          <div class="console-dot" style="background:#28c840"></div>
+          <span style="font-size:10px;color:#2a4a6a;margin-left:6px;">oxbot-console</span>
+          <div style="margin-left:auto;display:flex;gap:4px;">
+            <button class="btn-ghost btn-sm" onclick="clearConsole()" style="font-size:10px;padding:3px 8px;"><i class="fas fa-trash"></i></button>
+            <button class="btn-ghost btn-sm" onclick="fetchLogs()" style="font-size:10px;padding:3px 8px;"><i class="fas fa-sync-alt"></i></button>
+          </div>
+        </div>
+        <div class="console-box" id="consoleBox"><span style="color:#1a3a5a;">$ waiting for logs...</span></div>
+      </div>
+    </section>
+
+    <!-- REFERRAL -->
+    <section id="s-referral" class="section">
+      <div class="page-header"><h2>Referrals</h2><p>Earn 10 coins for every friend who verifies their email</p></div>
+      <div class="ref-hero">
+        <div class="ref-hero-title">🎁 Invite & Earn</div>
+        <div class="ref-hero-sub">Share your referral link. Get <strong style="color:var(--brand)">10 coins</strong> when they sign up and verify their email.</div>
+        <div class="ref-link-box"><span class="ref-link-text" id="refLinkDisplay">Loading...</span><button class="ref-copy-btn" onclick="copyRefLink()"><i class="fas fa-copy"></i> Copy</button></div>
+      </div>
+      <div class="ref-stats-grid">
+        <div class="ref-stat"><div class="ref-stat-val" id="refTotalCount">0</div><div class="ref-stat-lbl">Total Referred</div></div>
+        <div class="ref-stat"><div class="ref-stat-val" id="refTotalCoins" style="color:#f59e0b">0</div><div class="ref-stat-lbl">Coins Earned</div></div>
+        <div class="ref-stat"><div class="ref-stat-val" id="refCode" style="font-size:14px;letter-spacing:1px;font-family:monospace">—</div><div class="ref-stat-lbl">Your Code</div></div>
+      </div>
+      <div class="ref-table-wrap">
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;font-weight:600;"><i class="fas fa-users" style="color:var(--brand)"></i> Referred Users</span><button class="btn btn-sm btn-outline" onclick="loadReferrals()"><i class="fas fa-sync-alt"></i></button></div>
+        <div class="ref-table-head"><span>User</span><span>Joined</span><span>Reward</span></div>
+        <div id="refTableBody"><div class="ref-empty"><i class="fas fa-spinner fa-spin"></i></div></div>
+      </div>
+    </section>
+
+    <!-- SUPPORT TICKETS -->
+    <section id="s-tickets" class="section">
+      <div class="page-header"><h2>Support Tickets</h2><p>Get help from our support team</p></div>
+      <div class="ticket-hero">
+        <div class="ticket-hero-title">🎫 Submit a Ticket</div>
+        <div class="ticket-hero-sub">Describe your issue and our team will respond within 1–2 hours.</div>
+      </div>
+
+      <!-- New Ticket Form -->
+      <div class="card" id="newTicketForm">
+        <div class="card-title"><i class="fas fa-plus-circle" style="color:var(--blue)"></i> New Ticket</div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="ticketCategory" class="form-input" onchange="updateTicketSubject()">
+            <option value="">— Select a category —</option>
+            <option value="bot_not_working">🤖 Bot Not Working</option>
+            <option value="bot_disconnecting">🔌 Bot Keeps Disconnecting</option>
+            <option value="pairing_issue">📱 Pairing Issue (QR / Code)</option>
+            <option value="deposit_issue">💰 Deposit Not Credited</option>
+            <option value="pro_activation">👑 Pro Plan Activation</option>
+            <option value="account_issue">👤 Account Issue</option>
+            <option value="referral_coins">🎁 Referral Coins Missing</option>
+            <option value="other">❓ Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <input type="text" id="ticketSubject" class="form-input" placeholder="Brief description of your issue" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Message</label>
+          <textarea id="ticketMessage" class="form-input big" placeholder="Describe your issue in detail. Include your bot session ID, error messages, or any relevant information..." style="min-height:120px;"></textarea>
+        </div>
+        <button class="btn btn-primary" id="submitTicketBtn" onclick="submitTicket()" style="background:var(--blue);">
+          <i class="fas fa-paper-plane"></i> Submit Ticket
+        </button>
+        <div id="ticketSubmitStatus" style="display:none;margin-top:12px;"></div>
+      </div>
+
+      <!-- Ticket List -->
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;font-weight:600;"><i class="fas fa-list" style="color:var(--blue)"></i> My Tickets</span>
+          <button class="btn btn-sm btn-outline" onclick="loadTickets()"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <div class="ticket-list-head">
+          <span>Ticket #</span>
+          <span>Subject</span>
+          <span>Category</span>
+          <span>Status</span>
+          <span>Action</span>
+        </div>
+        <div id="ticketListBody">
+          <div class="ticket-empty"><i class="fas fa-spinner fa-spin"></i><p style="font-size:12px;">Loading tickets...</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HELP & FAQ -->
+    <section id="s-faq" class="section">
+      <div class="page-header"><h2>Help & FAQ</h2><p>Everything you need to know about OxBot</p></div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-book-open"></i> Things to Know</div>
+        <div class="know-grid">
+          <div class="know-item"><div class="know-icon">🔐</div><div class="know-title">Keep Your Session Safe</div><div class="know-desc">Your session ID is like a password. Never share it with anyone.</div></div>
+          <div class="know-item"><div class="know-icon">🪙</div><div class="know-title">Coins System</div><div class="know-desc">Activating a new bot costs <strong>20 coins</strong>. Earn coins by depositing or referring friends.</div></div>
+          <div class="know-item"><div class="know-icon">⏳</div><div class="know-title">Bot Duration</div><div class="know-desc">Free plan bots last <strong>2 days</strong>. Pro Starter: <strong>30 days</strong>. Pro Premium: <strong>30 days</strong>.</div></div>
+          <div class="know-item"><div class="know-icon">🔄</div><div class="know-title">Auto-Reconnect</div><div class="know-desc">Your bot automatically reconnects if it drops.</div></div>
+          <div class="know-item"><div class="know-icon">📱</div><div class="know-title">WhatsApp Linked Devices</div><div class="know-desc">OxBot uses WhatsApp's official Linked Devices. Max 4 linked devices per number.</div></div>
+          <div class="know-item"><div class="know-icon">💬</div><div class="know-title">Bot Commands</div><div class="know-desc">Use <code>.help</code> or <code>!help</code> in any WhatsApp chat to see all commands.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="fas fa-headset" style="color:var(--gold)"></i> Still Need Help?</div>
+        <p style="font-size:12px;color:var(--muted2);line-height:1.8;margin-bottom:12px;">Submit a support ticket or email us directly.</p>
+        <button onclick="go('s-tickets',null)" style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;margin-right:8px;"><i class="fas fa-ticket-alt"></i> Open Ticket</button>
+        <a href="mailto:support@zestpay.com.ng" style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--gold);font-size:12px;font-weight:600;text-decoration:none;"><i class="fas fa-envelope"></i> support@zestpay.com.ng</a>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="s-settings" class="section">
+      <div class="page-header"><h2>Settings</h2><p>Update your profile information</p></div>
+      <div class="card">
+        <form onsubmit="saveSettings(event)">
+          <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="sName" class="form-input" required></div>
+          <div class="form-group"><label class="form-label">Username</label><input type="text" id="sUsername" class="form-input" disabled style="opacity:.4"><p class="form-hint">Username cannot be changed</p></div>
+          <div class="form-group"><label class="form-label">Email Address</label><input type="email" id="sEmail" class="form-input" disabled style="opacity:.4"><p class="form-hint">Email cannot be changed for security reasons</p></div>
+          <div class="form-group"><label class="form-label">Phone</label><input type="tel" id="sPhone" class="form-input" required></div>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+        </form>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ALERT OVERLAY -->
+<div class="alert-overlay" id="alertOverlay">
+  <div class="alert-box">
+    <span class="alert-icon" id="alertIcon">⚠️</span>
+    <div class="alert-title" id="alertTitle">Confirm</div>
+    <div class="alert-msg" id="alertMsg">...</div>
+    <div id="alertExtra"></div>
+    <div class="alert-btns" style="margin-top:16px;">
+      <button class="alert-btn-cancel" id="alertCancel" onclick="alertClose()">Cancel</button>
+      <button class="alert-btn-danger" id="alertOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEPOSIT DETAIL MODAL -->
+<div class="alert-overlay" id="depDetailOverlay" style="z-index:10001;">
+  <div class="alert-box" style="max-width:400px;text-align:left;padding:0;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,rgba(22,163,74,.15),rgba(22,163,74,.05));padding:20px 20px 16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-family:var(--font-h);font-size:17px;font-weight:800;" id="ddTitle">Transaction Detail</div>
+        <button onclick="document.getElementById('depDetailOverlay').classList.remove('open')" style="background:var(--card2);border:1px solid var(--border);color:var(--muted2);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:4px;" id="ddDate">—</div>
+    </div>
+    <div style="padding:18px 20px;">
+      <div style="display:grid;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);"><span style="font-size:11px;color:var(--muted2);">💰 Coins Credited</span><span style="font-size:15px;font-weight:800;font-family:var(--font-h);color:var(--brand);" id="ddCoins">—</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);"><span style="font-size:11px;color:var(--muted2);">💵 Amount Paid</span><span style="font-size:14px;font-weight:700;color:var(--text);" id="ddAmount">—</span></div>
+        <div style="padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);"><div style="font-size:11px;color:var(--muted2);margin-bottom:6px;">🔖 Reference</div><div style="font-family:monospace;font-size:11px;color:var(--brand);word-break:break-all;background:rgba(22,163,74,.06);padding:8px;border-radius:6px;cursor:pointer;" id="ddRef" onclick="copyDepDetailRef()">—</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);"><span style="font-size:11px;color:var(--muted2);">📊 Status</span><span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;" id="ddStatus">—</span></div>
+      </div>
+    </div>
+    <div style="padding:0 20px 20px;"><button onclick="document.getElementById('depDetailOverlay').classList.remove('open')" style="width:100%;padding:11px;background:var(--card2);border:1px solid var(--border);color:var(--muted2);border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">Close</button></div>
+  </div>
+</div>
+
+<!-- TICKET DETAIL MODAL -->
+<!-- TICKET DETAIL MODAL -->
+<div class="alert-overlay" id="ticketDetailOverlay" style="z-index:10001;">
+  <div class="ticket-detail-box">
+    <div style="background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05));padding:20px 20px 16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-family:var(--font-h);font-size:17px;font-weight:800;" id="tdTitle">Ticket Detail</div>
+        <button onclick="document.getElementById('ticketDetailOverlay').classList.remove('open');stopAdminTypingPoll();" style="background:var(--card2);border:1px solid var(--border);color:var(--muted2);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:4px;" id="tdMeta">—</div>
+    </div>
+    <div style="padding:16px 20px;">
+      <!-- MESSAGES CONTAINER - THIS WAS MISSING! -->
+      <div class="ticket-messages-wrap" id="tdMessages"></div>
+      
+      <!-- Admin typing indicator -->
+      <div class="tk-admin-typing" id="tdAdminTyping">
+        <div class="tk-admin-typing-meta">🛠 Support is typing...</div>
+        <div class="tk-admin-typing-bubble"><span></span><span></span><span></span></div>
+      </div>
+      
+      <!-- Reply box -->
+      <div class="ticket-reply-box" id="tdReplyBox">
+        <div style="font-size:11px;font-weight:600;color:var(--muted2);margin-bottom:8px;">Your Reply</div>
+        <textarea id="tdReplyText" class="form-input" placeholder="Type your reply here..." oninput="tkUserTyping()"></textarea>
+        <button class="btn btn-primary" onclick="sendTicketReply()" style="margin-top:8px;background:var(--blue);"><i class="fas fa-paper-plane"></i> Send Reply</button>
+        <div style="font-size:9px;color:var(--muted);margin-top:6px;text-align:right;">Press Enter to send · Shift+Enter for new line</div>
+      </div>
+      <div id="tdClosedNote" style="display:none;padding:10px 12px;background:rgba(100,116,139,.1);border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--muted2);margin-top:12px;text-align:center;">🔒 This ticket is closed.</div>
+    </div>
+  </div>
+</div>
+<!-- BOT SETTINGS MODAL -->
+<div class="alert-overlay" id="botSettingsOverlay" style="z-index:10002;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;animation:alertIn .2s ease;">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05));padding:18px 20px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1;border-radius:16px 16px 0 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-family:var(--font-h);font-size:16px;font-weight:800;">⚙️ Bot Settings</div>
+        <button onclick="closeBotSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--muted2);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted2);margin-top:3px;font-family:monospace;" id="bsSessionLabel">—</div>
+    </div>
+
+    <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px;">
+
+      <!-- PRO BANNER -->
+      <div id="bsProBanner" style="display:none;background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 14px;font-size:11px;">
+        <div style="font-weight:700;color:var(--gold);margin-bottom:3px;">👑 Some features require Pro</div>
+        <div style="color:var(--muted2);line-height:1.6;">Antiban and Autoreply are Pro-only. <span onclick="closeBotSettings();go('s-pro',null);" style="color:var(--gold);cursor:pointer;font-weight:600;text-decoration:underline;">Upgrade →</span></div>
+      </div>
+
+      <!-- BOT IMAGE -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <div style="position:relative;">
+            <div id="bsImgCircle" style="width:54px;height:54px;border-radius:50%;background:var(--brand-glow);border:2px solid rgba(22,163,74,.3);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0;">🤖</div>
+            <img id="bsImgPreview" style="width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid var(--brand);position:absolute;top:0;left:0;display:none;" />
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:2px;">🖼️ Bot Profile Image <span style="font-size:9px;background:rgba(245,158,11,.15);color:var(--gold);padding:2px 6px;border-radius:4px;font-weight:700;">👑 PRO</span></div>
+            <div style="font-size:10px;color:var(--muted2);line-height:1.5;">Change the bot's WhatsApp profile picture.<br>Free plan uses the default OxBot image.</div>
+          </div>
+        </div>
+        <input type="file" id="bsImgInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="bsPreviewImage(this)">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="document.getElementById('bsImgInput').click()" style="flex:1;padding:9px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.2s;" onmouseover="this.style.borderColor='var(--brand)'" onmouseout="this.style.borderColor='var(--border)'">
+            <i class="fas fa-image"></i> Choose Image
+          </button>
+          <button id="bsImgUploadBtn" onclick="bsUploadImage()" style="display:none;flex:1;padding:9px;background:var(--brand);border:none;color:#fff;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px;">
+            <i class="fas fa-upload"></i> Upload
+          </button>
+        </div>
+        <div id="bsImgStatus" style="display:none;margin-top:8px;font-size:11px;padding:8px 10px;border-radius:6px;"></div>
+      </div>
+
+      <!-- TOGGLE ROW TEMPLATE -->
+      <!-- AUTOTYPING -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;">⌨️ Auto Typing</div>
+          <div style="font-size:10px;color:var(--muted2);margin-top:2px;">Shows typing indicator when processing</div>
+        </div>
+        <div class="bs-toggle" id="toggle-autotyping" onclick="bsToggle('autotyping')" style="width:44px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;flex-shrink:0;transition:background .2s;">
+          <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3);" id="knob-autotyping"></div>
+        </div>
+      </div>
+
+      <!-- ANTIDELETE -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;">🗑️ Anti Delete</div>
+          <div style="font-size:10px;color:var(--muted2);margin-top:2px;">Re-sends deleted messages in chat</div>
+        </div>
+        <div class="bs-toggle" id="toggle-antidelete" onclick="bsToggle('antidelete')" style="width:44px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;flex-shrink:0;transition:background .2s;">
+          <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3);" id="knob-antidelete"></div>
+        </div>
+      </div>
+
+      <!-- ANTIBAN (PRO) -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">🛡️ Antiban <span id="bsAntibanProTag" style="font-size:9px;background:rgba(245,158,11,.15);color:var(--gold);padding:2px 6px;border-radius:4px;font-weight:700;">👑 PRO</span></div>
+            <div style="font-size:10px;color:var(--muted2);margin-top:2px;">Smart delays to prevent WhatsApp ban</div>
+          </div>
+          <div class="bs-toggle" id="toggle-antiban" onclick="bsToggle('antiban')" style="width:44px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;flex-shrink:0;transition:background .2s;">
+            <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3);" id="knob-antiban"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUTOREPLY (PRO) -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">💬 Auto Reply <span id="bsAutoreplyProTag" style="font-size:9px;background:rgba(245,158,11,.15);color:var(--gold);padding:2px 6px;border-radius:4px;font-weight:700;">👑 PRO</span></div>
+            <div style="font-size:10px;color:var(--muted2);margin-top:2px;">Auto-reply to DMs after 8s (looks natural)</div>
+          </div>
+          <div class="bs-toggle" id="toggle-autoreply" onclick="bsToggle('autoreply')" style="width:44px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;flex-shrink:0;transition:background .2s;">
+            <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3);" id="knob-autoreply"></div>
+          </div>
+        </div>
+        <div id="bsAutoreplyBox">
+          <textarea id="bsAutoreplyText" class="form-input" placeholder="Auto-reply message e.g. Hi! I am busy right now, will get back to you soon 😊" style="min-height:72px;resize:none;font-size:12px;line-height:1.6;"></textarea>
+          <button onclick="bsSaveAutoreply()" style="margin-top:8px;padding:9px 16px;background:var(--brand);border:none;color:#fff;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+            <i class="fas fa-save"></i> Save Message
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="padding:0 18px 18px;">
+      <button onclick="closeBotSettings()" style="width:100%;padding:11px;background:var(--bg);border:1px solid var(--border);color:var(--muted2);border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">Done</button>
+    </div>
+  </div>
+</div>
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  TOKEN + INIT
+// ══════════════════════════════════════════════════════════════════
+const TOKEN = localStorage.getItem('token');
+if (!TOKEN) { window.location.href = 'login.html'; throw new Error('no token'); }
+const H = { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+
+let userData = {}, selectedServer = '', sessionValid = false;
+let pollTimer = null, qrPollTimer = null;
+let proData = { status: 'none' };
+let selectedPlan = null;
+let currentDepTab = 'bank';
+let selectedWalletNetwork = '';
+let currentDepRef = '';
+let currentTicketId = null;
+
+// ── UPTIME TRACKING ───────────────────────────────────────────────
+// Stores {sessionId: startTimestamp} in localStorage
+// Key: oxbot_uptimes
+function getUptimes() {
+  try { return JSON.parse(localStorage.getItem('oxbot_uptimes') || '{}'); } catch { return {}; }
+}
+function setUptimes(obj) { localStorage.setItem('oxbot_uptimes', JSON.stringify(obj)); }
+
+function recordBotOnline(sessionId) {
+  const ut = getUptimes();
+  if (!ut[sessionId]) { ut[sessionId] = Date.now(); setUptimes(ut); }
+}
+function clearBotUptime(sessionId) {
+  const ut = getUptimes();
+  delete ut[sessionId]; setUptimes(ut);
+}
+function getBotUptimeSeconds(sessionId) {
+  const ut = getUptimes();
+  if (!ut[sessionId]) return 0;
+  return Math.floor((Date.now() - ut[sessionId]) / 1000);
+}
+function formatUptime(secs) {
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (d > 0) return d + 'd ' + h + 'h ' + m + 'm ' + s + 's';
+  if (h > 0) return h + 'h ' + m + 'm ' + s + 's';
+  if (m > 0) return m + 'm ' + s + 's';
+  return s + 's';
+}
+
+// Live uptime counter — updates every second
+let uptimeInterval = null;
+function startUptimeCounters() {
+  if (uptimeInterval) clearInterval(uptimeInterval);
+  uptimeInterval = setInterval(() => {
+    document.querySelectorAll('[data-uptime-sid]').forEach(el => {
+      const sid = el.getAttribute('data-uptime-sid');
+      el.textContent = formatUptime(getBotUptimeSeconds(sid));
+    });
+  }, 1000);
+}
+
+const PRO_PLANS = {
+  half: { name: 'OxBot Pro Starter', price: '$1.50', naira: 2250, days: 30, label: '1 Month', bots: 5, botDays: 45 },
+  full: { name: 'OxBot Pro Premium', price: '$3.00', naira: 4500, days: 30, label: '1 Month', bots: 8, botDays: 30 }
+};
+
+const WALLETS = {
+  trc20: { label: 'USDT TRC-20',   address: 'TYourTRC20AddressHere' },
+  bep20: { label: 'USDT BEP-20',   address: '0xYourBEP20AddressHere' },
+  erc20: { label: 'USDT ERC-20',   address: '0xYourERC20AddressHere' },
+  sol:   { label: 'USDT SPL (SOL)', address: 'YourSolanaAddressHere' }
+};
+
+const VALID_SECTIONS = ['s-home','s-addbot','s-pair','s-mybots','s-console','s-deposit','s-pro','s-referral','s-tickets','s-faq','s-settings'];
+const TITLES = {
+  's-home':'Dashboard','s-addbot':'Add Bot','s-pair':'Pair Device','s-mybots':'My Bots',
+  's-console':'Console','s-deposit':'Deposit','s-pro':'Pro Plans','s-referral':'Referrals',
+  's-tickets':'Support Tickets','s-faq':'Help & FAQ','s-settings':'Settings'
+};
+
+function getSavedSection() {
+  const s = localStorage.getItem('oxbot_last_section');
+  return (s && VALID_SECTIONS.includes(s)) ? s : 's-home';
+}
+
+function go(id, el) {
+  if (!VALID_SECTIONS.includes(id)) return;
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = el || document.getElementById('nav-' + id);
+  if (navEl) navEl.classList.add('active');
+  document.getElementById('pageTitle').textContent = TITLES[id] || '';
+  localStorage.setItem('oxbot_last_section', id);
+  closeSidebar();
+  if (id === 's-mybots')  loadBots();
+  if (id === 's-console') fetchLogs();
+  if (id === 's-deposit') { loadDepHistory(); previewAmount(); }
+  if (id === 's-referral') loadReferrals();
+  if (id === 's-pro')     loadProStatus();
+  if (id === 's-addbot')  initAddBot();
+  if (id === 's-home')    loadActiveBots();
+  if (id === 's-tickets') loadTickets();
+}
+
+// ── TRIAL CHECK ───────────────────────────────────────────────────
+// FREE TRIAL = 2 DAYS from registration
+function checkFreeTrial() {
+  if (proData.status === 'active') return; // has pro, no restriction
+  if (!userData.created_at) return;
+  const regDate = new Date(userData.created_at);
+  const diffDays = (Date.now() - regDate) / (1000 * 60 * 60 * 24);
+  if (diffDays > 2) {
+    // Show expired overlay once per session
+    const shownKey = 'oxbot_trial_exp_shown';
+    if (!sessionStorage.getItem(shownKey)) {
+      sessionStorage.setItem(shownKey, '1');
+      document.getElementById('trialExpiredOverlay').classList.add('show');
+    }
+  }
+}
+
+function getPlanLimits() {
+  if (proData.status === 'active') {
+    if (proData.plan === 'full') return { maxBots: 8, botDurationDays: 30, name: 'Pro Premium', type: 'full' };
+    return { maxBots: 5, botDurationDays: 45, name: 'Pro Starter', type: 'half' };
+  }
+  if (!userData.created_at) return { maxBots: 0, botDurationDays: 0, name: 'Expired Free', type: 'none' };
+  const diffDays = (Date.now() - new Date(userData.created_at)) / (1000 * 60 * 60 * 24);
+  if (diffDays > 2) return { maxBots: 0, botDurationDays: 0, name: 'Free Trial Expired', type: 'none' };
+  return { maxBots: 1, botDurationDays: 2, name: 'Free Trial (2 Days)', type: 'free' };
+}
+
+// ── LOGOUT ────────────────────────────────────────────────────────
+function confirmLogout() {
+  showAlert('Log Out?','⚠️ You will be logged out of OxBot. <strong>Your bots will keep running</strong>.<br><br>Type <strong>LOGOUT</strong> below to confirm:','Log Out','alert-btn-danger',true)
+    .then(c => { if (c) { localStorage.removeItem('token'); localStorage.removeItem('oxbot_last_section'); window.location.href = 'login.html'; }});
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, err) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.style.borderColor = err ? 'rgba(239,68,68,.4)' : 'rgba(22,163,74,.4)';
+  t.style.color = err ? 'var(--red)' : 'var(--brand)';
+  t.querySelector('i').className = err ? 'fas fa-times-circle' : 'fas fa-check-circle';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+// ── LOAD USER ─────────────────────────────────────────────────────
+async function loadUser() {
+  try {
+    const r = await fetch('/api/user', { headers: H });
+    if (r.status === 403) { const d = await r.json(); localStorage.removeItem('token'); alert(d.message || 'Account suspended.'); window.location.href = 'login.html'; return; }
+    if (!r.ok) throw 0;
+    userData = await r.json();
+    const ini = (userData.username || '?').substring(0,2).toUpperCase();
+    document.getElementById('navUser').textContent  = userData.username;
+    document.getElementById('sideAvatar').textContent = ini;
+    document.getElementById('sideBal').textContent  = userData.balance;
+    document.getElementById('homeBal').textContent  = userData.balance;
+    document.getElementById('homeActive').textContent   = userData.active_bots;
+    document.getElementById('homeInactive').textContent = userData.inactive_bots;
+    document.getElementById('homeRefs').textContent = userData.total_referrals || 0;
+    const code = userData.referral_code || '';
+    document.getElementById('refLinkDisplay').textContent = location.origin + '/register?ref=' + code;
+    document.getElementById('refCode').textContent = code;
+    document.getElementById('refTotalCount').textContent = userData.total_referrals || 0;
+    document.getElementById('refTotalCoins').textContent = (userData.total_referrals||0)*10;
+    const badge = document.getElementById('refBadge');
+    if (userData.total_referrals > 0) { badge.textContent = userData.total_referrals; badge.style.display='inline-flex'; }
+    document.getElementById('sName').value    = userData.name     || '';
+    document.getElementById('sUsername').value = userData.username || '';
+    document.getElementById('sEmail').value   = userData.email    || '';
+    document.getElementById('sPhone').value   = userData.phone    || '';
+    await loadProStatus(true);
+    checkFreeTrial();
+  } catch { window.location.href = 'login.html'; }
+}
+
+function updateSidebarUI() {
+  const userEl = document.getElementById('sideUser');
+  const proBadgeNav = document.getElementById('proBadge');
+  let badgeHTML = '';
+  if (proData.status === 'active') {
+    if (proData.plan === 'full') { badgeHTML=' <span class="plan-badge pro-gold">PREMIUM</span>'; proBadgeNav.textContent='PREMIUM'; proBadgeNav.style.display='inline-flex'; }
+    else { badgeHTML=' <span class="plan-badge pro-starter">STARTER</span>'; proBadgeNav.textContent='STARTER'; proBadgeNav.style.display='inline-flex'; }
+  } else if (proData.status === 'expired') { badgeHTML=' <span class="plan-badge expired-tag">EXPIRED</span>'; proBadgeNav.style.display='none'; }
+  else { badgeHTML=' <span class="plan-badge free-tag">FREE</span>'; proBadgeNav.style.display='none'; }
+  userEl.innerHTML = esc(userData.username) + badgeHTML;
+}
+
+async function pollBotStatus() {
+  try {
+    const r = await fetch('/api/bot-status', { headers: H }); const d = await r.json();
+    const on = d.connected===true && d.activeBots>0;
+    document.getElementById('botDot').className = 'status-dot'+(on?' online':'');
+    document.getElementById('botStatus').textContent = on ? d.activeBots+' online' : 'offline';
+    document.getElementById('botStatus').style.color = on ? 'var(--brand)' : 'var(--muted2)';
+  } catch {}
+}
+
+// ── BOT STATUS HTML ───────────────────────────────────────────────
+function botStatusHTML(b) {
+  if (b.isActive)     return '<div class="status-circle online"></div><span style="font-size:11px;font-weight:600;color:var(--brand)">ONLINE</span>';
+  if (b.isConnecting) return '<div class="status-circle" style="background:var(--yellow);animation:blink 1.2s infinite"></div><span style="font-size:11px;font-weight:600;color:var(--yellow)">CONNECTING...</span>';
+  if (b.isStopped||b.status==='inactive') return '<div class="status-circle"></div><span style="font-size:11px;font-weight:600;color:var(--red)">STOPPED</span>';
+  return '<div class="status-circle" style="background:var(--yellow);animation:blink 1.2s infinite"></div><span style="font-size:11px;font-weight:600;color:var(--yellow)">RECONNECTING...</span>';
+}
+
+function botActionsHTML(b) {
+  const sid = b.session_id;
+  const del = '<button class="btn-delete" onclick="deleteBot(\''+escAttr(sid)+'\',\''+escAttr(b.bot_name||'Bot')+'\')" title="Delete"><i class="fas fa-trash"></i></button>';
+  const set = '<button class="btn-delete" onclick="openBotSettings(\''+escAttr(sid)+'\')" title="Settings" style="color:var(--blue);border-color:rgba(59,130,246,.3);"><i class="fas fa-cog"></i></button>';
+  if (b.isActive)     return '<div style="display:flex;gap:4px;align-items:center;"><button class="btn-deactivate" onclick="deactivateBot(\''+escAttr(sid)+'\')"><i class="fas fa-stop"></i> Stop</button>'+set+del+'</div>';
+  if (b.isConnecting) return '<div style="display:flex;gap:4px;align-items:center;"><button class="btn-start" style="opacity:.6;cursor:wait" disabled><div class="spinner" style="width:12px;height:12px;border-width:2px"></div> Connecting</button>'+set+del+'</div>';
+  return '<div style="display:flex;gap:4px;align-items:center;"><button class="btn-start" onclick="startBot(\''+escAttr(sid)+'\',this)"><i class="fas fa-play"></i> Start</button>'+set+del+'</div>';
+}
+// Uptime badge HTML
+function botUptimeHTML(b) {
+  if (!b.isActive) return '';
+  recordBotOnline(b.session_id);
+  const secs = getBotUptimeSeconds(b.session_id);
+  return '<div class="uptime-badge"><i class="fas fa-clock"></i> <span data-uptime-sid="'+escAttr(b.session_id)+'">'+formatUptime(secs)+'</span></div>';
+}
+
+// ── START / STOP / DELETE ─────────────────────────────────────────
+async function startBot(sid, btn) {
+  btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:12px;height:12px;border-width:2px"></div> Starting...';
+  try {
+    const r = await fetch('/api/start-bot',{method:'POST',headers:H,body:JSON.stringify({session_id:sid})});
+    const d = await r.json();
+    if (r.ok) { showToast('Bot started! 🚀'); loadActiveBots(); loadBots(); pollBotStatus(); }
+    else throw new Error(d.message);
+  } catch(e) { showToast(e.message,true); }
+  btn.disabled=false; btn.innerHTML='<i class="fas fa-play"></i> Start';
+}
+
+async function deactivateBot(sid) {
+  const c = await showAlert('Stop Bot?','<strong>This bot will go offline.</strong><br>Messages won\'t be processed until you start it again.','Stop','alert-btn-danger');
+  if (!c) return;
+  try {
+    const r = await fetch('/api/deactivate-bot',{method:'POST',headers:H,body:JSON.stringify({session_id:sid})});
+    const d = await r.json();
+    if (r.ok) { clearBotUptime(sid); showToast('Bot stopped'); loadActiveBots(); loadBots(); pollBotStatus(); }
+    else throw new Error(d.message);
+  } catch(e) { showToast(e.message,true); }
+}
+
+async function deleteBot(sid, name) {
+  const c1 = await showAlert('Delete "'+esc(name)+'"?','<strong>This will permanently:</strong><br>• Remove bot from your account<br>• Delete ALL session files<br>• <strong>Cannot be undone!</strong>','Delete','alert-btn-danger');
+  if (!c1) return;
+  const c2 = await showAlert('Final Confirmation','Permanently delete <strong>'+esc(name)+'</strong>. This cannot be reversed.','Yes, Delete','alert-btn-danger');
+  if (!c2) return;
+  try {
+    const r = await fetch('/api/delete-bot',{method:'POST',headers:H,body:JSON.stringify({session_id:sid})});
+    const d = await r.json();
+    if (r.ok) { clearBotUptime(sid); showToast('Bot deleted permanently'); loadActiveBots(); loadBots(); pollBotStatus(); loadUser(); }
+    else throw new Error(d.message);
+  } catch(e) { showToast(e.message,true); }
+}
+
+// ── ALERT ─────────────────────────────────────────────────────────
+let alertResolve=null;
+function showAlert(title,msg,btnText,btnClass,typeToConfirm=false) {
+  return new Promise(resolve => {
+    alertResolve=resolve;
+    document.getElementById('alertTitle').textContent=title;
+    document.getElementById('alertMsg').innerHTML=msg;
+    const ok=document.getElementById('alertOk');
+    ok.textContent=btnText||'OK'; ok.className=btnClass||'alert-btn-ok';
+    const extra=document.getElementById('alertExtra');
+    if (typeToConfirm) {
+      extra.innerHTML='<input type="text" class="confirm-input" id="logoutConfirmInput" placeholder="Type LOGOUT to confirm" oninput="checkLogoutInput()">';
+      ok.disabled=true; ok.onclick=()=>{alertClose();resolve(true);};
+    } else { extra.innerHTML=''; ok.disabled=false; ok.onclick=()=>{alertClose();resolve(true);}; }
+    document.getElementById('alertCancel').onclick=()=>{alertClose();resolve(false);};
+    document.getElementById('alertOverlay').classList.add('open');
+    if (typeToConfirm) setTimeout(()=>{const e=document.getElementById('logoutConfirmInput');if(e)e.focus();},100);
+  });
+}
+function checkLogoutInput(){const v=(document.getElementById('logoutConfirmInput')?.value||'').trim().toUpperCase();document.getElementById('alertOk').disabled=(v!=='LOGOUT');}
+function alertClose(){document.getElementById('alertOverlay').classList.remove('open');alertResolve=null;}
+document.getElementById('alertOverlay').addEventListener('click',function(e){if(e.target===this){alertClose();if(alertResolve)alertResolve(false);}});
+
+// ── ADD BOT ───────────────────────────────────────────────────────
+function pickServer(srv,el){document.querySelectorAll('.server-option').forEach(s=>s.classList.remove('selected'));el.classList.add('selected');selectedServer=srv;document.getElementById('actServer').value=srv;checkActBtn();}
+function checkActBtn(){const sid=document.getElementById('actSessionId').value.trim();const name=document.getElementById('actBotName').value.trim();document.getElementById('actBtn').disabled=!(sid&&name&&selectedServer&&sessionValid);}
+
+let validateDebounce;
+function liveValidate(val){
+  clearTimeout(validateDebounce);
+  const statusDiv=document.getElementById('sessStatus');
+  if(!val.trim()){statusDiv.innerHTML='';sessionValid=false;checkActBtn();return;}
+  statusDiv.innerHTML='<div class="sess-status checking"><div class="spinner" style="width:12px;height:12px;border-width:2px"></div> Validating session...</div>';
+  sessionValid=false;checkActBtn();
+  validateDebounce=setTimeout(async()=>{
+    try{
+      const r=await fetch('/api/validate-session',{method:'POST',headers:H,body:JSON.stringify({session_id:val.trim()})});
+      const d=await r.json();
+      if(d.valid){statusDiv.innerHTML='<div class="sess-status valid"><i class="fas fa-check-circle"></i> '+(d.isActive?'✅ Already active!':'✓ Valid — ready to connect')+'</div>';sessionValid=true;}
+      else{statusDiv.innerHTML='<div class="sess-status invalid"><i class="fas fa-times-circle"></i> '+esc(d.message)+'</div>';sessionValid=false;}
+    }catch{statusDiv.innerHTML='<div class="sess-status invalid"><i class="fas fa-exclamation-triangle"></i> Validation error</div>';sessionValid=false;}
+    checkActBtn();
+  },600);
+}
+
+async function initAddBot(){
+  const lockEl=document.getElementById('addBotProLock');
+  const formEl=document.getElementById('addBotForm');
+  await loadProStatus(true);
+  const limits=getPlanLimits();
+  document.getElementById('actBal').textContent=userData.balance+' coins';
+  document.getElementById('actPlanName').textContent=limits.name;
+  document.getElementById('actBotLimit').textContent=limits.maxBots>0?limits.maxBots+' bots':'None';
+  document.getElementById('actBotDuration').textContent=limits.botDurationDays>0?limits.botDurationDays+' Days':'N/A';
+  if(limits.maxBots===0){
+    lockEl.style.display='flex';formEl.style.opacity='.4';formEl.style.pointerEvents='none';
+    document.getElementById('addBotLockMsg').innerHTML=limits.type==='none'?'Your <strong>free trial</strong> has expired. <a onclick="go(\'s-pro\',null)" style="color:var(--gold);cursor:pointer;font-weight:600;">Upgrade to Pro →</a>':'Your <strong>Pro plan</strong> has expired. <a onclick="go(\'s-pro\',null)" style="color:var(--gold);cursor:pointer;font-weight:600;">Renew →</a>';
+    return;
+  }
+  try{
+    const br=await fetch('/api/bot-active-status',{headers:H});const bots=await br.json();
+    const activeCount=bots.filter(b=>b.status==='active').length;
+    if(activeCount>=limits.maxBots){lockEl.style.display='flex';formEl.style.opacity='.4';formEl.style.pointerEvents='none';document.getElementById('addBotLockMsg').innerHTML=`You've reached the <strong>${limits.maxBots} bot limit</strong>. <a onclick="go('s-pro',null)" style="color:var(--gold);cursor:pointer;font-weight:600;">Upgrade →</a>`;return;}
+  }catch{}
+  lockEl.style.display='none';formEl.style.opacity='1';formEl.style.pointerEvents='auto';checkActBtn();
+}
+
+async function doAddBot(){
+  const sid=document.getElementById('actSessionId').value.trim();
+  const name=document.getElementById('actBotName').value.trim();
+  const srv=selectedServer;
+  if(!sid||!name||!srv)return;
+  const limits=getPlanLimits();
+  if(limits.maxBots===0){showToast('Your plan does not allow adding bots.',true);return;}
+  const btn=document.getElementById('actBtn');const st=document.getElementById('actStatus');
+  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Adding bot...';
+  st.style.display='block';st.innerHTML='<div class="pair-progress"><div class="spinner"></div><div class="pair-progress-text"><span>Connecting bot</span> to server...</div></div>';
+  try{
+    const r=await fetch('/api/activate-bot',{method:'POST',headers:H,body:JSON.stringify({session_id:sid,bot_name:name,server:srv})});
+    const d=await r.json();
+    if(r.ok){
+      const freeNote=limits.type==='free'?'<br><br><span style="color:var(--yellow);font-size:11px;"><i class="fas fa-clock"></i> Free trial: bot lasts <strong>2 days</strong>.</span>':'';
+      st.innerHTML='<div class="state-box success"><i class="fas fa-check-circle"></i><h3>✅ Bot Online!</h3><p><strong>'+esc(name)+'</strong> is now active.'+freeNote+'</p></div>';
+      showToast('Bot added successfully! 🎉');
+      await loadUser();loadActiveBots();pollBotStatus();
+      document.getElementById('actSessionId').value='';document.getElementById('actBotName').value='';
+      document.querySelectorAll('.server-option').forEach(s=>s.classList.remove('selected'));
+      selectedServer='';sessionValid=false;document.getElementById('sessStatus').innerHTML='';
+    }else throw new Error(d.message);
+  }catch(err){st.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Failed</h3><p>'+esc(err.message)+'</p></div>';showToast(err.message,true);}
+  btn.disabled=false;btn.innerHTML='<i class="fas fa-robot"></i> Add Bot (−20 coins)';checkActBtn();
+}
+
+// ── LOAD BOTS ─────────────────────────────────────────────────────
+async function loadActiveBots(){
+  const el=document.getElementById('homeActiveBots');
+  const badge=document.getElementById('botCountBadge');
+  try{
+    const r=await fetch('/api/bot-active-status',{headers:H});const bots=await r.json();
+    if(bots.length>0){badge.textContent=bots.length;badge.style.display='inline-flex';}else badge.style.display='none';
+    // Update uptime records
+    bots.forEach(b=>{if(b.isActive)recordBotOnline(b.session_id);else clearBotUptime(b.session_id);});
+    if(!bots.length){el.innerHTML='<p style="color:var(--muted);font-size:12px;text-align:center;padding:16px;">No bots yet. <a onclick="go(\'s-addbot\',null)" style="color:var(--brand);cursor:pointer;font-weight:600;">Add your first bot →</a></p>';return;}
+    el.innerHTML=bots.map(b=>'<div class="active-bot-item '+(b.isActive?'connected':'')+'"><div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-weight:600;font-size:13px">'+esc(b.bot_name)+'</span>'+(b.isActive?'<span class="bot-limit-badge" style="background:rgba(22,163,74,.15);color:var(--brand)">● LIVE</span>':'')+'</div><div class="session-badge">'+esc(b.session_id)+'</div>'+botUptimeHTML(b)+botExpiryHTML(b)+'</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div style="display:flex;align-items:center;gap:6px">'+botStatusHTML(b)+'</div>'+botActionsHTML(b)+'</div></div>').join('');
+    startUptimeCounters();
+  }catch{el.innerHTML='<p style="color:var(--red);font-size:12px;">Error loading bots.</p>';}
+}
+
+async function loadBots(){
+  const c=document.getElementById('botList');
+  try{
+    const r=await fetch('/api/bot-active-status',{headers:H});const bots=await r.json();
+    bots.forEach(b=>{if(b.isActive)recordBotOnline(b.session_id);else clearBotUptime(b.session_id);});
+    if(!bots.length){c.innerHTML='<div class="card" style="text-align:center;color:var(--muted);padding:30px;"><i class="fas fa-robot" style="font-size:32px;opacity:.2;display:block;margin-bottom:12px;"></i>No bots yet.<br><a onclick="go(\'s-addbot\',null)" style="color:var(--brand);cursor:pointer;font-weight:600;">Add your first bot →</a></div>';return;}
+    c.innerHTML=bots.map(b=>'<div class="active-bot-item '+(b.isActive?'connected':'')+'"><div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap"><span style="font-weight:600;font-size:14px">'+esc(b.bot_name)+'</span>'+(b.isActive?'<span class="bot-limit-badge" style="background:rgba(22,163,74,.15);color:var(--brand)">● ONLINE</span>':'')+(b.server?'<span class="bot-limit-badge">'+esc(b.server)+'</span>':'')+'</div><div class="session-badge">'+esc(b.session_id)+'</div>'+(b.whatsapp_name?'<div style="font-size:11px;color:var(--muted);margin-top:4px"><i class="fas fa-user" style="font-size:9px"></i> '+esc(b.whatsapp_name)+'</div>':'')+botUptimeHTML(b)+botExpiryHTML(b)+'</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;"><div style="display:flex;align-items:center;gap:6px">'+botStatusHTML(b)+'</div>'+botActionsHTML(b)+'</div></div>').join('');
+    startUptimeCounters();
+  }catch{c.innerHTML='<div class="card" style="color:var(--red);">Error loading bots.</div>';}
+}
+
+// ── PAIR DEVICE ───────────────────────────────────────────────────
+function setPairMode(mode,el){
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  document.getElementById('qrMode').style.display=mode==='qr'?'':'none';
+  document.getElementById('codeMode').style.display=mode==='code'?'':'none';
+  if(qrPollTimer){clearInterval(qrPollTimer);qrPollTimer=null;}
+  if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+  document.getElementById('qrResult').innerHTML='';
+  document.getElementById('pairResult').innerHTML='';
+  document.getElementById('pairProgress').style.display='none';
+  resetPairBtn();
+}
+
+function cleanPhone(raw){let p=raw.replace(/\D/g,'');while(p.startsWith('0'))p=p.slice(1);if(p.length<=10)p='234'+p;return p;}
+
+async function doQR(){
+  const raw=document.getElementById('qrPhone').value.trim();if(!raw)return showToast('Enter phone number',true);
+  const phone=cleanPhone(raw);const btn=document.getElementById('qrBtn');const res=document.getElementById('qrResult');
+  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px;margin:0 auto"></div>';res.innerHTML='';
+  try{
+    const r=await fetch('/api/pair-qr',{method:'POST',headers:H,body:JSON.stringify({phone})});
+    const d=await r.json();if(!r.ok)throw new Error(d.message||'Failed');
+    const rid=d.requestId;let att=0;
+    qrPollTimer=setInterval(async()=>{att++;if(att>60){clearInterval(qrPollTimer);res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Timed Out</h3><p>QR expired. Try again.</p></div>';btn.disabled=false;btn.innerHTML='<i class="fas fa-qrcode"></i> Generate QR Code';return;}
+      try{const sr=await fetch('/api/pair-status/'+rid,{headers:H});const sd=await sr.json();
+        if(sd.status==='qr_ready'&&sd.qr){clearInterval(qrPollTimer);btn.disabled=false;btn.innerHTML='<i class="fas fa-sync-alt"></i> Refresh QR';showQR(sd.qr);pollLinked(rid,res,btn,'<i class="fas fa-qrcode"></i> Generate QR Code');}
+        if(sd.status==='linked'){clearInterval(qrPollTimer);showSuccess(res,btn,'<i class="fas fa-qrcode"></i> Generate QR Code',sd.waName);}
+        if(sd.status==='error'){clearInterval(qrPollTimer);res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Error</h3><p>'+esc(sd.error)+'</p></div>';btn.disabled=false;btn.innerHTML='<i class="fas fa-qrcode"></i> Generate QR Code';}
+      }catch{}
+    },2000);
+  }catch(e){res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Failed</h3><p>'+esc(e.message)+'</p></div>';btn.disabled=false;btn.innerHTML='<i class="fas fa-qrcode"></i> Generate QR Code';}
+}
+
+function showQR(data){
+  const el=document.getElementById('qrResult');
+  el.innerHTML='<div class="qr-wrapper"><div class="qr-box" id="qrCanvas"></div><div class="qr-timer" id="qrTimer">⏱ 60s</div><div class="qr-label">Open WhatsApp → <strong>Linked Devices</strong> → <strong>Link a Device</strong><br>Scan this QR code</div></div>';
+  new QRCode(document.getElementById('qrCanvas'),{text:data,width:180,height:180,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+  let s=60;const t=setInterval(()=>{s--;const e=document.getElementById('qrTimer');if(e)e.textContent='⏱ '+s+'s';if(s<=0)clearInterval(t);},1000);
+}
+
+async function doPair(){
+  const raw=document.getElementById('pairPhone').value.trim();if(!raw)return showToast('Enter phone number',true);
+  const phone=cleanPhone(raw);const btn=document.getElementById('pairBtn');const prog=document.getElementById('pairProgress');
+  const ptxt=document.getElementById('pairProgressText');const res=document.getElementById('pairResult');
+  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px"></div>';
+  prog.style.display='block';ptxt.innerHTML='<span>Connecting</span>...';res.innerHTML='';
+  if(pollTimer)clearInterval(pollTimer);
+  try{
+    const r=await fetch('/api/pair-device',{method:'POST',headers:H,body:JSON.stringify({phone})});
+    const d=await r.json();if(!r.ok)throw new Error(d.message||'Failed');
+    const rid=d.requestId;let att=0;
+    pollTimer=setInterval(async()=>{att++;
+      try{const sr=await fetch('/api/pair-status/'+rid,{headers:H});const sd=await sr.json();
+        if(sd.status==='code_ready'&&sd.code){clearInterval(pollTimer);pollTimer=null;prog.style.display='none';resetPairBtn();
+          const clean=sd.code.replace(/-/g,'');
+          res.innerHTML='<div class="code-display"><p style="font-size:11px;color:var(--brand);font-weight:600;margin-bottom:12px"><i class="fas fa-check-circle"></i> Pairing code for +'+phone+'</p><div class="code-num" onclick="copyText(\''+clean+'\')">'+esc(sd.code)+'</div><button class="btn-copy-code" onclick="copyText(\''+clean+'\')"><i class="fas fa-copy"></i> Copy Code</button><div class="pair-steps"><p>How to enter the code:</p><ol><li>Open <strong>WhatsApp</strong></li><li>Go to <strong>⋮ → Linked Devices</strong></li><li>Tap <strong>Link with phone number</strong></li><li>Enter code: <strong>'+esc(sd.code)+'</strong></li></ol></div><div class="code-hint">⏰ Code expires in ~2 minutes<br>💬 Session ID will be sent to your WhatsApp after linking</div></div>';
+          pollLinked(rid,res,btn,'<i class="fas fa-link"></i> Get Pairing Code');return;}
+        if(sd.status==='linked'){clearInterval(pollTimer);pollTimer=null;prog.style.display='none';showSuccess(res,btn,'<i class="fas fa-link"></i> Get Pairing Code',sd.waName);return;}
+        if(sd.status==='error'){clearInterval(pollTimer);pollTimer=null;prog.style.display='none';resetPairBtn();res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Pairing Failed</h3><p>'+esc(sd.error)+'</p></div>';return;}
+        if(att>=60){clearInterval(pollTimer);pollTimer=null;prog.style.display='none';resetPairBtn();}
+      }catch{}
+    },2000);
+  }catch(e){prog.style.display='none';resetPairBtn();res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Error</h3><p>'+esc(e.message)+'</p></div>';}
+}
+
+function pollLinked(rid,res,btn,html){
+  let a=0;const t=setInterval(async()=>{a++;if(a>60){clearInterval(t);return;}
+    try{const sr=await fetch('/api/pair-status/'+rid,{headers:H});const sd=await sr.json();if(sd.status==='linked'){clearInterval(t);showSuccess(res,btn,html,sd.waName);}}catch{}
+  },2000);
+}
+function showSuccess(res,btn,html,waName){
+  if(btn){btn.disabled=false;btn.innerHTML=html;}
+  const extra=waName?'<br>Linked as: <strong style="color:var(--brand)">'+esc(waName)+'</strong>':'';
+  res.innerHTML='<div class="state-box success"><i class="fas fa-check-circle"></i><h3>Device Linked Successfully!</h3><p>Session ID sent to your WhatsApp.'+extra+'<br><br>📲 <strong>Check your WhatsApp messages</strong> for the session ID.<br><br>Then go to <strong style="color:var(--brand);cursor:pointer;" onclick="go(\'s-addbot\',null)">Add Bot →</strong></p></div>';
+}
+function resetPairBtn(){const b=document.getElementById('pairBtn');if(b){b.disabled=false;b.innerHTML='<i class="fas fa-link"></i> Get Pairing Code';}}
+function copyText(t){navigator.clipboard.writeText(t).then(()=>showToast('Copied!')).catch(()=>prompt('Copy:',t));}
+
+// ── DEPOSIT ───────────────────────────────────────────────────────
+function switchDepTab(tab,el){currentDepTab=tab;document.querySelectorAll('.dep-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('depBankSection').style.display=tab==='bank'?'':'none';document.getElementById('depCryptoSection').style.display=tab==='crypto'?'':'none';}
+function selectWallet(key,el){document.querySelectorAll('.wallet-option').forEach(w=>w.classList.remove('selected'));el.classList.add('selected');selectedWalletNetwork=key;const w=WALLETS[key];document.getElementById('walletNetworkLabel').textContent=w.label;document.getElementById('walletAddressText').textContent=w.address;document.getElementById('walletAddressBox').style.display='block';const qrBox=document.getElementById('cryptoQRBox');qrBox.innerHTML='<div style="background:#fff;padding:10px;border-radius:8px;display:inline-block;" id="cryptoQRInner"></div>';new QRCode(document.getElementById('cryptoQRInner'),{text:w.address,width:140,height:140,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}
+function copyWalletAddress(){const addr=document.getElementById('walletAddressText').textContent;navigator.clipboard.writeText(addr).then(()=>showToast('Wallet address copied!')).catch(()=>prompt('Copy:',addr));}
+const COIN_RATE=5;
+function selectRate(coins,el){document.querySelectorAll('.rate-chip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');document.getElementById('depCoins').value=coins;previewAmount();}
+function previewAmount(){const c=parseInt(document.getElementById('depCoins').value)||0;document.getElementById('depAmountPreview').textContent=c>0?'₦'+(c*COIN_RATE).toLocaleString()+' for '+c+' coins':'—';}
+
+async function initiateDeposit(){
+  const coins=parseInt(document.getElementById('depCoins').value);if(!coins||coins<20)return showToast('Minimum is 20 coins',true);
+  const naira=coins*COIN_RATE;
+  try{
+    const r=await fetch('/api/deposit/initiate',{method:'POST',headers:H,body:JSON.stringify({amount:naira})});
+    const d=await r.json();if(!r.ok)return showToast(d.message||'Failed',true);
+    document.getElementById('dBankName').textContent=d.bank.name;document.getElementById('dAccNum').textContent=d.bank.account;
+    document.getElementById('dAccHolder').textContent=d.bank.holder;document.getElementById('dRef').textContent=d.reference;
+    document.getElementById('dAmount').textContent='₦'+naira.toLocaleString()+' → '+d.coins+' coins';
+    currentDepRef=d.reference;
+    document.getElementById('paidBtnWrap').style.display='block';document.getElementById('paidConfirm').style.display='none';
+    document.getElementById('paidBtn').disabled=false;document.getElementById('paidBtn').innerHTML='<i class="fas fa-check-circle"></i> I Have Paid — Notify Admin';
+    document.getElementById('bankDetails').style.display='block';
+    document.getElementById('bankDetails').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch{showToast('Failed to initiate deposit',true);}
+}
+
+function copyDepRef(){const ref=document.getElementById('dRef').textContent;navigator.clipboard.writeText(ref).then(()=>showToast('Reference copied!')).catch(()=>{});}
+
+async function markAsPaid(){
+  if(!currentDepRef)return showToast('No active deposit reference',true);
+  const btn=document.getElementById('paidBtn');btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px;border-top-color:#000"></div> Notifying...';
+  try{
+    const r=await fetch('/api/deposit/paid',{method:'POST',headers:H,body:JSON.stringify({reference:currentDepRef})});
+    const d=await r.json();
+    if(r.ok){document.getElementById('paidBtnWrap').style.display='none';document.getElementById('paidConfirm').style.display='block';showToast('Admin notified! Coins incoming 🪙');loadDepHistory();}
+    else throw new Error(d.message);
+  }catch(e){showToast(e.message,true);btn.disabled=false;btn.innerHTML='<i class="fas fa-check-circle"></i> I Have Paid — Notify Admin';}
+}
+
+async function loadDepHistory(){
+  const c=document.getElementById('depHistoryList');
+  try{
+    const r=await fetch('/api/deposit/history',{headers:H});const rows=await r.json();
+    if(!rows.length){c.innerHTML='<p style="color:var(--muted);font-size:12px;">No deposits yet.</p>';return;}
+    c.innerHTML=rows.map(d=>{
+      const dt=new Date(d.created_at);
+      const dateStr=dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      const timeStr=dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+      const statusColor=d.status==='confirmed'?'var(--brand)':d.status==='pending'?'var(--yellow)':'var(--red)';
+      const statusIcon=d.status==='confirmed'?'✅':d.status==='pending'?'⏳':'❌';
+      return `<div class="dep-item" onclick="showDepDetail(${JSON.stringify(d).replace(/"/g,'&quot;')})" style="cursor:pointer;flex-direction:column;align-items:stretch;gap:0;padding:0;overflow:hidden;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;background:var(--card2);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:9px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${statusIcon}</div>
+            <div><div style="font-weight:700;font-size:13px;font-family:var(--font-h)">+${Number(d.coins).toLocaleString()} coins</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">₦${Number(d.amount).toLocaleString()} · Bank Transfer</div></div>
+          </div>
+          <div style="text-align:right;"><div style="font-size:10px;font-weight:700;color:${statusColor};background:${statusColor}18;padding:3px 8px;border-radius:5px;margin-bottom:4px;">${d.status.toUpperCase()}</div><div style="font-size:10px;color:var(--muted);">${dateStr}</div><div style="font-size:10px;color:var(--muted);font-weight:600;">${timeStr}</div></div>
+        </div></div>`;
+    }).join('');
+  }catch{c.innerHTML='<p style="color:var(--red);">Failed to load history.</p>';}
+}
+
+// ── PRO ───────────────────────────────────────────────────────────
+function selectPlan(key,el){
+  document.querySelectorAll('.plan-card').forEach(p=>p.classList.remove('selected'));el.classList.add('selected');selectedPlan=key;
+  const p=PRO_PLANS[key];const expDate=new Date(Date.now()+p.days*86400000);
+  document.getElementById('sumPlan').textContent=p.name;document.getElementById('sumDur').textContent=p.label;
+  document.getElementById('sumBots').textContent='Up to '+p.bots+' bots';document.getElementById('sumBotDur').textContent=p.botDays+' Days per bot';
+  document.getElementById('sumPrice').textContent=p.price+' (≈₦'+p.naira.toLocaleString()+')';
+  document.getElementById('sumExp').textContent=expDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('planSummary').style.display='block';document.getElementById('proBuyBtn').disabled=false;
+}
+
+async function loadProStatus(silent=false){
+  try{
+    const r=await fetch('/api/pro/status',{headers:H});const d=await r.json();proData=d;updateSidebarUI();
+    if(silent)return;renderProStatusBox(d);
+  }catch{proData={status:'none',plan:null};updateSidebarUI();if(!silent)document.getElementById('proStatusBox').innerHTML='';}
+}
+
+function renderProStatusBox(d){
+  const box=document.getElementById('proStatusBox');
+  if(d.status==='active'){
+    const exp=new Date(d.expires_at);const daysLeft=Math.ceil((exp-Date.now())/86400000);
+    if(d.plan==='full') box.innerHTML=`<div class="pro-status-box active-pro"><div class="pro-status-icon">👑</div><div class="pro-status-info"><h4 style="color:var(--gold)">Pro Premium Active</h4><p>Up to <strong>8 bots</strong>, 30 days each.</p><div class="expires">Expires: ${exp.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})} (${daysLeft} day${daysLeft!==1?'s':''} left)</div></div></div>`;
+    else box.innerHTML=`<div class="pro-status-box active-pro" style="border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.08);"><div class="pro-status-icon">🚀</div><div class="pro-status-info"><h4 style="color:var(--blue)">Pro Starter Active</h4><p>Up to <strong>5 bots</strong>, 30 days each.</p><div class="expires" style="color:var(--blue);">Expires: ${exp.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})} (${daysLeft} day${daysLeft!==1?'s':''} left)</div></div></div>`;
+  }else if(d.status==='expired'){box.innerHTML=`<div class="pro-status-box expired-pro"><div class="pro-status-icon">⚠️</div><div class="pro-status-info"><h4 style="color:var(--red)">Pro Expired</h4><p>Select a plan below to renew.</p></div></div>`;}
+  else{
+    const limits=getPlanLimits();
+    if(limits.type==='none') box.innerHTML=`<div class="pro-status-box expired-pro"><div class="pro-status-icon">🔒</div><div class="pro-status-info"><h4 style="color:var(--red)">Free Trial Expired</h4><p>Your 2-day free trial ended. Upgrade to Pro to continue.</p></div></div>`;
+    else box.innerHTML=`<div class="pro-status-box no-pro"><div class="pro-status-icon">🔓</div><div class="pro-status-info"><h4 style="color:var(--free-color)">Free Trial Active</h4><p>1 bot · 2 days · limited commands.</p></div></div>`;
+  }
+}
+
+async function buyPro(){
+  if(!selectedPlan)return;const p=PRO_PLANS[selectedPlan];
+  const btn=document.getElementById('proBuyBtn');btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Processing...';
+  try{
+    const r=await fetch('/api/pro/initiate',{method:'POST',headers:H,body:JSON.stringify({plan:selectedPlan})});
+    const d=await r.json();if(!r.ok)throw new Error(d.message||'Failed');
+    document.getElementById('proBankName').textContent=d.bank.name;document.getElementById('proAccNum').textContent=d.bank.account;
+    document.getElementById('proAccHolder').textContent=d.bank.holder;document.getElementById('proRef').textContent=d.reference;
+    document.getElementById('proAmount').textContent=p.price+' ≈ ₦'+p.naira.toLocaleString();
+    document.getElementById('proPayDetails').style.display='block';
+    document.getElementById('proPayDetails').scrollIntoView({behavior:'smooth',block:'nearest'});showToast('Payment details ready 👑');
+  }catch(e){showToast(e.message,true);}
+  btn.disabled=false;btn.innerHTML='<i class="fas fa-crown"></i> Activate Pro Plan';
+}
+
+// ── CONSOLE ───────────────────────────────────────────────────────
+async function fetchLogs(){
+  const box=document.getElementById('consoleBox');
+  try{
+    const r=await fetch('/api/console-logs',{headers:H});const logs=await r.json();
+    if(!logs.length){box.innerHTML='<span style="color:#1a3a5a;">$ no logs yet — connect a bot to see activity</span>';return;}
+    box.innerHTML=logs.map(l=>{
+      let t='';const msg=l.message;
+      if(msg.includes('💬')||msg.includes('[CMD]'))t='cmd';
+      else if(msg.includes('✅')||msg.includes('Connected')||msg.includes('ONLINE'))t='success';
+      else if(msg.includes('❌')||msg.includes('Error')||msg.includes('Failed'))t='error';
+      else if(msg.includes('⚠️'))t='warn';
+      else if(msg.includes('🔄')||msg.includes('📲')||msg.includes('⏳'))t='info';
+      return '<div><span class="log-time">['+esc(l.time)+']</span><span class="log-msg '+t+'">'+esc(msg)+'</span></div>';
+    }).join('');
+    box.scrollTop=box.scrollHeight;
+  }catch{}
+}
+function clearConsole(){document.getElementById('consoleBox').innerHTML='<span style="color:#1a3a5a;">$ console cleared</span>';}
+
+// ── REFERRALS ─────────────────────────────────────────────────────
+async function loadReferrals(){
+  const tb=document.getElementById('refTableBody');tb.innerHTML='<div class="ref-empty"><i class="fas fa-spinner fa-spin"></i></div>';
+  try{
+    const r=await fetch('/api/referrals',{headers:H});const d=await r.json();
+    document.getElementById('refTotalCount').textContent=d.total||0;document.getElementById('refTotalCoins').textContent=(d.total||0)*10;
+    if(!d.referrals||!d.referrals.length){tb.innerHTML='<div class="ref-empty"><i class="fas fa-user-friends"></i>No referrals yet. Share your link!</div>';return;}
+    tb.innerHTML=d.referrals.map(u=>{
+      const ini=(u.username||'?').substring(0,2).toUpperCase();
+      const dt=u.created_at?new Date(u.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—';
+      const rb=u.reward_given?'<span class="reward-badge given"><i class="fas fa-check" style="font-size:8px"></i> Paid</span>':'<span class="reward-badge pending">Pending</span>';
+      return '<div class="ref-table-row"><div class="ref-user-info"><div class="ref-avatar">'+ini+'</div><div><div class="ref-username">@'+esc(u.username)+'</div><div class="ref-name">'+esc(u.name||'')+'</div></div></div><div class="ref-date">'+dt+'</div><div>'+rb+'</div></div>';
+    }).join('');
+  }catch{tb.innerHTML='<div class="ref-empty" style="color:var(--red)">Failed to load referrals.</div>';}
+}
+function copyRefLink(){const l=document.getElementById('refLinkDisplay').textContent;navigator.clipboard.writeText(l).then(()=>showToast('Referral link copied!')).catch(()=>prompt('Copy:',l));}
+
+// ══════════════════════════════════════════════════════════════════
+//  SUPPORT TICKETS
+// ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+//  SUPPORT TICKETS
+// ══════════════════════════════════════════════════════════════════
+const TICKET_CATEGORIES = {
+  bot_not_working: '🤖 Bot Not Working',
+  bot_disconnecting: '🔌 Bot Disconnecting',
+  pairing_issue: '📱 Pairing Issue',
+  deposit_issue: '💰 Deposit Issue',
+  pro_activation: '👑 Pro Activation',
+  account_issue: '👤 Account Issue',
+  referral_coins: '🎁 Referral Coins',
+  other: '❓ Other'
+};
+
+function updateTicketSubject(){
+  const cat=document.getElementById('ticketCategory').value;
+  const sub=document.getElementById('ticketSubject');
+  if(cat&&!sub.value){sub.value=TICKET_CATEGORIES[cat]||'';}
+}
+
+async function submitTicket(){
+  const category=document.getElementById('ticketCategory').value;
+  const subject=document.getElementById('ticketSubject').value.trim();
+  const message=document.getElementById('ticketMessage').value.trim();
+  const statusDiv=document.getElementById('ticketSubmitStatus');
+  if(!category)return showToast('Please select a category',true);
+  if(!subject)return showToast('Please enter a subject',true);
+  if(!message||message.length<10)return showToast('Please enter a detailed message (min 10 chars)',true);
+  const btn=document.getElementById('submitTicketBtn');
+  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Submitting...';
+  statusDiv.style.display='none';
+  try{
+    const r=await fetch('/api/tickets/create',{method:'POST',headers:H,body:JSON.stringify({category,subject,message})});
+    const d=await r.json();
+    if(r.ok){
+      statusDiv.style.display='block';
+      statusDiv.innerHTML='<div style="padding:12px 14px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:8px;font-size:12px;color:var(--brand);"><i class="fas fa-check-circle"></i> <strong>Ticket submitted!</strong> Your ticket number is <strong style="font-family:monospace">#'+d.ticket_number+'</strong>. We\'ll respond within 1–2 hours.</div>';
+      document.getElementById('ticketCategory').value='';
+      document.getElementById('ticketSubject').value='';
+      document.getElementById('ticketMessage').value='';
+      showToast('Ticket #'+d.ticket_number+' submitted!');
+      loadTickets();
+    }else throw new Error(d.message||'Failed to submit ticket');
+  }catch(e){statusDiv.style.display='block';statusDiv.innerHTML='<div style="padding:12px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;color:var(--red);"><i class="fas fa-times-circle"></i> '+esc(e.message)+'</div>';showToast(e.message,true);}
+  btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> Submit Ticket';
+}
+
+async function loadTickets(){
+  const body=document.getElementById('ticketListBody');
+  body.innerHTML='<div class="ticket-empty"><i class="fas fa-spinner fa-spin"></i><p style="font-size:12px;">Loading...</p></div>';
+  try{
+    const r=await fetch('/api/tickets',{headers:H});const tickets=await r.json();
+    const unread=tickets.filter(t=>t.status==='replied').length;
+    const badge=document.getElementById('ticketBadge');
+    if(unread>0){badge.textContent=unread;badge.style.display='inline-flex';}else badge.style.display='none';
+    if(!tickets.length){body.innerHTML='<div class="ticket-empty"><i class="fas fa-ticket-alt"></i><p style="font-size:12px;">No tickets yet. Submit one above!</p></div>';return;}
+    body.innerHTML=tickets.map(t=>{
+      const dt=new Date(t.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      const statusMap={open:'open',pending:'pending',replied:'replied',closed:'closed'};
+      const sLabel={open:'Open',pending:'Pending',replied:'Replied',closed:'Closed'};
+      const s=statusMap[t.status]||'open';
+      const catLabel=TICKET_CATEGORIES[t.category]||t.category;
+      return `<div class="ticket-list-row" onclick="viewTicket(${t.id})">
+        <span class="ticket-num">#${esc(t.ticket_number)}</span>
+        <span class="ticket-subject">${esc(t.subject)}</span>
+        <span><span class="ticket-cat-badge">${catLabel}</span></span>
+        <span><span class="ticket-status-badge ${s}">${sLabel[t.status]||'Open'}</span></span>
+        <span><button class="ticket-view-btn" onclick="event.stopPropagation();viewTicket(${t.id})"><i class="fas fa-eye"></i> View</button></span>
+      </div>`;
+    }).join('');
+  }catch{body.innerHTML='<div class="ticket-empty" style="color:var(--red)">Failed to load tickets.</div>';}
+}
+
+// ── Linkify helper ──
+function linkify(text) {
+  const escaped = esc(text);
+  const urlRegex = /(https?:\/\/[^\s<]+)/gi;
+  const wwwRegex = /(www\.[^\s<]+)/gi;
+  let result = escaped.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  result = result.replace(wwwRegex, '<a href="https://$1" target="_blank" rel="noopener">$1</a>');
+  return result;
+}
+
+// ── Scroll tracking — detect if user scrolled UP from bottom ──
+let userScrolledUp = false;
+function setupScrollWatch() {
+  const wrap = document.getElementById('tdMessages');
+  if (!wrap) return;
+  wrap.onscroll = function() {
+    const gap = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight;
+    userScrolledUp = gap > 80;
+  };
+}
+
+function isNearBottom() {
+  const wrap = document.getElementById('tdMessages');
+  if (!wrap) return true;
+  return (wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight) <= 80;
+}
+
+// ── Build a single message row HTML ──
+function buildMsgHTML(m, delay) {
+  const isAdmin = m.sender_type === 'admin';
+  const icon = isAdmin ? '🛠' : '👤';
+  const label = isAdmin ? 'Support' : 'You';
+  const time = new Date(m.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true});
+  const content = linkify(m.message).replace(/\n/g, '<br>');
+  return `<div class="ticket-msg-row ${isAdmin?'admin':'user'}" style="animation-delay:${delay}s">
+    <div class="ticket-msg-meta">${icon} ${label} · ${time}</div>
+    <div class="ticket-msg-bubble ${isAdmin?'admin':'user'}">${content}</div>
+    <div class="ticket-msg-time">${time}</div>
+  </div>`;
+}
+
+// ── Append messages to DOM without replacing existing ones ──
+function appendMsgs(msgs, forceScroll) {
+  const wrap = document.getElementById('tdMessages');
+  if (!wrap) return;
+  // Remove "no messages" placeholder if it's the only child
+  if (wrap.children.length === 1 && wrap.children[0].style && wrap.children[0].style.textAlign === 'center') {
+    wrap.innerHTML = '';
+  }
+  let i = 0;
+  msgs.forEach(m => {
+    const div = document.createElement('div');
+    div.innerHTML = buildMsgHTML(m, i * 0.03);
+    wrap.appendChild(div.firstElementChild);
+    i++;
+  });
+  // Only scroll if forced OR user is near the bottom
+  if (forceScroll || isNearBottom()) {
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+}
+
+// ── Live message polling ──
+let ticketPollTimer = null;
+let knownMsgIds = new Set();
+
+function startTicketPoll() {
+  stopTicketPoll();
+  knownMsgIds.clear();
+  // Seed with current message IDs
+  const wrap = document.getElementById('tdMessages');
+  if (wrap) {
+    wrap.querySelectorAll('.ticket-msg-row').forEach(() => {
+      // We don't store IDs in DOM, so we just track count
+    });
+  }
+  // Get initial count
+  knownMsgIds.size = wrap ? wrap.querySelectorAll('.ticket-msg-row').length : 0;
+
+  ticketPollTimer = setInterval(async () => {
+    if (!currentTicketId) return;
+    try {
+      const r = await fetch('/api/tickets/' + currentTicketId, { headers: H });
+      const d = await r.json();
+      if (!r.ok) return;
+      const msgs = d.messages || [];
+
+      // Detect if ticket was closed by admin
+      if (d.status === 'closed') {
+        document.getElementById('tdReplyBox').style.display = 'none';
+        document.getElementById('tdClosedNote').style.display = 'block';
+      }
+
+      if (msgs.length > knownMsgIds.size) {
+        const newOnes = msgs.slice(knownMsgIds.size);
+        appendMsgs(newOnes, false); // false = don't force scroll
+        knownMsgIds.size = msgs.length;
+        // Silently refresh ticket list for badge updates
+        fetch('/api/tickets', { headers: H }).then(r2 => r2.json()).then(tickets => {
+          const unread = tickets.filter(t => t.status === 'replied').length;
+          const badge = document.getElementById('ticketBadge');
+          if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-flex'; }
+          else badge.style.display = 'none';
+        }).catch(() => {});
+      }
+    } catch {}
+  }, 2500);
+}
+
+function stopTicketPoll() {
+  if (ticketPollTimer) { clearInterval(ticketPollTimer); ticketPollTimer = null; }
+}
+
+// ── Admin typing indicator ──
+
+function startAdminTypingPoll() {
+  stopAdminTypingPoll();
+  adminTypingPoll = setInterval(async () => {
+    if (!currentTicketId) return;
+    try {
+      const r = await fetch('/api/tickets/' + currentTicketId + '/typing-status', { headers: H });
+      const d = await r.json();
+      const el = document.getElementById('tdAdminTyping');
+      if (d.support_typing) {
+        el.classList.add('visible');
+        if (isNearBottom()) {
+          const wrap = document.getElementById('tdMessages');
+          setTimeout(() => { if (wrap) wrap.scrollTop = wrap.scrollHeight; }, 30);
+        }
+      } else {
+        el.classList.remove('visible');
+      }
+    } catch {}
+  }, 2000);
+}
+
+
+// ── User typing — notify server ──
+let userTypingDebounce = null;
+function tkUserTyping() {
+  if (!currentTicketId) return;
+  clearTimeout(userTypingDebounce);
+  userTypingDebounce = setTimeout(() => {
+    fetch('/api/tickets/' + currentTicketId + '/typing', { method: 'POST', headers: H }).catch(() => {});
+  }, 500);
+}
+
+// ── Enter to send ──
+document.getElementById('tdReplyText').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendTicketReply();
+  }
+});
+
+// ── VIEW TICKET — opens modal, loads messages once, starts poll ──
+async function viewTicket(id) {
+  currentTicketId = id;
+  const overlay = document.getElementById('ticketDetailOverlay');
+  document.getElementById('tdTitle').textContent = 'Loading...';
+  document.getElementById('tdMeta').textContent = '—';
+  document.getElementById('tdMessages').innerHTML = '<div style="text-align:center;padding:24px;"><div class="spinner" style="margin:0 auto;"></div><p style="font-size:11px;color:var(--muted);margin-top:10px;">Loading messages...</p></div>';
+  document.getElementById('tdAdminTyping').classList.remove('visible');
+  document.getElementById('tdReplyBox').style.display = 'block';
+  document.getElementById('tdClosedNote').style.display = 'none';
+  document.getElementById('tdReplyText').value = '';
+  overlay.classList.add('open');
+  userScrolledUp = false;
+  setupScrollWatch();
+
+  try {
+    const r = await fetch('/api/tickets/' + id, { headers: H });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message);
+
+    document.getElementById('tdTitle').textContent = 'Ticket #' + d.ticket_number;
+    document.getElementById('tdMeta').textContent = (TICKET_CATEGORIES[d.category] || d.category) + ' · ' + new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const msgs = d.messages || [];
+    const wrap = document.getElementById('tdMessages');
+
+    if (!msgs.length) {
+      wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No messages yet.</div>';
+    } else {
+      wrap.innerHTML = msgs.map((m, i) => buildMsgHTML(m, i * 0.03)).join('');
+      // Only scroll to bottom on first open
+      setTimeout(() => { wrap.scrollTop = wrap.scrollHeight; }, 60);
+    }
+
+    knownMsgIds.size = msgs.length;
+
+    const isClosed = d.status === 'closed';
+    document.getElementById('tdReplyBox').style.display = isClosed ? 'none' : 'block';
+    document.getElementById('tdClosedNote').style.display = isClosed ? 'block' : 'none';
+
+  } catch (e) {
+    document.getElementById('tdMessages').innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;font-size:12px;">' + esc(e.message) + '</div>';
+  }
+
+  // Start live polling after initial load
+  startTicketPoll();
+  startAdminTypingPoll();
+}
+
+// ── SEND REPLY — appends locally, NO scroll, poll handles the rest ──
+async function sendTicketReply() {
+  const msg = document.getElementById('tdReplyText').value.trim();
+  if (!msg) return showToast('Enter a message', true);
+  if (!currentTicketId) return;
+
+  const btn = document.querySelector('#tdReplyBox .btn-primary');
+  const input = document.getElementById('tdReplyText');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Sending...';
+
+  // Build a temporary message object for local display
+  const tempMsg = {
+    sender_type: 'user',
+    message: msg,
+    created_at: new Date().toISOString()
+  };
+
+  // Append locally WITHOUT scrolling
+  appendMsgs([tempMsg], false);
+  knownMsgIds.size++;
+  input.value = '';
+
+  // Send to server in background — don't re-fetch on success
+  try {
+    const r = await fetch('/api/tickets/' + currentTicketId + '/reply', {
+      method: 'POST', headers: H, body: JSON.stringify({ message: msg })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message);
+    showToast('Reply sent!');
+    // Silently refresh list for status
+    loadTickets();
+  } catch (e) {
+    showToast(e.message, true);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reply';
+  input.focus();
+}
+
+// ── Close modal — stop all polls ──
+function closeTicketModal() {
+  document.getElementById('ticketDetailOverlay').classList.remove('open');
+  stopTicketPoll();
+  stopAdminTypingPoll();
+  currentTicketId = null;
+}
+
+document.getElementById('ticketDetailOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeTicketModal();
+});
+
+// Also update the close button in the HTML to use the new function
+// (you already have onclick on the ✕ button — update it to: onclick="closeTicketModal()")
+// ── Linkify helper ──
+function linkify(text) {
+  const escaped = esc(text);
+  // URL pattern
+  const urlRegex = /(https?:\/\/[^\s<]+)/gi;
+  // www pattern
+  const wwwRegex = /(www\.[^\s<]+)/gi;
+  let result = escaped.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  result = result.replace(wwwRegex, '<a href="https://$1" target="_blank" rel="noopener">$1</a>');
+  return result;
+}
+
+// ── Typing indicator ──
+// User typing — notify server
+let userTypingTimer = null;
+document.addEventListener('input', e => {
+  if (e.target.id !== 'tdReplyText') return;
+  const text = e.target.value.trim();
+  if (text.length > 0 && currentTicketId) {
+    fetch('/api/tickets/' + currentTicketId + '/typing', {
+      method: 'POST', headers: H
+    }).catch(() => {});
+  }
+  clearTimeout(userTypingTimer);
+});
+
+// Poll admin typing status
+let adminTypingPoll = null;
+function startAdminTypingPoll() {
+  stopAdminTypingPoll();
+  adminTypingPoll = setInterval(async () => {
+    if (!currentTicketId) return;
+    try {
+      const r = await fetch('/api/tickets/' + currentTicketId + '/typing-status', { headers: H });
+      const d = await r.json();
+      const el = document.getElementById('tdAdminTyping');
+      if (d.support_typing) {
+        el.classList.add('visible');
+        const wrap = document.getElementById('tdMessages');
+        setTimeout(() => { wrap.scrollTop = wrap.scrollHeight; }, 30);
+      } else {
+        el.classList.remove('visible');
+      }
+    } catch {}
+  }, 2000);
+}
+
+function stopAdminTypingPoll() {
+  if (adminTypingPoll) { clearInterval(adminTypingPoll); adminTypingPoll = null; }
+  const el = document.getElementById('tdAdminTyping');
+  if (el) el.classList.remove('visible');
+}
+// ── Enter to send ──
+document.getElementById('tdReplyText').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendTicketReply();
+  }
+});
+
+async function viewTicket(id){
+  currentTicketId=id;
+  const overlay=document.getElementById('ticketDetailOverlay');
+  document.getElementById('tdTitle').textContent='Loading...';
+  document.getElementById('tdMeta').textContent='—';
+  document.getElementById('tdMessages').innerHTML='<div style="text-align:center;padding:24px;"><div class="spinner" style="margin:0 auto;"></div><p style="font-size:11px;color:var(--muted);margin-top:10px;">Loading messages...</p></div>';
+  document.getElementById('tdAdminTyping').classList.remove('visible');  // Fixed: was tdTyping
+  overlay.classList.add('open');
+  startAdminTypingPoll();  // Add this to start polling typing status
+  try{
+    const r=await fetch('/api/tickets/'+id,{headers:H});const d=await r.json();
+    if(!r.ok)throw new Error(d.message);
+    document.getElementById('tdTitle').textContent='Ticket #'+d.ticket_number;
+    document.getElementById('tdMeta').textContent=(TICKET_CATEGORIES[d.category]||d.category)+' · '+new Date(d.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    
+    const msgs=d.messages||[];
+    const msgWrap=document.getElementById('tdMessages');
+    
+    if(!msgs.length){
+      msgWrap.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No messages yet.</div>';
+    } else {
+      msgWrap.innerHTML=msgs.map((m,i) => {
+        const isAdmin = m.sender_type === 'admin';
+        const senderIcon = isAdmin ? '🛠' : '👤';
+        const senderLabel = isAdmin ? 'Support' : 'You';
+        const timeStr = new Date(m.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true});
+        const msgContent = linkify(m.message).replace(/\n/g, '<br>');
+        
+        return `<div class="ticket-msg-row ${isAdmin?'admin':'user'}" style="animation-delay:${i*0.04}s">
+          <div class="ticket-msg-meta">${senderIcon} ${senderLabel} · ${timeStr}</div>
+          <div class="ticket-msg-bubble ${isAdmin?'admin':'user'}">${msgContent}</div>
+          <div class="ticket-msg-time">${timeStr}</div>
+        </div>`;
+      }).join('');
+    }
+    
+    setTimeout(() => { msgWrap.scrollTop = msgWrap.scrollHeight; }, 50);
+    
+    const isClosed=d.status==='closed';
+    document.getElementById('tdReplyBox').style.display=isClosed?'none':'block';
+    document.getElementById('tdClosedNote').style.display=isClosed?'block':'none';
+    document.getElementById('tdReplyText').value='';
+    document.getElementById('tdAdminTyping').classList.remove('visible');
+  }catch(e){
+    document.getElementById('tdMessages').innerHTML='<div style="color:var(--red);text-align:center;padding:20px;font-size:12px;">'+esc(e.message)+'</div>';
+  }
+}
+async function sendTicketReply(){
+  const msg=document.getElementById('tdReplyText').value.trim();
+  if(!msg)return showToast('Enter a message',true);
+  if(!currentTicketId)return;
+  const btn=document.querySelector('#tdReplyBox .btn-primary');
+  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Sending...';
+  try{
+    const r=await fetch('/api/tickets/'+currentTicketId+'/reply',{method:'POST',headers:H,body:JSON.stringify({message:msg})});
+    const d=await r.json();
+    if(r.ok){showToast('Reply sent!');viewTicket(currentTicketId);loadTickets();}
+    else throw new Error(d.message);
+  }catch(e){showToast(e.message,true);}
+  btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> Send Reply';
+}
+
+document.getElementById('ticketDetailOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+
+// ── SETTINGS ─────────────────────────────────────────────────────
+async function saveSettings(e){
+  e.preventDefault();
+  try{const r=await fetch('/api/settings',{method:'POST',headers:H,body:JSON.stringify({name:document.getElementById('sName').value,phone:document.getElementById('sPhone').value})});const d=await r.json();showToast(d.message,!r.ok);if(r.ok)loadUser();}
+  catch{showToast('Failed to save settings',true);}
+}
+
+// ── DEPOSIT DETAIL MODAL ──────────────────────────────────────────
+function showDepDetail(d){
+  const dt=new Date(d.created_at);
+  const full=dt.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' at '+dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+  const statusColor=d.status==='confirmed'?'var(--brand)':d.status==='pending'?'var(--yellow)':'var(--red)';
+  const statusIcon=d.status==='confirmed'?'✅':d.status==='pending'?'⏳':'❌';
+  document.getElementById('ddTitle').textContent=statusIcon+' Transaction Detail';document.getElementById('ddDate').textContent=full;
+  document.getElementById('ddCoins').textContent='+'+Number(d.coins).toLocaleString()+' coins';document.getElementById('ddAmount').textContent='₦'+Number(d.amount).toLocaleString();
+  document.getElementById('ddRef').textContent=d.reference;document.getElementById('ddRef').dataset.ref=d.reference;
+  const statusEl=document.getElementById('ddStatus');statusEl.textContent=d.status.toUpperCase();statusEl.style.color=statusColor;statusEl.style.background=statusColor+'18';
+  document.getElementById('depDetailOverlay').classList.add('open');
+}
+function copyDepDetailRef(){const ref=document.getElementById('ddRef').dataset.ref;navigator.clipboard.writeText(ref).then(()=>showToast('Reference copied!')).catch(()=>{});}
+document.getElementById('depDetailOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+
+// ── BOT EXPIRY HTML ───────────────────────────────────────────────
+function botExpiryHTML(b){
+  if(!b.expires_at)return '';
+  const exp=new Date(b.expires_at);const now=Date.now();const diff=exp-now;
+  const days=Math.ceil(diff/(1000*60*60*24));
+  const dateStr=exp.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const timeStr=exp.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  if(diff<=0)return '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:10px;font-weight:700;color:var(--red);background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);padding:3px 8px;border-radius:5px;"><i class="fas fa-clock" style="font-size:9px"></i> EXPIRED — being deleted...</div>';
+  if(days<=1)return '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:10px;font-weight:700;color:var(--red);background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);padding:3px 8px;border-radius:5px;"><i class="fas fa-exclamation-triangle" style="font-size:9px"></i> Expires TODAY · '+timeStr+'</div>';
+  if(days<=3)return '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:10px;font-weight:700;color:var(--yellow);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);padding:3px 8px;border-radius:5px;"><i class="fas fa-clock" style="font-size:9px"></i> Expires in '+days+' day'+(days!==1?'s':'')+' · '+dateStr+'</div>';
+  return '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:10px;color:var(--muted2);background:var(--card2);border:1px solid var(--border);padding:3px 8px;border-radius:5px;"><i class="fas fa-calendar-alt" style="font-size:9px;color:var(--muted)"></i> Expires '+dateStr+' · '+timeStr+'</div>';
+}
+
+// ── HEARTBEAT ─────────────────────────────────────────────────────
+async function sendHeartbeat(){try{await fetch('/api/heartbeat',{method:'POST',headers:H,body:JSON.stringify({page:localStorage.getItem('oxbot_last_section')||'dashboard'})});}catch{}}
+sendHeartbeat();setInterval(sendHeartbeat,20000);
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function esc(s){const d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
+function escAttr(s){return String(s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+
+// ══════════════════════════════════════════════════════════════════
+//  BOT SETTINGS MODAL
+// ══════════════════════════════════════════════════════════════════
+let bsSessionId  = null;
+let bsIsPro      = false;
+let bsState      = {};
+let bsImgFile    = null;
+
+// Toggle state tracker
+const bsToggles = {
+    autotyping: false,
+    antidelete: false,
+    antiban:    false,
+    autoreply:  false,
+};
+
+function bsSetToggle(key, val) {
+    bsToggles[key] = !!val;
+    const track = document.getElementById('toggle-' + key);
+    const knob  = document.getElementById('knob-' + key);
+    if (!track || !knob) return;
+    if (val) {
+        track.style.background = key === 'antiban' || key === 'autoreply' ? 'var(--gold)' : 'var(--brand)';
+        knob.style.left = '23px';
+    } else {
+        track.style.background = 'var(--border)';
+        knob.style.left = '3px';
+    }
+}
+
+async function bsToggle(key) {
+    if (!bsSessionId) return;
+
+    // Pro gate
+    if ((key === 'antiban' || key === 'autoreply') && !bsIsPro) {
+        showToast('👑 Pro plan required!', true);
+        // Flash the pro banner
+        const banner = document.getElementById('bsProBanner');
+        banner.style.display = 'block';
+        banner.style.animation = 'none';
+        setTimeout(() => banner.style.animation = '', 100);
+        return;
+    }
+
+    const newVal = !bsToggles[key];
+    bsSetToggle(key, newVal);
+
+    try {
+        let url  = '/api/bot-features/' + key;
+        let body = { session_id: bsSessionId, enabled: newVal };
+
+        // autoreply also sends the message
+        if (key === 'autoreply') {
+            body.message = document.getElementById('bsAutoreplyText').value.trim();
+        }
+
+        const r = await fetch(url, { method: 'POST', headers: H, body: JSON.stringify(body) });
+        const d = await r.json();
+
+        if (!r.ok) {
+            bsSetToggle(key, !newVal); // revert
+            if (d.pro_required) showToast('👑 Pro plan required!', true);
+            else showToast(d.message || 'Failed', true);
+        } else {
+            showToast((newVal ? '✅ ' : '❌ ') + key.charAt(0).toUpperCase() + key.slice(1) + (newVal ? ' enabled' : ' disabled'));
+        }
+    } catch {
+        bsSetToggle(key, !newVal);
+        showToast('Failed to update', true);
+    }
+}
+
+async function bsSaveAutoreply() {
+    if (!bsSessionId) return;
+    if (!bsIsPro) { showToast('👑 Pro plan required!', true); return; }
+    const message = document.getElementById('bsAutoreplyText').value.trim();
+    if (!message) { showToast('Enter a message first', true); return; }
+    try {
+        const r = await fetch('/api/bot-features/autoreply', {
+            method: 'POST', headers: H,
+            body: JSON.stringify({ session_id: bsSessionId, enabled: bsToggles.autoreply, message })
+        });
+        const d = await r.json();
+        if (r.ok) showToast('✅ Message saved!');
+        else showToast(d.message, true);
+    } catch { showToast('Failed', true); }
+}
+
+function bsPreviewImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('Image too large! Max 5MB', true); return; }
+    bsImgFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const preview = document.getElementById('bsImgPreview');
+        const circle  = document.getElementById('bsImgCircle');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        circle.style.display  = 'none';
+        const uploadBtn = document.getElementById('bsImgUploadBtn');
+        uploadBtn.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function bsUploadImage() {
+    if (!bsImgFile || !bsSessionId) return;
+    if (!bsIsPro) { showToast('👑 Pro plan required!', true); return; }
+
+    const btn = document.getElementById('bsImgUploadBtn');
+    const statusEl = document.getElementById('bsImgStatus');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:12px;height:12px;border-width:2px;border-top-color:#fff"></div> Uploading...';
+    statusEl.style.display = 'none';
+
+    try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const base64 = e.target.result.split(',')[1];
+            const r = await fetch('/api/bot-features/upload-image', {
+                method: 'POST', headers: H,
+                body: JSON.stringify({ session_id: bsSessionId, image_data: base64, mime_type: bsImgFile.type })
+            });
+            const d = await r.json();
+
+            statusEl.style.display = 'block';
+            if (r.ok) {
+                statusEl.style.background = 'rgba(22,163,74,.1)';
+                statusEl.style.border = '1px solid rgba(22,163,74,.2)';
+                statusEl.style.color = 'var(--brand)';
+                statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Bot image updated successfully!';
+                showToast('Bot image updated! 🖼️');
+                btn.style.display = 'none';
+                bsImgFile = null;
+            } else {
+                statusEl.style.background = 'rgba(239,68,68,.08)';
+                statusEl.style.border = '1px solid rgba(239,68,68,.2)';
+                statusEl.style.color = 'var(--red)';
+                statusEl.innerHTML = '<i class="fas fa-times-circle"></i> ' + (d.message || 'Upload failed');
+                if (d.pro_required) showToast('👑 Pro plan required!', true);
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+        };
+        reader.readAsDataURL(bsImgFile);
+    } catch {
+        showToast('Upload failed', true);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+    }
+}
+
+async function openBotSettings(sid) {
+    bsSessionId = sid;
+    bsImgFile   = null;
+    document.getElementById('bsSessionLabel').textContent = sid;
+    document.getElementById('bsImgStatus').style.display = 'none';
+    document.getElementById('bsImgUploadBtn').style.display = 'none';
+    document.getElementById('bsImgPreview').style.display = 'none';
+    document.getElementById('bsImgCircle').style.display = 'flex';
+
+    // Reset all toggles
+    ['autotyping','antidelete','antiban','autoreply'].forEach(k => bsSetToggle(k, false));
+
+    document.getElementById('botSettingsOverlay').classList.add('open');
+
+    try {
+        const r = await fetch('/api/bot-features/' + sid, { headers: H });
+        const d = await r.json();
+        bsIsPro = !!d.is_pro;
+        bsState = d;
+
+        // Show/hide pro banner
+        document.getElementById('bsProBanner').style.display = bsIsPro ? 'none' : 'flex';
+
+        // Show/hide PRO tags
+        document.getElementById('bsAntibanProTag').style.display   = bsIsPro ? 'none' : 'inline';
+        document.getElementById('bsAutoreplyProTag').style.display = bsIsPro ? 'none' : 'inline';
+
+        // Set toggles
+        bsSetToggle('autotyping', d.autotyping);
+        bsSetToggle('antidelete', d.antidelete);
+        bsSetToggle('antiban',    bsIsPro ? d.antiban    : false);
+        bsSetToggle('autoreply',  bsIsPro ? d.autoreply  : false);
+
+        // Set autoreply message
+        document.getElementById('bsAutoreplyText').value = d.autoreply_message || '';
+
+        // Load bot image
+        try {
+            const imgR = await fetch('/api/bot-features/image/' + sid, { headers: H });
+            if (imgR.ok) {
+                const blob = await imgR.blob();
+                const url  = URL.createObjectURL(blob);
+                const preview = document.getElementById('bsImgPreview');
+                preview.src = url;
+                preview.style.display = 'block';
+                document.getElementById('bsImgCircle').style.display = 'none';
+            }
+        } catch {}
+
+    } catch (e) {
+        showToast('Failed to load settings', true);
+    }
+}
+
+function closeBotSettings() {
+    document.getElementById('botSettingsOverlay').classList.remove('open');
+    bsSessionId = null;
+    bsImgFile   = null;
+}
+
+document.getElementById('botSettingsOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeBotSettings();
+});
+// ── INIT ──────────────────────────────────────────────────────────
+window.onload=async()=>{
+  await loadUser();
+  pollBotStatus();
+  const lastSection=getSavedSection();
+  go(lastSection,null);
+  setInterval(pollBotStatus,8000);
+  setInterval(()=>{if(document.getElementById('s-console').classList.contains('active'))fetchLogs();},3000);
+  setInterval(()=>{
+    if(document.getElementById('s-home').classList.contains('active'))loadActiveBots();
+    if(document.getElementById('s-mybots').classList.contains('active')){loadActiveBots();loadBots();}
+  },5000);
+};
+
+</script>
+</body>
+</html>

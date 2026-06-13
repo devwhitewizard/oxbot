@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Login — OxBot</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --brand:#16a34a;--brand-d:#15803d;--brand-dd:#14532d;--brand-l:#bbf7d0;--brand-glow:rgba(22,163,74,.1);
+  --bg:#f1f5f0;--card:#ffffff;--text:#0c1a10;--text-2:#1e3a25;--muted:#5f7d68;--muted-l:#94b39d;
+  --border:#d4e8d8;--border-focus:#16a34a;
+  --red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;
+  --green-t:#065f46;--green-bg:#ecfdf5;--green-border:#a7f3d0;
+  --amber:#f59e0b;--amber-bg:#fffbeb;--amber-border:#fde68a;--amber-text:#92400e;--amber-text-2:#78350f;
+  --font-h:'Outfit',sans-serif;--font-b:'Inter',sans-serif;
+  --radius:14px;--radius-lg:24px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:var(--font-b);background:var(--bg);color:var(--text);
+  display:flex;justify-content:center;align-items:center;
+  min-height:100vh;padding:20px;position:relative;overflow:hidden;
+}
+
+body::before{
+  content:'';position:fixed;top:-220px;right:-180px;
+  width:580px;height:580px;border-radius:50%;
+  background:radial-gradient(circle,rgba(22,163,74,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+body::after{
+  content:'';position:fixed;bottom:-200px;left:-160px;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(22,163,74,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.bg-grid{
+  position:fixed;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(22,163,74,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(22,163,74,.04) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 50%,black 30%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 50%,black 30%,transparent 100%);
+}
+.bg-dots{
+  position:fixed;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(22,163,74,.07) 1px,transparent 1px);
+  background-size:24px 24px;
+  mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,black 20%,transparent 80%);
+  -webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,black 20%,transparent 80%);
+}
+
+.login-card{
+  position:relative;z-index:2;
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--radius-lg);padding:48px 44px;width:100%;max-width:430px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.04),
+    0 4px 12px rgba(0,0,0,.03),
+    0 16px 48px -12px rgba(22,163,74,.08),
+    0 0 0 0 transparent;
+  animation:cardIn .55s cubic-bezier(.16,1,.3,1);
+}
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(20px) scale(.98)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.login-card::before{
+  content:'';position:absolute;top:0;left:40px;right:40px;height:3px;
+  background:linear-gradient(90deg,transparent,var(--brand),transparent);
+  border-radius:0 0 4px 4px;opacity:.6;
+}
+
+.view{animation:viewIn .4s cubic-bezier(.16,1,.3,1)}
+.view.hidden{display:none !important}
+@keyframes viewIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.logo{
+  text-decoration:none;font-family:var(--font-h);font-weight:800;font-size:24px;
+  color:var(--text);display:flex;align-items:center;gap:11px;margin-bottom:36px;
+}
+.logo-icon{
+  width:38px;height:38px;background:var(--brand);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:11px;font-weight:800;letter-spacing:-.5px;
+  box-shadow:0 3px 10px rgba(22,163,74,.3);
+  transition:transform .2s,box-shadow .2s;
+}
+.logo:hover .logo-icon{transform:translateY(-1px) rotate(-2deg);box-shadow:0 5px 14px rgba(22,163,74,.35)}
+
+.heading{font-family:var(--font-h);font-size:28px;font-weight:800;margin-bottom:6px;letter-spacing:-.4px;color:var(--text)}
+.subtitle{color:var(--muted);font-size:14.5px;margin-bottom:30px;line-height:1.6}
+
+.form-group{margin-bottom:20px}
+.form-label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-2);
+  letter-spacing:.15px;
+}
+.form-label a{
+  font-size:12.5px;font-weight:500;color:var(--brand);text-decoration:none;
+  transition:color .2s;position:relative;
+}
+.form-label a::after{
+  content:'';position:absolute;bottom:-1px;left:0;width:0;height:1.5px;
+  background:var(--brand-d);transition:width .25s;
+}
+.form-label a:hover{color:var(--brand-d)}
+.form-label a:hover::after{width:100%}
+
+.input-wrap{position:relative}
+.input-wrap i.icon-left{
+  position:absolute;left:15px;top:50%;transform:translateY(-50%);
+  color:var(--muted-l);font-size:14px;pointer-events:none;
+  transition:color .25s;
+}
+.input-wrap:focus-within i.icon-left{color:var(--brand)}
+
+.form-input{
+  width:100%;padding:13px 16px 13px 44px;
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:14.5px;font-family:var(--font-b);outline:none;
+  transition:border-color .25s,box-shadow .25s,background .25s;
+  background:var(--bg);color:var(--text);
+}
+.form-input:focus{
+  border-color:var(--border-focus);
+  box-shadow:0 0 0 3.5px var(--brand-glow),0 1px 3px rgba(0,0,0,.04);
+  background:#fff;
+}
+.form-input::placeholder{color:var(--muted-l);font-weight:400}
+.form-input:hover:not(:focus){border-color:#b8d4be}
+
+.eye-btn{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;padding:5px;
+  color:var(--muted-l);font-size:14px;line-height:1;transition:color .2s;
+  border-radius:6px;
+}
+.eye-btn:hover{color:var(--brand);background:var(--brand-glow)}
+.form-input.has-eye{padding-right:44px}
+
+.alert{
+  font-size:13px;padding:12px 15px;border-radius:var(--radius);margin-bottom:22px;
+  display:none;align-items:flex-start;gap:10px;line-height:1.5;
+  animation:alertIn .3s ease-out;
+}
+@keyframes alertIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.alert.show{display:flex}
+.alert i{flex-shrink:0;font-size:15px;margin-top:1px}
+.alert-error{color:var(--red);background:var(--red-bg);border:1px solid var(--red-border)}
+.alert-success{color:var(--green-t);background:var(--green-bg);border:1px solid var(--green-border)}
+
+.btn{
+  width:100%;background:var(--brand);color:#fff;padding:14px;border-radius:var(--radius);
+  border:none;font-size:15px;font-weight:600;cursor:pointer;
+  transition:all .22s cubic-bezier(.16,1,.3,1);
+  display:flex;justify-content:center;align-items:center;gap:9px;
+  font-family:var(--font-b);margin-top:8px;
+  box-shadow:0 2px 8px rgba(22,163,74,.2),inset 0 1px 0 rgba(255,255,255,.15);
+  position:relative;overflow:hidden;
+}
+.btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,transparent 50%);
+  pointer-events:none;
+}
+.btn:hover{background:var(--brand-d);transform:translateY(-1.5px);box-shadow:0 6px 20px rgba(22,163,74,.28),inset 0 1px 0 rgba(255,255,255,.15)}
+.btn:active{transform:translateY(0);box-shadow:0 1px 4px rgba(22,163,74,.2)}
+.btn:disabled{background:#a3b8a8;cursor:not-allowed;transform:none;box-shadow:none}
+.btn:disabled::after{display:none}
+
+.btn-ghost{
+  width:100%;background:transparent;color:var(--muted);padding:12px;border-radius:var(--radius);
+  border:1.5px solid var(--border);font-size:13.5px;font-weight:500;cursor:pointer;
+  transition:all .22s;font-family:var(--font-b);margin-top:12px;
+  display:flex;justify-content:center;align-items:center;gap:8px;
+}
+.btn-ghost:hover{background:var(--bg);color:var(--text);border-color:#b8d4be;transform:translateY(-1px)}
+.btn-ghost:active{transform:translateY(0)}
+
+.spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.divider{
+  display:flex;align-items:center;gap:14px;margin:24px 0 4px;
+  font-size:12px;color:var(--muted-l);font-weight:500;letter-spacing:.3px;text-transform:uppercase;
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.unverified-panel{
+  background:var(--amber-bg);border:1.5px solid var(--amber-border);
+  border-radius:18px;padding:28px 24px;margin-bottom:24px;
+  position:relative;overflow:hidden;
+}
+.unverified-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--amber),transparent);
+  opacity:.5;
+}
+.unverified-icon{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#fef3c7,#fde68a);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 18px;font-size:22px;color:var(--amber);
+  box-shadow:0 4px 12px rgba(245,158,11,.15);
+}
+.unverified-panel h3{font-family:var(--font-h);font-size:18px;font-weight:700;text-align:center;margin-bottom:8px;color:var(--amber-text)}
+.unverified-panel p{font-size:13.5px;color:var(--amber-text-2);text-align:center;line-height:1.6;margin-bottom:16px}
+.unverified-email{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(146,64,14,.06);border:1px solid rgba(146,64,14,.12);
+  padding:10px 18px;border-radius:10px;
+  font-size:14px;font-weight:600;color:var(--amber-text);
+  margin:0 auto 18px;width:fit-content;
+}
+.unverified-email i{font-size:13px;opacity:.6}
+
+.btn-amber{
+  width:100%;background:var(--amber);color:#fff;padding:13px;border-radius:var(--radius);
+  border:none;font-size:14px;font-weight:600;cursor:pointer;
+  transition:all .22s cubic-bezier(.16,1,.3,1);
+  display:flex;justify-content:center;align-items:center;gap:8px;
+  font-family:var(--font-b);margin-bottom:12px;
+  box-shadow:0 2px 8px rgba(245,158,11,.2),inset 0 1px 0 rgba(255,255,255,.2);
+  position:relative;overflow:hidden;
+}
+.btn-amber::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 50%);
+  pointer-events:none;
+}
+.btn-amber:hover:not(:disabled){background:#d97706;transform:translateY(-1.5px);box-shadow:0 6px 18px rgba(245,158,11,.25)}
+.btn-amber:active:not(:disabled){transform:translateY(0)}
+.btn-amber:disabled{background:#d1d5db;cursor:not-allowed;color:#6b7280;box-shadow:none}
+.btn-amber:disabled::after{display:none}
+
+.footer-text{margin-top:30px;text-align:center;font-size:14px;color:var(--muted);line-height:1.5}
+.footer-text a{color:var(--brand);text-decoration:none;font-weight:600;transition:color .2s;position:relative}
+.footer-text a::after{content:'';position:absolute;bottom:-1px;left:0;width:0;height:1.5px;background:var(--brand-d);transition:width .25s}
+.footer-text a:hover{color:var(--brand-d)}
+.footer-text a:hover::after{width:100%}
+
+@media(max-width:480px){
+  body{padding:16px}
+  .login-card{padding:36px 24px;border-radius:20px}
+  .heading{font-size:24px}
+  .login-card::before{left:24px;right:24px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-dots"></div>
+
+<div class="login-card">
+
+  <a href="/" class="logo">
+    <div class="logo-icon">OX</div>
+    OxBot
+  </a>
+
+  <!-- ═══════════════════════════════
+       VIEW 1 — Login
+  ════════════════════════════════ -->
+  <div id="viewLogin" class="view">
+    <h1 class="heading">Welcome back</h1>
+    <p class="subtitle">Enter your credentials to access your dashboard.</p>
+
+    <div id="loginError" class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="loginErrorText"></span>
+    </div>
+
+    <form id="loginForm" autocomplete="on" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <div class="input-wrap">
+          <i class="fas fa-user icon-left"></i>
+          <input type="text" id="username" class="form-input" placeholder="Enter your username" autocomplete="username" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">
+          Password
+          <a href="/forgot-password">Forgot password?</a>
+        </label>
+        <div class="input-wrap">
+          <i class="fas fa-lock icon-left"></i>
+          <input type="password" id="password" class="form-input has-eye" placeholder="Enter your password" autocomplete="current-password" required>
+          <button type="button" class="eye-btn" id="eyeToggle" aria-label="Toggle password visibility" onclick="toggleEye()">
+            <i class="fas fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn" id="loginBtn">
+        <span class="spinner" id="loginSpinner"></span>
+        <span id="loginBtnText">Log In</span>
+      </button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <button type="button" class="btn-ghost" onclick="window.location.href='/register'">
+      <i class="fas fa-user-plus" style="font-size:13px"></i> Create a new account
+    </button>
+
+    <p class="footer-text">Don't have an account? <a href="/register">Sign up free</a></p>
+  </div>
+
+  <!-- ═══════════════════════════════
+       VIEW 2 — Unverified email
+  ════════════════════════════════ -->
+  <div id="viewUnverified" class="view hidden">
+    <div class="unverified-panel">
+      <div class="unverified-icon"><i class="fas fa-envelope-circle-check"></i></div>
+      <h3>Verify your email first</h3>
+      <p>Your account is registered but not yet activated. We sent a link to:</p>
+      <div class="unverified-email">
+        <i class="fas fa-envelope"></i>
+        <span id="unverifiedEmail">—</span>
+      </div>
+      <p style="margin-bottom:0">Click below to resend the verification email.</p>
+    </div>
+
+    <div id="resendAlert" class="alert" style="margin-bottom:16px"></div>
+
+    <button type="button" class="btn-amber" id="resendBtn" onclick="handleResend()">
+      <i class="fas fa-paper-plane"></i>
+      <span id="resendBtnText">Resend Verification Email</span>
+    </button>
+
+    <button type="button" class="btn-ghost" onclick="showView('viewLogin')">
+      <i class="fas fa-arrow-left"></i> Back to login
+    </button>
+  </div>
+
+</div>
+
+<script>
+function showView(id) {
+  ['viewLogin','viewUnverified'].forEach(v => {
+    document.getElementById(v).classList.toggle('hidden', v !== id);
+  });
+  clearAlerts();
+}
+
+function clearAlerts() {
+  document.querySelectorAll('.alert').forEach(a => {
+    a.className = 'alert';
+  });
+}
+
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type} show`;
+  el.innerHTML = `<i class="fas fa-${type==='error'?'exclamation-circle':'check-circle'}"></i><span>${msg}</span>`;
+}
+
+function toggleEye() {
+  const input = document.getElementById('password');
+  const icon  = document.getElementById('eyeIcon');
+  const show  = input.type === 'password';
+  input.type  = show ? 'text' : 'password';
+  icon.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+}
+
+document.getElementById('username').addEventListener('input', clearAlerts);
+document.getElementById('password').addEventListener('input', clearAlerts);
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!username || !password) {
+    showAlert('loginError','error','Please fill in all fields.');
+    return;
+  }
+
+  const btn     = document.getElementById('loginBtn');
+  const spinner = document.getElementById('loginSpinner');
+  const txt     = document.getElementById('loginBtnText');
+
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  txt.textContent = 'Authenticating…';
+
+  try {
+    const res  = await fetch('/api/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+
+    if (res.ok && data.token) {
+      localStorage.setItem('token', data.token);
+      window.location.href = '/dashboard';
+    } else if (data.unverified) {
+      document.getElementById('unverifiedEmail').textContent = data.email || '—';
+      showView('viewUnverified');
+    } else {
+      showAlert('loginError','error', data.message || 'Invalid username or password.');
+    }
+  } catch {
+    showAlert('loginError','error','Connection failed. Check your internet and try again.');
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    txt.textContent = 'Log In';
+  }
+});
+
+let resendCountdown = 0, resendTimer = null;
+
+async function handleResend() {
+  if (resendCountdown > 0) return;
+  const email = document.getElementById('unverifiedEmail').textContent;
+  const btn   = document.getElementById('resendBtn');
+  const txt   = document.getElementById('resendBtnText');
+
+  btn.disabled = true;
+  txt.textContent = 'Sending…';
+
+  try {
+    const res  = await fetch('/api/resend-verification', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email})
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      showAlert('resendAlert','success', data.message || 'Verification email sent!');
+      startResendCountdown(60);
+    } else {
+      showAlert('resendAlert','error', data.message || 'Failed to resend. Try again.');
+      btn.disabled = false;
+      txt.textContent = 'Resend Verification Email';
+    }
+  } catch {
+    showAlert('resendAlert','error','Connection failed. Check your internet.');
+    btn.disabled = false;
+    txt.textContent = 'Resend Verification Email';
+  }
+}
+
+function startResendCountdown(s) {
+  resendCountdown = s;
+  const btn = document.getElementById('resendBtn');
+  const txt = document.getElementById('resendBtnText');
+  resendTimer = setInterval(() => {
+    resendCountdown--;
+    if (resendCountdown <= 0) {
+      clearInterval(resendTimer);
+      btn.disabled = false;
+      txt.textContent = 'Resend Verification Email';
+    } else {
+      txt.textContent = `Resend in ${resendCountdown}s`;
+    }
+  }, 1000);
+}
+</script>
+</body>
+</html>

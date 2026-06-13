@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>OxBot — WhatsApp Automation</title>
+<meta name="description" content="Automate your WhatsApp like a pro. Grow your community, save time, and automate replies in minutes — no coding needed."/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g0: #ffffff;
+  --g1: #f6faf7;
+  --g2: #e8f5ec;
+  --accent: #16a34a;
+  --accent-d: #14532d;
+  --accent-l: #bbf7d0;
+  --text: #0d1f12;
+  --text-2: #3d5247;
+  --text-3: #7a9486;
+  --border: #d8ece0;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --radius: 16px;
+  --radius-lg: 24px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--g0);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+/* ── UTILITIES ─────────────────────────────────────────── */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+.section { padding: 96px 0; }
+.section-alt { background: var(--g1); }
+
+.label {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--accent);
+  background: var(--g2); border: 1px solid var(--accent-l);
+  padding: 5px 14px; border-radius: 100px;
+  margin-bottom: 18px;
+}
+
+.label-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0;
+  animation: blink 2s ease infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4vw, 46px);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--text);
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+.section-sub {
+  font-size: 17px;
+  color: var(--text-2);
+  max-width: 480px;
+  line-height: 1.7;
+}
+
+/* ── FADE IN ───────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity .65s cubic-bezier(.16,1,.3,1), transform .65s cubic-bezier(.16,1,.3,1);
+}
+.reveal.in { opacity: 1; transform: none; }
+.reveal-d1 { transition-delay: .08s; }
+.reveal-d2 { transition-delay: .16s; }
+.reveal-d3 { transition-delay: .24s; }
+.reveal-d4 { transition-delay: .32s; }
+
+/* ── HEADER ────────────────────────────────────────────── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+}
+.header-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 68px;
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display);
+  font-size: 21px; font-weight: 900;
+  color: var(--text);
+}
+.logo-mark {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-mark svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+.main-nav { display: flex; align-items: center; gap: 28px; }
+.main-nav a { font-size: 14px; font-weight: 500; color: var(--text-2); transition: color .18s; }
+.main-nav a:hover { color: var(--accent); }
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+.btn-ghost-sm {
+  font-size: 14px; font-weight: 600; color: var(--text-2);
+  padding: 8px 16px; border-radius: 10px;
+  border: 1px solid transparent;
+  transition: all .18s;
+}
+.btn-ghost-sm:hover { border-color: var(--border); color: var(--text); }
+
+.btn-cta {
+  font-size: 14px; font-weight: 700;
+  background: var(--accent); color: #fff;
+  padding: 9px 20px; border-radius: 10px;
+  display: inline-flex; align-items: center; gap: 7px;
+  transition: background .18s, transform .15s, box-shadow .18s;
+  box-shadow: 0 3px 12px rgba(22,163,74,.25);
+}
+.btn-cta:hover { background: var(--accent-d); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(22,163,74,.3); }
+.btn-cta svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* hamburger */
+.burger {
+  display: none; width: 42px; height: 42px;
+  border: none; background: none; cursor: pointer;
+  border-radius: 10px; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .15s;
+}
+.burger:hover { background: var(--g2); }
+.burger svg { width: 22px; height: 22px; stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; }
+
+/* mobile drawer */
+.drawer {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(13,31,18,.4); backdrop-filter: blur(4px);
+  opacity: 0; transition: opacity .25s;
+}
+.drawer.open { display: block; }
+.drawer.visible { opacity: 1; }
+.drawer-panel {
+  position: absolute; top: 0; right: 0;
+  width: 280px; max-width: 85vw; height: 100%;
+  background: var(--g0); padding: 24px;
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .3s cubic-bezier(.16,1,.3,1);
+  box-shadow: -12px 0 40px rgba(0,0,0,.08);
+}
+.drawer.visible .drawer-panel { transform: none; }
+.drawer-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+.drawer-close {
+  width: 38px; height: 38px; border: none; background: var(--g1);
+  border-radius: 10px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.drawer-close svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; }
+.drawer-nav { display: flex; flex-direction: column; gap: 4px; }
+.drawer-nav a {
+  padding: 13px 14px; border-radius: 12px;
+  font-size: 15px; font-weight: 500; color: var(--text);
+  transition: background .15s;
+}
+.drawer-nav a:hover { background: var(--g1); }
+.drawer-foot { margin-top: auto; padding-top: 24px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+.drawer-foot .btn-ghost-sm { text-align: center; border: 1px solid var(--border); font-size: 15px; padding: 12px; }
+.drawer-foot .btn-cta { justify-content: center; font-size: 15px; padding: 13px; }
+
+/* ── HERO ──────────────────────────────────────────────── */
+.hero {
+  position: relative; overflow: hidden;
+  background: linear-gradient(170deg, var(--g1) 0%, var(--g0) 55%);
+  padding: 108px 0 120px;
+  text-align: center;
+}
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 52px 52px;
+  opacity: .35;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+}
+.hero-blob {
+  position: absolute; border-radius: 50%;
+  filter: blur(90px); pointer-events: none;
+}
+.hero-blob-a { width: 560px; height: 400px; background: #d1fae5; top: -80px; left: -100px; opacity: .55; }
+.hero-blob-b { width: 400px; height: 380px; background: #bbf7d0; bottom: -60px; right: -80px; opacity: .45; }
+
+.hero-inner { position: relative; max-width: 740px; margin: 0 auto; }
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 6vw, 72px);
+  font-weight: 900;
+  letter-spacing: -.03em;
+  line-height: 1.08;
+  color: var(--text);
+  margin-bottom: 22px;
+}
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hero-sub {
+  font-size: 18px; color: var(--text-2);
+  line-height: 1.65; max-width: 500px;
+  margin: 0 auto 40px;
+}
+
+.hero-actions {
+  display: flex; flex-wrap: wrap; gap: 14px; justify-content: center;
+  margin-bottom: 52px;
+}
+.btn-hero-main {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--accent); color: #fff;
+  padding: 17px 36px; border-radius: 14px;
+  font-family: var(--font-display); font-size: 16px; font-weight: 700;
+  box-shadow: 0 10px 28px rgba(22,163,74,.28);
+  transition: all .2s;
+}
+.btn-hero-main:hover { background: var(--accent-d); transform: translateY(-2px); box-shadow: 0 16px 36px rgba(22,163,74,.36); }
+.btn-hero-main svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+.btn-hero-sec {
+  display: inline-flex; align-items: center; gap: 10px;
+  border: 1.5px solid var(--border); background: var(--g0); color: var(--text);
+  padding: 16px 32px; border-radius: 14px;
+  font-family: var(--font-display); font-size: 16px; font-weight: 600;
+  transition: all .2s;
+}
+.btn-hero-sec:hover { border-color: var(--accent-l); background: var(--g1); transform: translateY(-2px); }
+
+.hero-trust {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 28px;
+  font-size: 13px; color: var(--text-3); font-weight: 500;
+}
+.hero-trust span { display: flex; align-items: center; gap: 7px; }
+.hero-trust span::before { content: '✓'; color: var(--accent); font-weight: 700; font-size: 15px; }
+
+/* ── FEATURES ──────────────────────────────────────────── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 56px;
+}
+
+.feat-card {
+  background: var(--g0);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  transition: transform .28s, border-color .28s, box-shadow .28s;
+}
+.feat-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent-l);
+  box-shadow: 0 18px 40px -8px rgba(22,163,74,.12);
+}
+.feat-icon {
+  width: 50px; height: 50px; border-radius: 14px;
+  background: var(--g2);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 22px; color: var(--accent);
+  transition: transform .28s, background .28s;
+}
+.feat-card:hover .feat-icon { transform: scale(1.1); background: var(--accent-l); }
+.feat-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.feat-card h3 { font-family: var(--font-display); font-size: 19px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+.feat-card p { font-size: 15px; color: var(--text-2); line-height: 1.7; }
+
+/* ── HOW IT WORKS ──────────────────────────────────────── */
+.hiw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin-top: 56px;
+}
+.hiw-step {
+  background: var(--g0);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  position: relative;
+}
+.step-num {
+  width: 38px; height: 38px;
+  background: var(--text);
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 800; color: #fff;
+  margin-bottom: 22px;
+}
+.hiw-step h3 { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 9px; }
+.hiw-step p { font-size: 15px; color: var(--text-2); line-height: 1.7; }
+
+/* ── PRICING ───────────────────────────────────────────── */
+.plans-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 28px;
+  margin-top: 60px;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.plan {
+  background: var(--g0);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 38px 32px;
+  display: flex; flex-direction: column;
+  position: relative;
+  transition: transform .25s, box-shadow .25s;
+}
+.plan:hover { transform: translateY(-4px); box-shadow: 0 20px 44px -10px rgba(0,0,0,.06); }
+.plan.featured {
+  border-color: var(--accent);
+  box-shadow: 0 16px 48px -10px rgba(22,163,74,.22);
+}
+.plan-crown {
+  position: absolute; top: -14px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent); color: #fff;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 5px 16px; border-radius: 100px;
+  white-space: nowrap;
+}
+.plan-name {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 800;
+  margin-bottom: 6px; color: var(--text);
+}
+.plan-coin-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700; color: #854d0e;
+  background: #fef3c7; border: 1px solid #fde68a;
+  padding: 3px 10px; border-radius: 20px;
+  margin-bottom: 16px;
+}
+.plan-price-row {
+  display: flex; align-items: baseline; gap: 4px;
+  margin-bottom: 28px;
+}
+.plan-amount {
+  font-family: var(--font-display);
+  font-size: 48px; font-weight: 900;
+  color: var(--text); line-height: 1;
+}
+.plan-period { font-size: 15px; color: var(--text-3); font-weight: 500; }
+.plan-feats {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 13px;
+  margin-bottom: 32px; flex: 1;
+}
+.plan-feats li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 15px; color: var(--text);
+}
+.plan-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--g2); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
+}
+.plan-btn {
+  display: flex; align-items: center; justify-content: center;
+  padding: 15px; border-radius: 12px;
+  font-family: var(--font-display); font-size: 16px; font-weight: 700;
+  transition: all .2s;
+}
+.plan-btn.outline {
+  border: 1.5px solid var(--border); color: var(--text); background: var(--g0);
+}
+.plan-btn.outline:hover { border-color: var(--accent-l); background: var(--g1); }
+.plan-btn.solid {
+  background: var(--accent); color: #fff;
+  box-shadow: 0 4px 14px rgba(22,163,74,.28);
+}
+.plan-btn.solid:hover { background: var(--accent-d); transform: translateY(-1px); }
+
+/* ── FAQ ───────────────────────────────────────────────── */
+.faq-list {
+  max-width: 700px; margin: 56px auto 0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.faq-item {
+  background: var(--g0);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.faq-q {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 19px 22px; background: none; border: none; cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 15px; font-weight: 600; color: var(--text);
+  text-align: left; transition: background .15s;
+}
+.faq-q:hover { background: var(--g1); }
+.faq-icon { color: var(--text-3); transition: transform .3s, color .2s; flex-shrink: 0; }
+.faq-icon svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.faq-item.open .faq-icon { transform: rotate(180deg); color: var(--accent); }
+.faq-a {
+  max-height: 0; overflow: hidden;
+  transition: max-height .32s ease, padding .32s ease;
+  font-size: 15px; color: var(--text-2); line-height: 1.75;
+  padding: 0 22px;
+}
+.faq-item.open .faq-a { max-height: 320px; padding: 0 22px 22px; }
+
+/* ── CTA BANNER ────────────────────────────────────────── */
+.cta-banner {
+  background: var(--accent-d);
+  padding: 100px 0; text-align: center;
+  position: relative; overflow: hidden;
+}
+.cta-banner::before {
+  content: '';
+  position: absolute; top: -80px; right: -80px;
+  width: 380px; height: 380px; border-radius: 50%;
+  background: rgba(255,255,255,.04);
+}
+.cta-banner::after {
+  content: '';
+  position: absolute; bottom: -60px; left: -60px;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: rgba(255,255,255,.04);
+}
+.cta-banner-inner { position: relative; }
+.cta-banner h2 {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900; color: #fff;
+  letter-spacing: -.02em; margin-bottom: 14px; line-height: 1.1;
+}
+.cta-banner p { font-size: 17px; color: rgba(255,255,255,.7); margin-bottom: 36px; }
+.btn-banner {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: #fff; color: var(--accent-d);
+  padding: 17px 38px; border-radius: 14px;
+  font-family: var(--font-display); font-size: 16px; font-weight: 800;
+  box-shadow: 0 10px 32px rgba(0,0,0,.18);
+  transition: all .2s;
+}
+.btn-banner:hover { background: var(--g1); transform: translateY(-2px); }
+.btn-banner svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── FOOTER ────────────────────────────────────────────── */
+footer {
+  background: var(--g0);
+  border-top: 1px solid var(--border);
+  padding: 48px 0 32px;
+}
+.footer-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 24px;
+  text-align: center;
+}
+.footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
+.footer-links a { font-size: 14px; font-weight: 500; color: var(--text-3); transition: color .18s; }
+.footer-links a:hover { color: var(--accent); }
+.footer-copy { font-size: 13px; color: var(--text-3); margin-top: 8px; }
+
+/* ── RESPONSIVE ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .main-nav, .header-right .btn-ghost-sm, .header-right .btn-cta { display: none; }
+  .burger { display: flex; }
+  .section { padding: 72px 0; }
+  .hero { padding: 80px 0 96px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <a class="logo" href="/">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        OxBot
+      </a>
+      <nav class="main-nav">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="header-right">
+        <a class="btn-ghost-sm" href="login.html">Log in</a>
+        <a class="btn-cta" href="register.html">
+          Start free
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+      <button class="burger" id="burgerBtn" aria-label="Open menu">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- MOBILE DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-panel">
+    <div class="drawer-top">
+      <a class="logo" href="/">
+        <div class="logo-mark" style="width:30px;height:30px;border-radius:8px">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        OxBot
+      </a>
+      <button class="drawer-close" id="drawerClose">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="drawer-foot">
+      <a class="btn-ghost-sm" href="login.html">Log in</a>
+      <a class="btn-cta" href="register.html">
+        Start free
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-blob hero-blob-a"></div>
+  <div class="hero-blob hero-blob-b"></div>
+  <div class="container">
+    <div class="hero-inner">
+      <div class="label reveal"><span class="label-dot"></span> Trusted by 5,000+ creators</div>
+      <h1 class="reveal reveal-d1">Automate Your WhatsApp <em>Like a Pro.</em> No Coding.</h1>
+      <p class="hero-sub reveal reveal-d2">Scale your presence, reclaim your time, and run automated replies around the clock. OxBot handles the busywork — you handle the growth.</p>
+      <div class="hero-actions reveal reveal-d3">
+        <a class="btn-hero-main" href="register.html">
+          Get started free
+          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </a>
+        <a class="btn-hero-sec" href="#pricing">See pricing</a>
+      </div>
+      <div class="hero-trust reveal reveal-d4">
+        <span>No credit card needed</span>
+        <span>2-day free trial</span>
+        <span>Cancel any time</span>
+        <span>24/7 uptime</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="section section-alt">
+  <div class="container">
+    <div style="text-align:center" class="reveal">
+      <div class="label"><span class="label-dot"></span> Why OxBot</div>
+      <h2 class="section-title" style="margin:0 auto 14px">Everything you need to grow</h2>
+      <p class="section-sub" style="margin:0 auto">Spend less time typing repetitive replies and more time growing your community.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal reveal-d1">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3>Instant Auto Replies</h3>
+        <p>Respond to messages instantly, just like a human. Boost engagement without staying glued to your phone all day.</p>
+      </div>
+      <div class="feat-card reveal reveal-d2">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>24/7 Uptime</h3>
+        <p>Your bot keeps working while you sleep, travel, or focus on other things. No breaks, no missed messages.</p>
+      </div>
+      <div class="feat-card reveal reveal-d3">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3>Safe by Default</h3>
+        <p>Built-in anti-ban protection. Sensible automation patterns designed to keep your WhatsApp account in good standing.</p>
+      </div>
+      <div class="feat-card reveal reveal-d4">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+        <h3>Full Customization</h3>
+        <p>Set your bot's name, profile image, and behavior to match your brand. Nothing generic, everything yours.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works" class="section">
+  <div class="container">
+    <div class="reveal">
+      <div class="label"><span class="label-dot"></span> Simple setup</div>
+      <h2 class="section-title">Up and running in minutes</h2>
+      <p class="section-sub">Three steps. Most people go live in under five minutes.</p>
+    </div>
+    <div class="hiw-grid">
+      <div class="hiw-step reveal reveal-d1">
+        <div class="step-num">1</div>
+        <h3>Connect WhatsApp</h3>
+        <p>Pair using a secure code or QR scan. No technical knowledge needed. Works with your existing number.</p>
+      </div>
+      <div class="hiw-step reveal reveal-d2">
+        <div class="step-num">2</div>
+        <h3>Set up your bot</h3>
+        <p>Paste your session ID, pick a server, and give your bot a name. Done in under a minute.</p>
+      </div>
+      <div class="hiw-step reveal reveal-d3">
+        <div class="step-num">3</div>
+        <h3>Go live</h3>
+        <p>Hit start. Your OxBot is online and handling messages 24/7. Send <strong>.help</strong> to see all commands.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="section section-alt">
+  <div class="container">
+    <div style="text-align:center" class="reveal">
+      <div class="label"><span class="label-dot"></span> Pricing</div>
+      <h2 class="section-title" style="margin:0 auto 14px">Pick your plan</h2>
+      <p class="section-sub" style="margin:0 auto">Coins are used to activate bots. 1 bot costs 20 coins to activate.</p>
+    </div>
+    <div class="plans-wrap">
+
+      <!-- Basic -->
+      <div class="plan reveal reveal-d1">
+        <div class="plan-name">Basic</div>
+        <div class="plan-coin-badge">🪙 70 coins included</div>
+        <div class="plan-price-row">
+          <span class="plan-amount">$1.5</span>
+          <span class="plan-period">/ month</span>
+        </div>
+        <ul class="plan-feats">
+          <li><span class="plan-check">✓</span><span>Up to <strong>5 bots</strong></span></li>
+          <li><span class="plan-check">✓</span><span>Antiban protection</span></li>
+          <li><span class="plan-check">✓</span><span>24/7 uptime, no downtime</span></li>
+          <li><span class="plan-check">✓</span><span>Standard support</span></li>
+          <li><span class="plan-check">✓</span><span>Bot lasts 30 days</span></li>
+          <li><span class="plan-check">✓</span><span>All basic commands</span></li>
+        </ul>
+        <a class="plan-btn outline" href="register.html">Choose Basic</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="plan featured reveal reveal-d2">
+        <div class="plan-crown">Best Value</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-coin-badge">🪙 100 coins included</div>
+        <div class="plan-price-row">
+          <span class="plan-amount">$3</span>
+          <span class="plan-period">/ month</span>
+        </div>
+        <ul class="plan-feats">
+          <li><span class="plan-check">✓</span><span>Up to <strong>8 bots</strong></span></li>
+          <li><span class="plan-check">✓</span><span>Antiban protection</span></li>
+          <li><span class="plan-check">✓</span><span>24/7 uptime, no downtime</span></li>
+          <li><span class="plan-check">✓</span><span><strong>Priority support</strong></span></li>
+          <li><span class="plan-check">✓</span><span>Custom bot image</span></li>
+          <li><span class="plan-check">✓</span><span>Fast command priority</span></li>
+          <li><span class="plan-check">✓</span><span>All commands unlocked</span></li>
+          <li><span class="plan-check">✓</span><span>Bot lasts 30 days</span></li>
+        </ul>
+        <a class="plan-btn solid" href="register.html">Choose Pro</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="section">
+  <div class="container">
+    <div style="text-align:center" class="reveal">
+      <div class="label"><span class="label-dot"></span> FAQ</div>
+      <h2 class="section-title" style="margin:0 auto">Questions answered</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item open reveal">
+        <button class="faq-q">
+          Is OxBot safe for my WhatsApp account?
+          <span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="faq-a">Yes. OxBot uses WhatsApp's official Linked Devices feature, which is designed for exactly this kind of multi-device usage. We also apply sensible automation pacing to reduce any account risk. Thousands of users run OxBot daily without issues.</div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q">
+          Do I need any coding skills?
+          <span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="faq-a">None at all. Setup is entirely through your dashboard. Pair your device, paste your session ID, pick a server, and you are live. No terminal, no scripts, no config files.</div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q">
+          What are coins and how do they work?
+          <span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="faq-a">Coins are your OxBot credits. Each plan includes coins on signup: Basic gives 70 coins, Pro gives 100 coins. Activating a new bot costs 20 coins. You can earn more coins by referring friends (10 coins each) or depositing via bank transfer.</div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q">
+          How long does each bot last?
+          <span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="faq-a">All bots last 30 days per activation, regardless of plan. Free trial bots last 2 days. After expiry you can reactivate using coins, and the bot continues from where it left off.</div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q">
+          Can I run multiple bots at once?
+          <span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="faq-a">Yes. Basic plan supports up to 5 simultaneous bots and Pro supports up to 8. Each bot uses its own WhatsApp session and runs independently. You manage all of them from one dashboard.</div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q">
+          What payment methods do you accept?
+          <span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="faq-a">We accept Nigerian bank transfer (NGN), and USDT crypto (TRC-20, BEP-20, ERC-20, Solana). For USD, GBP, or EUR payments, contact support@oxbot.name.ng and we will arrange it for you.</div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q">
+          How do I get a pairing code or QR?
+          <span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="faq-a">After registering, go to Pair Device in your dashboard. Choose QR code or phone code. Enter your WhatsApp number, follow the steps in the app, and your session ID will be sent directly to your WhatsApp chat. Then paste it into Add Bot.</div>
+      </div>
+      <div class="faq-item reveal">
+        <button class="faq-q">
+          What happens if my bot disconnects?
+          <span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="faq-a">OxBot has automatic reconnect built in. If a session drops, the bot attempts to reconnect immediately. You can also manually restart any bot from your dashboard. Pro users get faster reconnect priority.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section class="cta-banner">
+  <div class="container">
+    <div class="cta-banner-inner reveal">
+      <h2>Start Automating Today</h2>
+      <p>Free 2-day trial. No credit card. Setup in under 5 minutes.</p>
+      <a class="btn-banner" href="register.html">
+        Create free account
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <a class="logo" href="/">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        OxBot
+      </a>
+      <nav class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="login.html">Log in</a>
+        <a href="register.html">Sign up</a>
+        <a href="mailto:support@oxbot.name.ng">Contact</a>
+      </nav>
+      <p class="footer-copy">© 2026 OxBot · All rights reserved · <a href="mailto:support@oxbot.name.ng" style="color:var(--accent)">support@oxbot.name.ng</a></p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ── Scroll reveal ── */
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+/* ── FAQ accordion ── */
+document.querySelectorAll('.faq-q').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  });
+});
+
+/* ── Mobile drawer ── */
+const burger = document.getElementById('burgerBtn');
+const drawerClose = document.getElementById('drawerClose');
+const drawer = document.getElementById('drawer');
+
+function openDrawer() {
+  drawer.classList.add('open');
+  requestAnimationFrame(() => requestAnimationFrame(() => drawer.classList.add('visible')));
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  drawer.classList.remove('visible');
+  setTimeout(() => { drawer.classList.remove('open'); document.body.style.overflow = ''; }, 300);
+}
+burger.addEventListener('click', openDrawer);
+drawerClose.addEventListener('click', closeDrawer);
+drawer.addEventListener('click', e => { if (e.target === drawer) closeDrawer(); });
+drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', closeDrawer));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+</script>
+</body>
+</html>
