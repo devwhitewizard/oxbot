@@ -83,6 +83,7 @@ async function execute(sock, msg, botData, args) {
 ┃  ◈ .mp3 <name/link>    ┃
 ┃  ◈ .ytmp4 <yt link>    ┃
 ┃  ◈ .spotify <query>    ┃
+┃  ◈ .lyrics <song>      ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ┏━━━━━━━━━━━━━━━━━━━━━━┓
@@ -94,6 +95,8 @@ async function execute(sock, msg, botData, args) {
 ┃  ◈ .circle             ┃
 ┃  ◈ .joke               ┃
 ┃  ◈ .roast @user        ┃
+┃  ◈ .fact               ┃
+┃  ◈ .compliment @user   ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ┏━━━━━━━━━━━━━━━━━━━━━━┓
@@ -115,6 +118,8 @@ async function execute(sock, msg, botData, args) {
 ┃  ◈ .translate <text>   ┃
 ┃  ◈ .ping               ┃
 ┃  ◈ .alive              ┃
+┃  ◈ .gpt <question>     ┃
+┃  ◈ .gemini <question>  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ┏━━━━━━━━━━━━━━━━━━━━━━┓
@@ -161,18 +166,6 @@ async function execute(sock, msg, botData, args) {
                         channel_id: '120363421280626994@newsletter'
                     })
                 }
-            },
-            { 
-                urlButton: { 
-                    displayText: '👑 Owner',   
-                    url: `https://wa.me/${ownerNumber || '2348000000000'}` 
-                } 
-            },
-            { 
-                urlButton: { 
-                    displayText: '🛠️ Deploy',  
-                    url: 'https://oxbot.name.ng' 
-                } 
             },
         ];
 

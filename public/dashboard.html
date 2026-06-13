@@ -598,12 +598,38 @@ select.form-input option{background:var(--card2);color:var(--text);}
           <button class="mode-tab" onclick="setPairMode('code',this)"><i class="fas fa-keyboard"></i> Phone Code</button>
         </div>
         <div id="qrMode">
-          <div class="form-group"><label class="form-label">WhatsApp Number (for delivery)</label><div class="phone-row"><div class="phone-flag">🇳🇬 +234</div><input type="tel" id="qrPhone" class="form-input" placeholder="8012345678" inputmode="numeric"/></div></div>
+          <div class="form-group"><label class="form-label">WhatsApp Number (for delivery)</label><div class="phone-row">
+            <select id="qrCountry" class="phone-flag" onchange="onCountryChange('qr')" style="cursor:pointer; outline:none; background:var(--card2); color:var(--text); border:1px solid var(--border); border-radius:8px;">
+              <option value="234">🇳🇬 +234</option>
+              <option value="260">🇿🇲 +260</option>
+              <option value="254">🇰🇪 +254</option>
+              <option value="27">🇿🇦 +27</option>
+              <option value="44">🇬🇧 +44</option>
+              <option value="1">🇺🇸 +1</option>
+              <option value="other">🌐 Other</option>
+            </select>
+            <input type="tel" id="qrPhone" class="form-input" placeholder="8012345678" inputmode="numeric" oninput="updatePhonePreview('qr')"/></div>
+            <div id="qrPhonePreview" style="margin-top:6px; font-size:12px; color:var(--brand); font-weight:600; display:none;"></div>
+            <p id="qrHint" class="form-hint" style="margin-top:6px; font-size:11px; color:var(--muted2);">Nigeria: Omit leading 0 (e.g., type 8012345678 instead of 08012345678).</p>
+          </div>
           <button class="btn btn-primary" id="qrBtn" onclick="doQR()"><i class="fas fa-qrcode"></i> Generate QR Code</button>
           <div id="qrResult"></div>
         </div>
         <div id="codeMode" style="display:none;">
-          <div class="form-group"><label class="form-label">WhatsApp Number</label><div class="phone-row"><div class="phone-flag">🇳🇬 +234</div><input type="tel" id="pairPhone" class="form-input" placeholder="8012345678" inputmode="numeric"/></div><p class="form-hint">Other countries: enter full international number (e.g. 447911123456)</p></div>
+          <div class="form-group"><label class="form-label">WhatsApp Number</label><div class="phone-row">
+            <select id="pairCountry" class="phone-flag" onchange="onCountryChange('pair')" style="cursor:pointer; outline:none; background:var(--card2); color:var(--text); border:1px solid var(--border); border-radius:8px;">
+              <option value="234">🇳🇬 +234</option>
+              <option value="260">🇿🇲 +260</option>
+              <option value="254">🇰🇪 +254</option>
+              <option value="27">🇿🇦 +27</option>
+              <option value="44">🇬🇧 +44</option>
+              <option value="1">🇺🇸 +1</option>
+              <option value="other">🌐 Other</option>
+            </select>
+            <input type="tel" id="pairPhone" class="form-input" placeholder="8012345678" inputmode="numeric" oninput="updatePhonePreview('pair')"/></div>
+            <div id="pairPhonePreview" style="margin-top:6px; font-size:12px; color:var(--brand); font-weight:600; display:none;"></div>
+            <p id="pairHint" class="form-hint" style="margin-top:6px; font-size:11px; color:var(--muted2);">Nigeria: Omit leading 0 (e.g., type 8012345678 instead of 08012345678).</p>
+          </div>
           <button class="btn btn-primary" id="pairBtn" onclick="doPair()"><i class="fas fa-link"></i> Get Pairing Code</button>
           <div id="pairProgress" style="display:none;"><div class="pair-progress"><div class="spinner"></div><div class="pair-progress-text" id="pairProgressText"><span>Connecting</span>...</div></div></div>
           <div id="pairResult"></div>
@@ -987,6 +1013,17 @@ select.form-input option{background:var(--card2);color:var(--text);}
       </div>
 
       <!-- TOGGLE ROW TEMPLATE -->
+      <!-- PUBLIC COMMANDS (BOT MODE) -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;">🌐 Public Commands</div>
+          <div style="font-size:10px;color:var(--muted2);margin-top:2px;">Allow other users to interact with your bot</div>
+        </div>
+        <div class="bs-toggle" id="toggle-botmode" onclick="bsToggle('botmode')" style="width:44px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;flex-shrink:0;transition:background .2s;">
+          <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3);" id="knob-botmode"></div>
+        </div>
+      </div>
+
       <!-- AUTOTYPING -->
       <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
         <div>
@@ -1448,11 +1485,86 @@ function setPairMode(mode,el){
   resetPairBtn();
 }
 
-function cleanPhone(raw){let p=raw.replace(/\D/g,'');while(p.startsWith('0'))p=p.slice(1);if(p.length<=10)p='234'+p;return p;}
+function cleanPhone(raw, countryCode) {
+  let rawStr = raw.trim();
+  let p = rawStr.replace(/\D/g,'');
+  if (!p) return '';
+  if (!countryCode || countryCode === 'other') {
+    return p;
+  }
+  if (p.startsWith(countryCode) && p.length > countryCode.length) {
+    return p;
+  }
+  if (p.startsWith('0')) {
+    p = p.slice(1);
+  }
+  return countryCode + p;
+}
+
+const COUNTRY_METADATA = {
+  '234': { placeholder: '8012345678', hint: 'Nigeria: Omit leading 0 (e.g., type 8012345678 instead of 08012345678).' },
+  '260': { placeholder: '977123456', hint: 'Zambia: Omit leading 0 (e.g., type 977123456 instead of 0977123456).' },
+  '254': { placeholder: '712345678', hint: 'Kenya: Omit leading 0 (e.g., type 712345678 instead of 0712345678).' },
+  '27':  { placeholder: '821234567', hint: 'South Africa: Omit leading 0 (e.g., type 821234567 instead of 0821234567).' },
+  '44':  { placeholder: '7911123456', hint: 'United Kingdom: Omit leading 0 (e.g., type 7911123456 instead of 07911123456).' },
+  '1':   { placeholder: '2025550143', hint: 'United States: Enter 10-digit area code + phone number.' },
+  'other': { placeholder: '447911123456', hint: 'Enter full number with country code (e.g., 447911123456 for UK, 2348012345678 for Nigeria).' }
+};
+
+function updatePhonePreview(type) {
+  const selectId = type === 'qr' ? 'qrCountry' : 'pairCountry';
+  const inputId = type === 'qr' ? 'qrPhone' : 'pairPhone';
+  const previewId = type === 'qr' ? 'qrPhonePreview' : 'pairPhonePreview';
+  
+  const selectEl = document.getElementById(selectId);
+  const inputEl = document.getElementById(inputId);
+  const previewEl = document.getElementById(previewId);
+  
+  if (!selectEl || !inputEl || !previewEl) return;
+  
+  const country = selectEl.value;
+  const raw = inputEl.value.trim();
+  
+  if (!raw) {
+    previewEl.style.display = 'none';
+    return;
+  }
+  
+  const clean = cleanPhone(raw, country);
+  if (clean) {
+    previewEl.style.display = 'block';
+    previewEl.innerHTML = `<i class="fas fa-phone-alt"></i> Formatted: <strong style="color:#22c55e;">+${clean}</strong>`;
+  } else {
+    previewEl.style.display = 'none';
+  }
+}
+
+function onCountryChange(type) {
+  const selectId = type === 'qr' ? 'qrCountry' : 'pairCountry';
+  const inputId = type === 'qr' ? 'qrPhone' : 'pairPhone';
+  const hintId = type === 'qr' ? 'qrHint' : 'pairHint';
+  
+  const selectEl = document.getElementById(selectId);
+  const inputEl = document.getElementById(inputId);
+  const hintEl = document.getElementById(hintId);
+  
+  if (!selectEl || !inputEl) return;
+  
+  const country = selectEl.value;
+  const meta = COUNTRY_METADATA[country] || COUNTRY_METADATA['other'];
+  
+  inputEl.placeholder = meta.placeholder;
+  if (hintEl) {
+    hintEl.textContent = meta.hint;
+  }
+  
+  updatePhonePreview(type);
+}
 
 async function doQR(){
   const raw=document.getElementById('qrPhone').value.trim();if(!raw)return showToast('Enter phone number',true);
-  const phone=cleanPhone(raw);const btn=document.getElementById('qrBtn');const res=document.getElementById('qrResult');
+  const country=document.getElementById('qrCountry').value;
+  const phone=cleanPhone(raw, country);const btn=document.getElementById('qrBtn');const res=document.getElementById('qrResult');
   btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px;margin:0 auto"></div>';res.innerHTML='';
   try{
     const r=await fetch('/api/pair-qr',{method:'POST',headers:H,body:JSON.stringify({phone})});
@@ -1461,7 +1573,7 @@ async function doQR(){
     qrPollTimer=setInterval(async()=>{att++;if(att>60){clearInterval(qrPollTimer);res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Timed Out</h3><p>QR expired. Try again.</p></div>';btn.disabled=false;btn.innerHTML='<i class="fas fa-qrcode"></i> Generate QR Code';return;}
       try{const sr=await fetch('/api/pair-status/'+rid,{headers:H});const sd=await sr.json();
         if(sd.status==='qr_ready'&&sd.qr){clearInterval(qrPollTimer);btn.disabled=false;btn.innerHTML='<i class="fas fa-sync-alt"></i> Refresh QR';showQR(sd.qr);pollLinked(rid,res,btn,'<i class="fas fa-qrcode"></i> Generate QR Code');}
-        if(sd.status==='linked'){clearInterval(qrPollTimer);showSuccess(res,btn,'<i class="fas fa-qrcode"></i> Generate QR Code',sd.waName);}
+        if(sd.status==='linked'){clearInterval(qrPollTimer);showSuccess(res,btn,'<i class="fas fa-qrcode"></i> Generate QR Code',sd.waName,sd.fullSession);}
         if(sd.status==='error'){clearInterval(qrPollTimer);res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Error</h3><p>'+esc(sd.error)+'</p></div>';btn.disabled=false;btn.innerHTML='<i class="fas fa-qrcode"></i> Generate QR Code';}
       }catch{}
     },2000);
@@ -1477,7 +1589,8 @@ function showQR(data){
 
 async function doPair(){
   const raw=document.getElementById('pairPhone').value.trim();if(!raw)return showToast('Enter phone number',true);
-  const phone=cleanPhone(raw);const btn=document.getElementById('pairBtn');const prog=document.getElementById('pairProgress');
+  const country=document.getElementById('pairCountry').value;
+  const phone=cleanPhone(raw, country);const btn=document.getElementById('pairBtn');const prog=document.getElementById('pairProgress');
   const ptxt=document.getElementById('pairProgressText');const res=document.getElementById('pairResult');
   btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px"></div>';
   prog.style.display='block';ptxt.innerHTML='<span>Connecting</span>...';res.innerHTML='';
@@ -1492,7 +1605,7 @@ async function doPair(){
           const clean=sd.code.replace(/-/g,'');
           res.innerHTML='<div class="code-display"><p style="font-size:11px;color:var(--brand);font-weight:600;margin-bottom:12px"><i class="fas fa-check-circle"></i> Pairing code for +'+phone+'</p><div class="code-num" onclick="copyText(\''+clean+'\')">'+esc(sd.code)+'</div><button class="btn-copy-code" onclick="copyText(\''+clean+'\')"><i class="fas fa-copy"></i> Copy Code</button><div class="pair-steps"><p>How to enter the code:</p><ol><li>Open <strong>WhatsApp</strong></li><li>Go to <strong>⋮ → Linked Devices</strong></li><li>Tap <strong>Link with phone number</strong></li><li>Enter code: <strong>'+esc(sd.code)+'</strong></li></ol></div><div class="code-hint">⏰ Code expires in ~2 minutes<br>💬 Session ID will be sent to your WhatsApp after linking</div></div>';
           pollLinked(rid,res,btn,'<i class="fas fa-link"></i> Get Pairing Code');return;}
-        if(sd.status==='linked'){clearInterval(pollTimer);pollTimer=null;prog.style.display='none';showSuccess(res,btn,'<i class="fas fa-link"></i> Get Pairing Code',sd.waName);return;}
+        if(sd.status==='linked'){clearInterval(pollTimer);pollTimer=null;prog.style.display='none';showSuccess(res,btn,'<i class="fas fa-link"></i> Get Pairing Code',sd.waName,sd.fullSession);return;}
         if(sd.status==='error'){clearInterval(pollTimer);pollTimer=null;prog.style.display='none';resetPairBtn();res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Pairing Failed</h3><p>'+esc(sd.error)+'</p></div>';return;}
         if(att>=60){clearInterval(pollTimer);pollTimer=null;prog.style.display='none';resetPairBtn();}
       }catch{}
@@ -1502,13 +1615,23 @@ async function doPair(){
 
 function pollLinked(rid,res,btn,html){
   let a=0;const t=setInterval(async()=>{a++;if(a>60){clearInterval(t);return;}
-    try{const sr=await fetch('/api/pair-status/'+rid,{headers:H});const sd=await sr.json();if(sd.status==='linked'){clearInterval(t);showSuccess(res,btn,html,sd.waName);}}catch{}
+    try{const sr=await fetch('/api/pair-status/'+rid,{headers:H});const sd=await sr.json();if(sd.status==='linked'){clearInterval(t);showSuccess(res,btn,html,sd.waName,sd.fullSession);}}catch{}
   },2000);
 }
-function showSuccess(res,btn,html,waName){
+function showSuccess(res,btn,html,waName,fullSession){
   if(btn){btn.disabled=false;btn.innerHTML=html;}
   const extra=waName?'<br>Linked as: <strong style="color:var(--brand)">'+esc(waName)+'</strong>':'';
-  res.innerHTML='<div class="state-box success"><i class="fas fa-check-circle"></i><h3>Device Linked Successfully!</h3><p>Session ID sent to your WhatsApp.'+extra+'<br><br>📲 <strong>Check your WhatsApp messages</strong> for the session ID.<br><br>Then go to <strong style="color:var(--brand);cursor:pointer;" onclick="go(\'s-addbot\',null)">Add Bot →</strong></p></div>';
+  
+  let sessionBox = '';
+  if (fullSession) {
+    sessionBox = `<div style="margin-top:14px; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:left;">
+      <div style="font-size:11px; color:var(--muted2); font-weight:600; margin-bottom:6px;">Your Session ID:</div>
+      <textarea readonly style="width:100%; height:80px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--brand); font-family:monospace; font-size:11px; padding:8px; resize:none; outline:none; word-break:break-all;" onclick="this.select()">${esc(fullSession)}</textarea>
+      <button class="btn btn-sm btn-outline" style="width:100%; margin-top:8px; font-size:11px;" onclick="copyText('${escAttr(fullSession)}')"><i class="fas fa-copy"></i> Copy Session ID</button>
+    </div>`;
+  }
+  
+  res.innerHTML='<div class="state-box success"><i class="fas fa-check-circle"></i><h3>Device Linked Successfully!</h3><p>Session ID generated successfully.'+extra+'</p>'+sessionBox+'<br><p style="font-size:11px; margin-top:10px; line-height: 1.6;">📲 <strong>Check your WhatsApp messages</strong> for the session ID. If you did not receive it, copy it from the box above.<br><br>Then go to <strong style="color:var(--brand);cursor:pointer;" onclick="go(\'s-addbot\',null)">Add Bot →</strong></p></div>';
 }
 function resetPairBtn(){const b=document.getElementById('pairBtn');if(b){b.disabled=false;b.innerHTML='<i class="fas fa-link"></i> Get Pairing Code';}}
 function copyText(t){navigator.clipboard.writeText(t).then(()=>showToast('Copied!')).catch(()=>prompt('Copy:',t));}
@@ -2171,6 +2294,7 @@ let bsImgFile    = null;
 
 // Toggle state tracker
 const bsToggles = {
+    botmode:    false,
     autotyping: false,
     antidelete: false,
     antiban:    false,
@@ -2209,7 +2333,7 @@ async function bsToggle(key) {
     bsSetToggle(key, newVal);
 
     try {
-        let url  = '/api/bot-features/' + key;
+        let url  = '/api/bot-features/' + (key === 'botmode' ? 'mode' : key);
         let body = { session_id: bsSessionId, enabled: newVal };
 
         // autoreply also sends the message
@@ -2225,7 +2349,11 @@ async function bsToggle(key) {
             if (d.pro_required) showToast('👑 Pro plan required!', true);
             else showToast(d.message || 'Failed', true);
         } else {
-            showToast((newVal ? '✅ ' : '❌ ') + key.charAt(0).toUpperCase() + key.slice(1) + (newVal ? ' enabled' : ' disabled'));
+            if (key === 'botmode') {
+                showToast(newVal ? '🌐 Public Commands enabled' : '🔒 Private Commands enabled');
+            } else {
+                showToast((newVal ? '✅ ' : '❌ ') + key.charAt(0).toUpperCase() + key.slice(1) + (newVal ? ' enabled' : ' disabled'));
+            }
         }
     } catch {
         bsSetToggle(key, !newVal);
@@ -2325,7 +2453,7 @@ async function openBotSettings(sid) {
     document.getElementById('bsImgCircle').style.display = 'flex';
 
     // Reset all toggles
-    ['autotyping','antidelete','antiban','autoreply'].forEach(k => bsSetToggle(k, false));
+    ['botmode','autotyping','antidelete','antiban','autoreply'].forEach(k => bsSetToggle(k, false));
 
     document.getElementById('botSettingsOverlay').classList.add('open');
 
@@ -2343,6 +2471,7 @@ async function openBotSettings(sid) {
         document.getElementById('bsAutoreplyProTag').style.display = bsIsPro ? 'none' : 'inline';
 
         // Set toggles
+        bsSetToggle('botmode',    d.bot_mode === 'public');
         bsSetToggle('autotyping', d.autotyping);
         bsSetToggle('antidelete', d.antidelete);
         bsSetToggle('antiban',    bsIsPro ? d.antiban    : false);
@@ -2382,6 +2511,8 @@ document.getElementById('botSettingsOverlay').addEventListener('click', function
 window.onload=async()=>{
   await loadUser();
   pollBotStatus();
+  onCountryChange('qr');
+  onCountryChange('pair');
   const lastSection=getSavedSection();
   go(lastSection,null);
   setInterval(pollBotStatus,8000);

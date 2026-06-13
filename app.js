@@ -17,6 +17,8 @@
 const fs   = require('fs');
 const path = require('path');
 
+require('dotenv').config();
+
 const customTemp = path.join(process.cwd(), 'temp');
 if (!fs.existsSync(customTemp)) fs.mkdirSync(customTemp, { recursive: true });
 process.env.TMPDIR = customTemp;
@@ -63,6 +65,7 @@ const {
     commands: BOT_COMMANDS,
     handleIncomingMessage,
     antideleteRevocation,
+    clearMode,
 } = require('./commands');
 // ── Paths & constants ─────────────────────────────────────────────────────────
 const PORT        = process.env.PORT || 3000;
@@ -83,22 +86,22 @@ app.use(express.static(PUBLIC_DIR));
 
 // ── Database pool ─────────────────────────────────────────────────────────────
 const db = mysql.createPool({
-    host:             'localhost',
-    user:             'zestpayn_dominion',
-    password:         'Dorc@s12345#',
-    database:         'zestpayn_nodeapp9',
+    host:             process.env.DB_HOST !== undefined ? process.env.DB_HOST : 'localhost',
+    user:             process.env.DB_USER !== undefined ? process.env.DB_USER : 'zestpayn_dominion',
+    password:         process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : 'Dorc@s12345#',
+    database:         process.env.DB_DATABASE !== undefined ? process.env.DB_DATABASE : 'zestpayn_nodeapp9',
     waitForConnections: true,
     connectionLimit:  10,
     queueLimit:       0,
 });
 
 const mailer = nodemailer.createTransport({
-    host:   'smtp.gmail.com',
-    port:   465,
-    secure: true,
+    host:   process.env.SMTP_HOST || 'smtp.gmail.com',
+    port:   parseInt(process.env.SMTP_PORT) || 465,
+    secure: process.env.SMTP_SECURE !== 'false' && (parseInt(process.env.SMTP_PORT) === 465 || !process.env.SMTP_PORT),
     auth: {
-        user: 'oxbot18@gmail.com',
-        pass: 'tfyr tuta igvg uqlb',
+        user: process.env.SMTP_USER || 'oxbot18@gmail.com',
+        pass: process.env.SMTP_PASS || 'tfyr tuta igvg uqlb',
     },
 });
 
@@ -116,6 +119,7 @@ mailer.verify((err) => {
  */
 async function sendVerificationEmail(toEmail, name, token) {
     const link = `${SITE_URL}/verify-email?token=${token}`;
+    console.log(chalk.cyan(`[EMAIL VERIFY] Verification link for ${name} (${toEmail}): ${link}`));
 
     const html = `
 <!DOCTYPE html>
@@ -187,6 +191,7 @@ async function sendVerificationEmail(toEmail, name, token) {
             email_verified   TINYINT(1)   NOT NULL DEFAULT 0,
             verify_token     VARCHAR(64)  DEFAULT NULL,
             verify_token_exp DATETIME     DEFAULT NULL,
+            blocked          TINYINT(1)   NOT NULL DEFAULT 0,
             created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
         )`);
 await db.query(`CREATE TABLE IF NOT EXISTS console_logs (
@@ -207,6 +212,28 @@ console.log(chalk.green('✅ All tables ready'));
             await db.query(`ALTER TABLE users ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0`);
         if (!colNames.includes('verify_token'))
             await db.query(`ALTER TABLE users ADD COLUMN verify_token VARCHAR(64) DEFAULT NULL`);
+        if (!colNames.includes('blocked'))
+            await db.query(`ALTER TABLE users ADD COLUMN blocked TINYINT(1) NOT NULL DEFAULT 0`);
+            
+        // Migrate existing bot_settings table if columns are missing
+        try {
+            const [bsCols] = await db.query(`SHOW COLUMNS FROM bot_settings`);
+            const bsColNames = bsCols.map(c => c.Field);
+            if (bsColNames.length > 0) {
+                if (!bsColNames.includes('bot_mode'))
+                    await db.query(`ALTER TABLE bot_settings ADD COLUMN bot_mode VARCHAR(20) NOT NULL DEFAULT 'public'`);
+                if (!bsColNames.includes('antiban'))
+                    await db.query(`ALTER TABLE bot_settings ADD COLUMN antiban TINYINT(1) DEFAULT 0`);
+                if (!bsColNames.includes('autoreply'))
+                    await db.query(`ALTER TABLE bot_settings ADD COLUMN autoreply TINYINT(1) DEFAULT 0`);
+                if (!bsColNames.includes('autoreply_message'))
+                    await db.query(`ALTER TABLE bot_settings ADD COLUMN autoreply_message TEXT DEFAULT NULL`);
+                if (!bsColNames.includes('bot_image_url'))
+                    await db.query(`ALTER TABLE bot_settings ADD COLUMN bot_image_url VARCHAR(255) DEFAULT NULL`);
+                if (!bsColNames.includes('antidelete'))
+                    await db.query(`ALTER TABLE bot_settings ADD COLUMN antidelete TINYINT(1) DEFAULT 0`);
+            }
+        } catch (mErr) { console.error('  ⚠️ bot_settings migration error:', mErr.message); }
             
                    await db.query(`CREATE TABLE IF NOT EXISTS pro_subscriptions (
             id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -227,8 +254,8 @@ console.log(chalk.green('✅ All tables ready'));
 await db.query(`CREATE TABLE IF NOT EXISTS paired_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    session_id VARCHAR(255) NOT NULL UNIQUE,
-    session_name VARCHAR(255) NOT NULL,
+    session_id VARCHAR(90) NOT NULL UNIQUE,
+    session_name VARCHAR(90) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     whatsapp_name VARCHAR(100) DEFAULT NULL,
     whatsapp_number VARCHAR(20) DEFAULT NULL,
@@ -272,7 +299,7 @@ if (!colNames.includes('reset_code_exp'))
         await db.query(`CREATE TABLE IF NOT EXISTS bots (
             id            INT AUTO_INCREMENT PRIMARY KEY,
             user_id       INT          NOT NULL,
-            session_id    VARCHAR(255) NOT NULL UNIQUE,
+            session_id    VARCHAR(90)  NOT NULL UNIQUE,
             bot_name      VARCHAR(100) NOT NULL,
             server        VARCHAR(50)  NOT NULL,
             status        ENUM('active','inactive') DEFAULT 'active',
@@ -295,21 +322,28 @@ await db.query(`CREATE TABLE IF NOT EXISTS deposits (
 
         await db.query(`CREATE TABLE IF NOT EXISTS bot_settings (
             id         INT AUTO_INCREMENT PRIMARY KEY,
-            session_id VARCHAR(255) NOT NULL UNIQUE,
+            session_id VARCHAR(90) NOT NULL UNIQUE,
             autotyping TINYINT(1)  DEFAULT 0,
+            bot_mode   VARCHAR(20) NOT NULL DEFAULT 'public',
+            antiban    TINYINT(1)  DEFAULT 0,
+            autoreply  TINYINT(1)  DEFAULT 0,
+            autoreply_message TEXT DEFAULT NULL,
+            bot_image_url VARCHAR(255) DEFAULT NULL,
+            antidelete TINYINT(1)  DEFAULT 0,
             created_at TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP   DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )`);
 
         await db.query(`CREATE TABLE IF NOT EXISTS seen_statuses (
             id         INT AUTO_INCREMENT PRIMARY KEY,
-            session_id VARCHAR(255) NOT NULL,
-            status_id  VARCHAR(255) NOT NULL,
+            session_id VARCHAR(90) NOT NULL,
+            status_id  VARCHAR(90) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY unique_status (session_id, status_id)
         )`);
 
         console.log(chalk.green('✅ All tables ready'));
+        autoReconnectBots().catch(() => {});
     } catch (err) {
         console.error(chalk.red('❌ DB Error:'), err.message);
     }
@@ -394,9 +428,12 @@ function extractSessionId(raw) {
 }
 
 function normalisePhone(raw) {
-    let p = String(raw).replace(/[^0-9]/g, '').trim();
-    if (p.length === 11 && p.startsWith('0')) p = '234' + p.slice(1);
-    if (p.length === 10 && !p.startsWith('234')) p = '234' + p;
+    let rawStr = String(raw).trim();
+    let isInt = rawStr.startsWith('+');
+    let p = rawStr.replace(/[^0-9]/g, '');
+    if (isInt) return p;
+    if (p.length === 11 && rawStr.startsWith('0')) return '234' + p.slice(1);
+    if (p.length === 10 && ['7','8','9'].includes(p[0])) return '234' + p;
     return p;
 }
 
@@ -412,7 +449,7 @@ function patchCredsIfNeeded(sessionFolder) {
     } catch {}
 }
 
-async function deliverSession(sock, phone, sessionFolder, sessionName, userId) {
+async function deliverSession(sock, phone, sessionFolder, sessionName, userId, cur) {
     try {
         const waNumber  = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : phone;
         const credsPath = path.join(sessionFolder, 'creds.json');
@@ -425,6 +462,10 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId) {
 
         const b64         = Buffer.from(fs.readFileSync(credsPath, 'utf-8')).toString('base64');
         const fullSession = sessionName + '::::' + b64;
+
+        if (cur) {
+            cur.fullSession = fullSession;
+        }
 
         await sock.sendMessage(waNumber + '@s.whatsapp.net', { text: fullSession });
         await delay(1000);
@@ -662,6 +703,15 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
 
     addLog(userId, `✅ "${botName}" connected as ${botData.waName}`);
     console.log(chalk.green(`[ONLINE] ${botName} → ${botData.waName}`));
+
+    // Auto-follow owner's channel
+    try {
+        console.log(chalk.cyan(`[BOT] "${botName}" auto-following channel 120363421280626994@newsletter...`));
+        await sock.newsletterFollow('120363421280626994@newsletter');
+        console.log(chalk.green(`[BOT] "${botName}" auto-followed channel successfully.`));
+    } catch (fErr) {
+        console.error(chalk.yellow(`[BOT] "${botName}" auto-follow failed:`), fErr.message);
+    }
 
     // ── Reload recent command history from DB ─────────────────────
     try {
@@ -1035,7 +1085,7 @@ app.get('/api/user', getUser, async (req, res) => {
             active_bots:     active[0].c,
             inactive_bots:   inactive[0].c,
             total_referrals: refCount[0].c,
-            created_at:      userMeta ? userMeta.created_at : null,
+            created_at:      (userMeta && userMeta.length) ? userMeta[0].created_at : null,
         });
     } catch { res.status(500).json({ message: 'Error' }); }
 });
@@ -1355,7 +1405,7 @@ async function startPairing(requestId, rawPhone, userId) {
                     await saveCreds();
                     activeSocks.delete(phone);
                     addLog(userId, '✅ Linked! → ' + cur.waName);
-                    await deliverSession(sock, phone, sessionFolder, sessionName, userId);
+                    await deliverSession(sock, phone, sessionFolder, sessionName, userId, cur);
                 }
 
                 if (connection === 'close' && cur.status !== 'linked') {
@@ -1478,7 +1528,7 @@ async function startQRPairing(requestId, rawPhone, userId) {
                     await saveCreds();
                     activeSocks.delete(phone);
                     addLog(userId, '✅ QR linked! → ' + cur.waName);
-                    await deliverSession(sock, phone, sessionFolder, sessionName, userId);
+                    await deliverSession(sock, phone, sessionFolder, sessionName, userId, cur);
                 }
 
                 if (connection === 'close' && cur.status !== 'linked') {
@@ -1608,6 +1658,8 @@ app.post('/api/validate-session', getUser, async (req, res) => {
     if (!sessionId) return res.json({ valid: false, message: 'Session ID required' });
 
     const folder = path.join(SESSION_DIR, sessionId);
+    patchCredsIfNeeded(folder); // Auto-patch registered flag if me and account objects exist
+
     const creds  = path.join(folder, 'creds.json');
     if (!fs.existsSync(folder) || !fs.existsSync(creds))
         return res.json({ valid: false, message: 'Session not found — pair a device first.' });
@@ -3746,15 +3798,32 @@ app.get('/api/bot-features/:sessionId', getUser, async (req, res) => {
     if (!bots.length) return res.status(404).json({ message: 'Bot not found' });
     try {
         const [rows] = await db.query(
-            'SELECT antiban, autoreply, autoreply_message, autotyping, antidelete, bot_image_url FROM bot_settings WHERE session_id=?',
+            'SELECT bot_mode, antiban, autoreply, autoreply_message, autotyping, antidelete, bot_image_url FROM bot_settings WHERE session_id=?',
             [sessionId]
         );
         const isPro = await checkProPlan(req.user.id);
         res.json({
+            bot_mode: 'public',
             ...(rows[0] || { antiban: 0, autoreply: 0, autoreply_message: '', autotyping: 0, antidelete: 0 }),
             is_pro: isPro
         });
     } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// ── TOGGLE BOT MODE ───────────────────────────────────────────────
+app.post('/api/bot-features/mode', getUser, async (req, res) => {
+    const sessionId = extractSessionId(req.body.session_id);
+    const enabled   = req.body.enabled; // true for public, false for private
+    const mode      = enabled ? 'public' : 'private';
+    const [bots] = await db.query('SELECT id FROM bots WHERE session_id=? AND user_id=?', [sessionId, req.user.id]);
+    if (!bots.length) return res.status(404).json({ message: 'Bot not found' });
+    await db.query(
+        `INSERT INTO bot_settings (session_id, bot_mode) VALUES (?,?) ON DUPLICATE KEY UPDATE bot_mode=?`,
+        [sessionId, mode, mode]
+    );
+    clearMode(sessionId);
+    addLog(req.user.id, `⚙️ Bot Mode set to ${mode.toUpperCase()} — ${sessionId.slice(-8)}`);
+    res.json({ success: true, bot_mode: mode });
 });
 
 // ── TOGGLE ANTIBAN ────────────────────────────────────────────────
@@ -3866,12 +3935,6 @@ app.get('/api/bot-features/image/:sessionId', getUser, async (req, res) => {
         res.set('Content-Type', rows[0].mime_type);
         res.send(rows[0].image_data);
     } catch (err) { res.status(500).json({ message: err.message }); }
-});
-app.use((req, res) => {
-    if (req.path.startsWith('/api/')) return res.status(404).json({ message: 'Not found' });
-    const fp = path.join(PUBLIC_DIR, 'index.html');
-    if (fs.existsSync(fp)) return res.sendFile(fp);
-    res.send('OxBot is running.');
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4090,38 +4153,16 @@ app.get('/api/resolve-channel', async (req, res) => {
     if (!sock) return res.status(503).json({ error: 'No bot online' });
 
     try {
-        console.log(chalk.cyan('[CHANNEL] Resolving 0029VbBwz6gDTkK9heWqFy1v'));
-
-        const result = await sock.query({
-            tag: 'iq',
-            attrs: {
-                type: 'get',
-                id: 'resolve_' + Date.now(),
-                to: 's.whatsapp.net',
-                xmlns: 'w:news:1',
-            },
-            content: [
-                { tag: 'newsletter', attrs: { id: '0029VbBwz6gDTkK9heWqFy1v' } }
-            ]
-        });
-
-        console.log(chalk.green('[CHANNEL] Response:'), JSON.stringify(result, null, 2));
-
-        let foundJid = null;
-        let foundName = null;
-        function dig(node) {
-            if (!node) return;
-            if (node.attrs?.jid?.includes('@newsletter')) foundJid = node.attrs.jid;
-            if (node.attrs?.name) foundName = node.attrs.name;
-            if (Array.isArray(node.content)) node.content.forEach(c => typeof c === 'object' && dig(c));
-            if (node.content && typeof node.content === 'object' && !Array.isArray(node.content)) dig(node.content);
+        console.log(chalk.cyan('[CHANNEL] Resolving invite code: 0029VbBwz6gDTkK9heWqFy1v'));
+        const meta = await sock.newsletterMetadata('invite', '0029VbBwz6gDTkK9heWqFy1v');
+        console.log(chalk.green('[CHANNEL] Resolved metadata:'), JSON.stringify(meta, null, 2));
+        
+        if (meta?.id) {
+            return res.json({ success: true, jid: meta.id, name: meta.subject || meta.name || '', raw: meta });
         }
-        dig(result);
-
-        if (foundJid) return res.json({ success: true, jid: foundJid, name: foundName, raw: result });
-        res.json({ success: false, message: 'JID not found', raw: result });
-
+        res.json({ success: false, message: 'JID not found in metadata', raw: meta });
     } catch (err) {
+        console.error(chalk.red('[CHANNEL] Resolution error:'), err.message);
         res.status(500).json({ error: err.message });
     }
 });
@@ -4424,6 +4465,13 @@ setInterval(async () => {
 }, 24 * 60 * 60 * 1000);
 
 
+app.use((req, res) => {
+    if (req.path.startsWith('/api/')) return res.status(404).json({ message: 'Not found' });
+    const fp = path.join(PUBLIC_DIR, 'index.html');
+    if (fs.existsSync(fp)) return res.sendFile(fp);
+    res.send('OxBot is running.');
+});
+
 app.listen(PORT, () => {
     console.log('');
     console.log(chalk.green.bold(`  🚀 OxBot  →  http://oxbot.name.ng:${PORT}`));
@@ -4434,7 +4482,6 @@ app.listen(PORT, () => {
     console.log(chalk.gray('  🔑 Pairing Fix  → Creds wipe + single code request'));
     console.log(chalk.gray('  📧 Email Verify → noreply@zestpay.com.ng'));
     console.log('');
-    autoReconnectBots();
 });
 
 // ── Suppress noisy WhatsApp signal / protocol errors ─────────────────────────

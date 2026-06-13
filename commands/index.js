@@ -215,16 +215,24 @@ async function getOwnerNum(db, sessionId) {
     } catch { return null; }
 }
 
+function phonesMatch(phone1, phone2) {
+    if (!phone1 || !phone2) return false;
+    const p1 = String(phone1).replace(/\D/g, '').replace(/^0+/, '');
+    const p2 = String(phone2).replace(/\D/g, '').replace(/^0+/, '');
+    if (!p1 || !p2) return false;
+    return p1 === p2 || p1.endsWith(p2) || p2.endsWith(p1);
+}
+
 async function isOwner(db, sessionId, senderId, sock, chatId) {
     const own = await getOwnerNum(db, sessionId);
     if (!own) return false;
     const clean = cleanNum(senderId);
-    if (clean === own || senderId.includes(own)) return true;
+    if (phonesMatch(clean, own)) return true;
     // LID fallback for groups
     if (sock && chatId?.endsWith('@g.us') && senderId.includes('@lid')) {
         try {
             const meta = await sock.groupMetadata(chatId);
-            return (meta.participants || []).some(p => cleanNum(p.id) === own);
+            return (meta.participants || []).some(p => phonesMatch(cleanNum(p.id), own));
         } catch {}
     }
     return false;
@@ -239,10 +247,10 @@ async function getMode(db, sessionId) {
     if (c && Date.now() - c.ts < MODE_TTL) return c.v;
     try {
         const [rows] = await db.query('SELECT bot_mode FROM bot_settings WHERE session_id=? LIMIT 1', [sessionId]);
-        const v = rows[0]?.bot_mode || 'private';
+        const v = rows[0]?.bot_mode || 'public';
         modeCache.set(sessionId, { v, ts: Date.now() });
         return v;
-    } catch { return 'private'; }
+    } catch { return 'public'; }
 }
 
 function clearMode(sid) { modeCache.delete(sid); }
@@ -329,8 +337,8 @@ async function handleIncomingMessage(sock, msg, botData) {
         const isDM       = !chatId.endsWith('@g.us');
         const isGroup    = chatId.endsWith('@g.us');
 
-        // Skip own messages
-        if (senderNum === botNum) return;
+        // Allow self-sent commands (app.js already filters out non-command self messages)
+
 
         console.log(`[${sessionId?.slice(-8)}] .${cmd} ← ${senderNum} [${isDM ? 'DM' : 'GROUP'}]`);
 
@@ -412,4 +420,5 @@ module.exports = {
     handleGroupParticipantUpdate: null,
     handleStatus: null,
     antideleteRevocation,
+    clearMode,
 };

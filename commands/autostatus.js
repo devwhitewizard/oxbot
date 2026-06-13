@@ -77,8 +77,8 @@ async function ensureSeenTable(db) {
         await db.query(`
             CREATE TABLE IF NOT EXISTS seen_statuses (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                session_id VARCHAR(255) NOT NULL,
-                status_id VARCHAR(255) NOT NULL,
+                session_id VARCHAR(90) NOT NULL,
+                status_id VARCHAR(90) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE KEY uniq_session_status (session_id, status_id),
                 INDEX idx_session (session_id)

@@ -1,0 +1,14 @@
+{
+  "verbose": true,
+  "ignore": [
+    "sessions/*",
+    "temp/*",
+    "tmp/*",
+    "node_modules/*",
+    "public/*",
+    "*.json",
+    ".git/*"
+  ],
+  "ext": "js,mjs,cjs",
+  "delay": 1500
+}
