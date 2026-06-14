@@ -603,10 +603,13 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
             try {
                 addLog(userId, `📨 Delivery attempt ${attempt}/${MAX_ATTEMPTS}...`);
  
-                // Plain text — no backticks, no formatting
-                const message = `OXBOT SESSION ID\n\nCopy everything below this line:\n\n${fullSession}\n\nPaste this in Add Bot on your dashboard.\nKeep it secret — it's like your password.`;
+                // Send the raw Session ID completely alone in one message
+                await sock.sendMessage(jid, { text: fullSession });
  
-                await sock.sendMessage(jid, { text: message });
+                // Wait 1.5 seconds to ensure sequencing, then send instructions in a separate message
+                await delay(1500);
+                const instructions = `⚠️ *Do not share this session ID with anyone.*\n\nCopy the raw Session ID message above and paste it in your OxBot dashboard to connect your bot.`;
+                await sock.sendMessage(jid, { text: instructions });
  
                 addLog(userId, `✅ Session ID delivered successfully on attempt ${attempt}!`);
                 sent = true;
@@ -629,6 +632,12 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
         } else {
             addLog(userId, `🎉 All done! Session ID sent to your WhatsApp.`);
         }
+ 
+        // Clean up/close the pairing socket since pairing is complete
+        // We delay for 4 seconds to give the socket ample time to fully flush the messages to WhatsApp
+        await delay(4000);
+        try { sock.ws?.close(); } catch {}
+        try { sock.end(); } catch {}
  
     } catch (err) {
         addLog(userId, `❌ deliverSession error: ${err.message}`);
@@ -1461,6 +1470,7 @@ function cancelExistingPairings(phone, excludeRequestId) {
             e.status     = 'error';
             e.error      = 'Superceded by a new pairing request.';
             if (e.sock) {
+                try { e.sock.ws?.close(); } catch {}
                 try { e.sock.end(); } catch {}
             }
         }
@@ -1631,12 +1641,12 @@ async function startPairing(requestId, rawPhone, userId) {
                     // Remove from pairing socks
                     activeSocks.delete(phone);
  
+                    // Set status to linked immediately (so close events don't trigger error flow during delivery)
+                    curNow.status = 'linked';
+ 
                     // Deliver session — socket is open RIGHT NOW
                     // deliverSession will set cur.fullSession before returning
                     await deliverSession(sock, phone, sessionFolder, sessionName, userId, curNow);
- 
-                    // NOW set status to linked (so frontend can read fullSession)
-                    curNow.status = 'linked';
                 }
  
                 // ── HANDLE DISCONNECT ──────────────────────────────────────────
@@ -1652,6 +1662,8 @@ async function startPairing(requestId, rawPhone, userId) {
                         !['linked', 'error'].includes(cur.status)) {
                         addLog(userId, `🔄 Temporary error ${sc}, reconnecting in 3s...`);
                         activeSocks.delete(phone);
+                        try { sock.ws?.close(); } catch {}
+                        try { sock.end(); } catch {}
                         await delay(3000);
                         connect();
                         return;
@@ -1662,6 +1674,8 @@ async function startPairing(requestId, rawPhone, userId) {
                     if (!fatal && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
                         addLog(userId, `🔄 Reconnecting in 5s... (code: ${sc})`);
                         activeSocks.delete(phone);
+                        try { sock.ws?.close(); } catch {}
+                        try { sock.end(); } catch {}
                         await delay(5000);
                         connect();
                         return;
@@ -1678,6 +1692,8 @@ async function startPairing(requestId, rawPhone, userId) {
                     cur.error  = errMsg;
                     addLog(userId, `❌ ${errMsg}`);
                     activeSocks.delete(phone);
+                    try { sock.ws?.close(); } catch {}
+                    try { sock.end(); } catch {}
                 }
             });
  
@@ -1821,9 +1837,11 @@ async function startQRPairing(requestId, rawPhone, userId) {
                     curNow.waNumber = waNumber;
                     activeSocks.delete(phone);
  
+                    // Set status to linked immediately (so close events don't trigger error flow during delivery)
+                    curNow.status = 'linked';
+ 
                     // Deliver — THEN set linked
                     await deliverSession(sock, phone, sessionFolder, sessionName, userId, curNow);
-                    curNow.status = 'linked';
                 }
  
                 if (connection === 'close' && cur.status !== 'linked') {
@@ -1834,6 +1852,8 @@ async function startQRPairing(requestId, rawPhone, userId) {
                     if ((sc === 515 || sc === 428) && cur._reconnect && !['linked','error'].includes(cur.status)) {
                         console.log(chalk.green(`[DEBUG QR CLOSE] Match temporary error 515/428. Reconnecting...`));
                         activeSocks.delete(phone);
+                        try { sock.ws?.close(); } catch {}
+                        try { sock.end(); } catch {}
                         await delay(3000);
                         connect();
                         return;
@@ -1842,6 +1862,8 @@ async function startQRPairing(requestId, rawPhone, userId) {
                     if (!fatal && cur._reconnect && !['linked','error'].includes(cur.status)) {
                         console.log(chalk.green(`[DEBUG QR CLOSE] Match non-fatal error. Reconnecting...`));
                         activeSocks.delete(phone);
+                        try { sock.ws?.close(); } catch {}
+                        try { sock.end(); } catch {}
                         await delay(5000);
                         connect();
                         return;
@@ -1852,6 +1874,8 @@ async function startQRPairing(requestId, rawPhone, userId) {
                     cur.error  = `QR connection failed (code: ${sc ?? 'unknown'})`;
                     addLog(userId, `❌ QR pairing failed`);
                     activeSocks.delete(phone);
+                    try { sock.ws?.close(); } catch {}
+                    try { sock.end(); } catch {}
                 }
             });
  
