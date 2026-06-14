@@ -482,139 +482,162 @@ function patchCredsIfNeeded(sessionFolder) {
  * 3. Sends session as TEXT chunks (Most reliable).
  * 4. Falls back to File only if text completely fails.
  */
+ 
+const { delay } = require('@whiskeysockets/baileys');
+ 
+// ── REPLACE YOUR ENTIRE deliverSession FUNCTION WITH THIS ─────────────────────
+/**
+ * deliverSession — called AFTER connection is already open.
+ * The socket IS open when this is called. Do NOT wait for open event again.
+ * 
+ * Strategy:
+ * 1. Save session to DB immediately (so user can always get it from dashboard)
+ * 2. Send a plain WhatsApp message with the session ID
+ * 3. No chunks, no formatting, no code blocks — plain text only
+ */
 async function deliverSession(sock, phone, sessionFolder, sessionName, userId, cur) {
     try {
-        addLog(userId, `🔍 Starting TEXT-PRIORITY session delivery...`);
-
-        // ── STEP 1: WAIT FOR CONNECTION OPEN ──
-        addLog(userId, `⏳ Waiting for connection to open...`);
-        
-        const isOpen = await new Promise((resolve) => {
-            let resolved = false;
-            const timeout = setTimeout(() => {
-                if (!resolved) {
-                    resolved = true;
-                    resolve(false);
-                }
-            }, 90_000); // Give 90 seconds for user to type code
-
-            const listener = (update) => {
-                const { connection, lastDisconnect } = update;
-                if (connection === 'open') {
-                    if (!resolved) {
-                        resolved = true;
-                        clearTimeout(timeout);
-                        sock.ev.off('connection.update', listener);
-                        resolve(true);
-                    }
-                } else if (connection === 'close') {
-                    if (!resolved) {
-                        resolved = true;
-                        clearTimeout(timeout);
-                        sock.ev.off('connection.update', listener);
-                        resolve(false);
-                    }
-                }
-            };
-            sock.ev.on('connection.update', listener);
-        });
-
-        if (!isOpen) {
-            addLog(userId, '❌ Error: Connection timed out or closed.');
-            throw new Error('Connection failed');
-        }
-
-        // ── STEP 2: STABILIZE DELAY (CRITICAL FIX) ──
-        // WhatsApp can sometimes drop the session milliseconds after 'open'.
-        // We wait 3 seconds to ensure it's fully synced.
-        addLog(userId, `🔗 Connection Open! Stabilizing (3s)...`);
-        await delay(3000);
-
-        // ── STEP 3: GET CREDS & PREPARE ──
+        const path = require('path');
+        const fs   = require('fs');
+ 
+        addLog(userId, `📦 Preparing session delivery for ${sessionName}...`);
+ 
+        // ── STEP 1: READ CREDS (they exist because connection is open) ──────────
         const credsPath = path.join(sessionFolder, 'creds.json');
-        if (!fs.existsSync(credsPath)) {
-            addLog(userId, '❌ Error: Credentials file missing after connection.');
-            return;
+ 
+        // Give saveCreds() up to 5 seconds to flush to disk
+        let credsContent = null;
+        for (let i = 0; i < 10; i++) {
+            if (fs.existsSync(credsPath)) {
+                try {
+                    const raw = fs.readFileSync(credsPath, 'utf8');
+                    JSON.parse(raw); // validate it's real JSON
+                    credsContent = raw;
+                    break;
+                } catch {}
+            }
+            await delay(500);
         }
-
-        const credsContent = fs.readFileSync(credsPath, 'utf8');
-        const b64 = Buffer.from(credsContent).toString('base64');
+ 
+        if (!credsContent) {
+            addLog(userId, '❌ Creds file not found after 5s — retrying in 3s...');
+            await delay(3000);
+            if (fs.existsSync(credsPath)) {
+                credsContent = fs.readFileSync(credsPath, 'utf8');
+            } else {
+                addLog(userId, '❌ Fatal: creds.json missing. Re-pair device.');
+                return;
+            }
+        }
+ 
+        // ── STEP 2: BUILD FULL SESSION STRING ───────────────────────────────────
+        const b64         = Buffer.from(credsContent).toString('base64');
         const fullSession = sessionName + '::::' + b64;
+ 
+        // Store on cur object so status polling can return it
+        if (cur) {
+            cur.fullSession = fullSession;
+            cur.waName      = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
+            cur.waNumber    = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : phone;
+        }
+ 
+        addLog(userId, `✅ Session string built (${fullSession.length} chars)`);
+ 
+        // ── STEP 3: SAVE TO DB FIRST (safety net — user can always get it here) ─
+        const waName   = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
+        const waNumber = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : String(phone).replace(/\D/g,'');
+ 
+               try {
+            // 1. Save to paired_sessions
+            await db.query(
+                `INSERT INTO paired_sessions
+                 (user_id, session_id, session_name, phone, whatsapp_name, whatsapp_number, session_data, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'paired')
+                 ON DUPLICATE KEY UPDATE
+                   whatsapp_name   = VALUES(whatsapp_name),
+                   whatsapp_number = VALUES(whatsapp_number),
+                   session_data    = VALUES(session_data),
+                   status          = 'paired'`,
+                [userId, sessionName, sessionName, phone, waName, waNumber, fullSession]
+            );
 
-        if (cur) cur.fullSession = fullSession;
+            // 2. ⚡ CRITICAL FIX: Create/Update the bots table immediately
+            // This ensures isOwner() in index.js finds you as the owner instantly
+            await db.query(
+                `INSERT INTO bots (user_id, session_id, bot_name, server, status, whatsapp_name)
+                 VALUES (?, ?, ?, ?, 'active', ?)
+                 ON DUPLICATE KEY UPDATE 
+                   status = 'active',
+                   whatsapp_name = VALUES(whatsapp_name)`,
+                [userId, sessionName, sessionName, 'OxBot-Server', waName]
+            );
 
+            addLog(userId, `💾 Session saved to database — Owner set to User ID: ${userId}`);
+        } catch (dbErr) {
+            addLog(userId, `⚠️ DB save warning: ${dbErr.message} — continuing with WhatsApp delivery`);
+        
+        }
+ 
+        // ── STEP 4: NORMALIZE TARGET JID ────────────────────────────────────────
         let targetNum = String(phone).replace(/[^0-9]/g, '');
         if (targetNum.startsWith('0')) targetNum = '234' + targetNum.slice(1);
         const jid = targetNum + '@s.whatsapp.net';
-
-        // ── STEP 4: SEND AS TEXT CHUNKS (PRIMARY METHOD) ──
-        let textSuccess = false;
-        
-        try {
-            addLog(userId, `📤 Sending Session ID via TEXT (Safer)...`);
-            
-            // Start Message
-            await sock.sendMessage(jid, { text: `🤖 *OXBOT SESSION ID*\n\nPlease copy the following parts in order:` });
-            await delay(1000);
-
-            // Split and Send
-            const chunkSize = 1500; // Keep chunks small to avoid spam filters
-            const parts = Math.ceil(fullSession.length / chunkSize);
-
-            for (let i = 0; i < parts; i++) {
-                const chunk = fullSession.substring(i * chunkSize, (i + 1) * chunkSize);
+ 
+        addLog(userId, `📤 Sending session ID to ${jid}...`);
+ 
+        // ── STEP 5: WAIT FOR SOCKET TO STABILIZE ────────────────────────────────
+        // Even though 'open' fired, WhatsApp needs a moment to finish key exchange
+        await delay(4000);
+ 
+        // ── STEP 6: SEND AS PLAIN TEXT — NO CHUNKS, NO FORMATTING ──────────────
+        // "waiting for this message" is almost always caused by:
+        //   - Code blocks (``` ```) triggering media metadata lookup
+        //   - Messages sent before message store is fully synced
+        //   - Chunked messages where WhatsApp expects a follow-up that never comes
+        //
+        // SOLUTION: Send ONE message, plain text, no markdown, no backticks.
+        // WhatsApp plain text messages are ALWAYS delivered.
+ 
+        let sent = false;
+        const MAX_ATTEMPTS = 5;
+ 
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                addLog(userId, `📨 Delivery attempt ${attempt}/${MAX_ATTEMPTS}...`);
+ 
+                // Plain text — no backticks, no formatting
+                const message = `OXBOT SESSION ID\n\nCopy everything below this line:\n\n${fullSession}\n\nPaste this in Add Bot on your dashboard.\nKeep it secret — it's like your password.`;
+ 
+                await sock.sendMessage(jid, { text: message });
+ 
+                addLog(userId, `✅ Session ID delivered successfully on attempt ${attempt}!`);
+                sent = true;
+                break;
+ 
+            } catch (sendErr) {
+                addLog(userId, `⚠️ Attempt ${attempt} failed: ${sendErr.message}`);
                 
-                // Retry logic for EACH chunk
-                let chunkSent = false;
-                for (let retry = 0; retry < 3; retry++) {
-                    try {
-                        await sock.sendMessage(jid, { 
-                            text: `*Part ${i+1}/${parts}*\n\`\`\`${chunk}\`\`\`` 
-                        });
-                        chunkSent = true;
-                        break;
-                    } catch (err) {
-                        console.error(`[Chunk ${i+1} Fail]`, err.message);
-                        await delay(1000); // Wait before retry
-                    }
+                if (attempt < MAX_ATTEMPTS) {
+                    const waitMs = 3000 * attempt; // 3s, 6s, 9s, 12s
+                    addLog(userId, `⏳ Waiting ${waitMs/1000}s before retry...`);
+                    await delay(waitMs);
                 }
-
-                if (!chunkSent) throw new Error(`Failed to send part ${i+1}`);
-                
-                await delay(1500); // Delay between chunks to avoid ban
             }
-
-            // End Message
-            await sock.sendMessage(jid, { text: `✅ *END OF SESSION*\n\nGo to your dashboard and paste all parts together.` });
-            addLog(userId, `✅ Session ID sent successfully via Text!`);
-            textSuccess = true;
-
-        } catch (textErr) {
-            addLog(userId, `⚠️ Text method failed: ${textErr.message}`);
         }
-
-        // ── STEP 5: SAVE TO DB (If text worked) ──
-        if (textSuccess) {
-            const waName = sock.user?.name || sock.user?.verifiedName || 'Unknown';
-            const waNumber = sock.user?.id?.split(':')[0] || targetNum;
-            
-            await db.query(
-                `INSERT INTO paired_sessions (user_id, session_id, session_name, phone, whatsapp_name, whatsapp_number, session_data, status)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 'paired')
-                 ON DUPLICATE KEY UPDATE 
-                    whatsapp_name = VALUES(whatsapp_name),
-                    whatsapp_number = VALUES(whatsapp_number),
-                    session_data = VALUES(session_data),
-                    status = 'paired'`,
-                [userId, sessionName, sessionName, phone, waName, waNumber, fullSession]
-            ).catch(err => console.error('[DB ERROR]', err.message));
+ 
+        if (!sent) {
+            addLog(userId, `⚠️ WhatsApp delivery failed after ${MAX_ATTEMPTS} attempts.`);
+            addLog(userId, `💡 Your session IS saved. Go to dashboard → Pair Device → you can copy it there.`);
+        } else {
+            addLog(userId, `🎉 All done! Session ID sent to your WhatsApp.`);
         }
-
+ 
     } catch (err) {
-        addLog(userId, '❌ Fatal Error in deliverSession: ' + err.message);
-        console.error(err);
+        addLog(userId, `❌ deliverSession error: ${err.message}`);
+        console.error('[DELIVER SESSION]', err);
     }
 }
+ 
 function cleanupConnection(botData, sessionId) {
     if (botData?.sock) {
         try { botData.sock.ws?.close(); } catch {}
@@ -1435,58 +1458,55 @@ app.post('/api/bot-settings/autotyping', getUser, async (req, res) => {
 async function startPairing(requestId, rawPhone, userId) {
     const entry = pairingMap.get(requestId);
     if (!entry) return;
-
-    // 1. Normalize Phone & Define Paths
+ 
     const phone         = normalisePhone(rawPhone);
     const sessionName   = 'oxbot_' + phone;
     const sessionFolder = path.join(SESSION_DIR, sessionName);
-
-    // 2. Kill any existing socket for this number to prevent conflict
+ 
+    // Kill any existing socket for this number
     if (activeSocks.has(phone)) {
         try { activeSocks.get(phone).end(); } catch {}
         activeSocks.delete(phone);
     }
-
-    // 3. If this session is already running as a bot, stop it
+ 
+    // Kill any running bot for this session
     if (activeBots.has(sessionName)) {
         const existing = activeBots.get(sessionName);
         try { existing.sock?.end(); } catch {}
         activeBots.delete(sessionName);
         global.botConnected = activeBots.size > 0;
     }
-
-    // 4. Wipe the session folder cleanly (Prevents 440/515 errors)
+ 
+    // Wipe session folder — prevents 440/515 ghost conflicts
     if (fs.existsSync(sessionFolder)) {
         try {
             fs.rmSync(sessionFolder, { recursive: true, force: true });
-            console.log(chalk.gray(`[CLEANUP] Wiped old session folder: ${sessionName}`));
+            console.log(chalk.gray(`[PAIR] Wiped old session: ${sessionName}`));
         } catch (err) {
-            console.error(chalk.red('[WIPE ERROR]'), err.message);
+            console.error(chalk.red('[PAIR WIPE]'), err.message);
         }
     }
     fs.mkdirSync(sessionFolder, { recursive: true });
-
-    // 5. Update Map Entry
-    entry.phone = phone;
-    entry.sessionName = sessionName;
+ 
+    entry.phone         = phone;
+    entry.sessionName   = sessionName;
     entry.sessionFolder = sessionFolder;
-    entry.status = 'connecting';
-    entry._reconnect = true;
-
-    addLog(userId, '📱 Starting pairing for +' + phone);
-
-    // ── RECURSIVE CONNECTION FUNCTION ──
+    entry.status        = 'connecting';
+    entry._reconnect    = true;
+ 
+    addLog(userId, `📱 Pairing code flow started for +${phone}`);
+ 
     async function connect() {
         const cur = pairingMap.get(requestId);
-        // Stop if pairing finished or errored out
         if (!cur || ['linked', 'error'].includes(cur.status)) return;
-
+ 
         let pairingCodeRequested = false;
-
+        let deliveryStarted      = false;
+ 
         try {
-            const { version } = await fetchLatestBaileysVersion();
+            const { version }          = await fetchLatestBaileysVersion();
             const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
-
+ 
             const sock = makeWASocket({
                 version,
                 logger: pino({ level: 'silent' }),
@@ -1494,141 +1514,192 @@ async function startPairing(requestId, rawPhone, userId) {
                 browser: Browsers.ubuntu('Chrome'),
                 auth: {
                     creds: state.creds,
-                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
+                    keys:  makeCacheableSignalKeyStore(
+                        state.keys,
+                        pino({ level: 'fatal' }).child({ level: 'fatal' })
+                    ),
                 },
-                markOnlineOnConnect: true,
+                // CRITICAL SETTINGS FOR STABLE PAIRING:
+                markOnlineOnConnect:            true,
                 generateHighQualityLinkPreview: false,
-                syncFullHistory: false,
-                getMessage: async () => undefined,
-                msgRetryCounterCache: new NodeCache(),
-                keepAliveIntervalMs: 25_000,
-                defaultQueryTimeoutMs: 60_000,
-                connectTimeoutMs: 60_000,
-                retryRequestDelayMs: 2000,
+                syncFullHistory:                false,
+                getMessage:                     async () => undefined,
+                msgRetryCounterCache:           new NodeCache({ stdTTL: 300, checkperiod: 60 }),
+                keepAliveIntervalMs:            20_000,  // Faster keep-alive during pairing
+                defaultQueryTimeoutMs:          60_000,
+                connectTimeoutMs:               60_000,
+                retryRequestDelayMs:            2000,
+                emitOwnEvents:                  false,
             });
-
+ 
             cur.sock = sock;
             activeSocks.set(phone, sock);
-            
-            // Listen for credential updates
             sock.ev.on('creds.update', saveCreds);
-
+ 
             sock.ev.on('connection.update', async (update) => {
-                const { connection, lastDisconnect } = update;
-
-                // ── STEP 1: REQUEST CODE ──
+                const { connection, lastDisconnect, qr } = update;
+ 
+                // ── REQUEST PAIRING CODE ON FIRST CONNECT ──────────────────────
                 if (connection === 'connecting' && !pairingCodeRequested) {
                     pairingCodeRequested = true;
-                    addLog(userId, '🔄 Requesting pairing code...');
-
-                    // Delay slightly to ensure socket stability
+                    addLog(userId, '🔄 Connection established, requesting pairing code...');
+ 
+                    // Wait 2s for socket to stabilize before requesting code
                     setTimeout(async () => {
                         const e = pairingMap.get(requestId);
                         if (!e || ['linked', 'error'].includes(e.status)) return;
-                        
+ 
                         try {
-                            // Request code from WhatsApp
-                            let code = await sock.requestPairingCode(phone.replace(/[^0-9]/g, ''));
-                            code = code?.match(/.{1,4}/g)?.join('-') || code;
-                            
+                            const rawCode = await sock.requestPairingCode(
+                                phone.replace(/[^0-9]/g, '')
+                            );
+                            // Format as XXXX-XXXX
+                            const code = rawCode?.match(/.{1,4}/g)?.join('-') || rawCode;
+ 
                             const e2 = pairingMap.get(requestId);
                             if (e2 && !['linked', 'error'].includes(e2.status)) {
                                 e2.status = 'code_ready';
                                 e2.code   = code;
-                                addLog(userId, '📲 Pairing code: ' + code);
+                                addLog(userId, `📲 Pairing code ready: ${code}`);
                             }
-                        } catch (err) {
+                        } catch (codeErr) {
                             const e2 = pairingMap.get(requestId);
                             if (e2 && !['linked', 'error'].includes(e2.status)) {
-                                e2.status = 'error';
-                                e2.error  = 'Code request failed: ' + err.message;
-                                addLog(userId, '❌ ' + e2.error);
+                                // Retry once after 3s
+                                addLog(userId, `⚠️ Code request failed: ${codeErr.message} — retrying in 3s...`);
+                                await delay(3000);
+                                try {
+                                    const rawCode2 = await sock.requestPairingCode(
+                                        phone.replace(/[^0-9]/g, '')
+                                    );
+                                    const code2 = rawCode2?.match(/.{1,4}/g)?.join('-') || rawCode2;
+                                    const e3 = pairingMap.get(requestId);
+                                    if (e3 && !['linked', 'error'].includes(e3.status)) {
+                                        e3.status = 'code_ready';
+                                        e3.code   = code2;
+                                        addLog(userId, `📲 Pairing code ready (retry): ${code2}`);
+                                    }
+                                } catch (retryErr) {
+                                    const e3 = pairingMap.get(requestId);
+                                    if (e3 && !['linked', 'error'].includes(e3.status)) {
+                                        e3.status = 'error';
+                                        e3.error  = 'Failed to get code: ' + retryErr.message;
+                                        addLog(userId, '❌ Code request failed twice. Try again.');
+                                    }
+                                }
                             }
                         }
-                    }, 3000);
+                    }, 2000);
                 }
-
-                // ── STEP 2: CONNECTION SUCCESS ──
+ 
+                // ── HANDLE SUCCESSFUL LINK ─────────────────────────────────────
                 if (connection === 'open') {
-                    cur.status   = 'linked';
-                    cur.waName   = sock.user?.name || sock.user?.notify || 'Unknown';
-                    cur.waNumber = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : phone;
-                    
-                    // Force save credentials immediately
+                    // Guard against duplicate open events
+                    if (deliveryStarted) return;
+                    deliveryStarted = true;
+ 
+                    const curNow = pairingMap.get(requestId);
+                    if (!curNow) return;
+ 
+                    // Force save creds to disk NOW
                     await saveCreds();
-                    
-                    // Remove from temporary active sockets
+ 
+                    const waName   = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
+                    const waNumber = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : phone;
+ 
+                    addLog(userId, `✅ WhatsApp linked! Account: ${waName} (+${waNumber})`);
+ 
+                    // Update entry
+                    curNow.waName   = waName;
+                    curNow.waNumber = waNumber;
+ 
+                    // Remove from pairing socks
                     activeSocks.delete(phone);
-                    
-                    addLog(userId, '✅ Linked! → ' + cur.waName);
-                    
-                    // ── TRIGGER DELIVERY (Hybrid File/Text) ──
-                    await deliverSession(sock, phone, sessionFolder, sessionName, userId, cur);
+ 
+                    // Deliver session — socket is open RIGHT NOW
+                    // deliverSession will set cur.fullSession before returning
+                    await deliverSession(sock, phone, sessionFolder, sessionName, userId, curNow);
+ 
+                    // NOW set status to linked (so frontend can read fullSession)
+                    curNow.status = 'linked';
                 }
-
-                // ── STEP 3: HANDLE DISCONNECT/RETRY ──
+ 
+                // ── HANDLE DISCONNECT ──────────────────────────────────────────
                 if (connection === 'close' && cur.status !== 'linked') {
-                    const sc = lastDisconnect?.error?.output?.statusCode;
-                    const should = sc !== DisconnectReason.loggedOut && sc !== 403 && sc !== 401;
-                    
-                    addLog(userId, `❌ Connection closed during pairing (status: ${sc ?? 'unknown'})`);
-                    
-                    // Handle temporary errors (515 = Stream Error, 428 = Bad Session)
-                    if ((sc === 515 || sc === 428) && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
-                        console.log(chalk.yellow(`[RETRY] Temporary error ${sc}, retrying in 3s...`));
-                        await delay(3000); connect(); return;
+                    const sc  = lastDisconnect?.error?.output?.statusCode;
+                    const msg = lastDisconnect?.error?.message || 'unknown';
+ 
+                    addLog(userId, `⚠️ Connection closed during pairing (code: ${sc ?? 'none'}, msg: ${msg})`);
+ 
+                    // Temporary errors — retry
+                    if ((sc === 515 || sc === 428 || sc === 503) && 
+                        cur._reconnect && 
+                        !['linked', 'error'].includes(cur.status)) {
+                        addLog(userId, `🔄 Temporary error ${sc}, reconnecting in 3s...`);
+                        activeSocks.delete(phone);
+                        await delay(3000);
+                        connect();
+                        return;
                     }
-                    
-                    // Handle general disconnects
-                    if (should && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
-                        console.log(chalk.yellow(`[RETRY] General disconnect, retrying in 5s...`));
-                        await delay(5000); connect(); return;
+ 
+                    // General disconnect — retry if not logged out
+                    const fatal = (sc === DisconnectReason.loggedOut || sc === 403 || sc === 401);
+                    if (!fatal && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
+                        addLog(userId, `🔄 Reconnecting in 5s... (code: ${sc})`);
+                        activeSocks.delete(phone);
+                        await delay(5000);
+                        connect();
+                        return;
                     }
-
-                    // Fatal Error
-                    const msg = sc === 403
-                        ? 'Too many linked devices — unlink one first.'
-                        : 'Connection closed (' + (sc ?? 'unknown') + ')';
-                    
-                    cur.status = 'error'; 
-                    cur.error = msg;
-                    addLog(userId, '❌ ' + msg);
+ 
+                    // Fatal error
+                    const errMsg = sc === 403
+                        ? 'Too many linked devices — unlink one in WhatsApp first.'
+                        : sc === 401
+                        ? 'Session rejected. Try pairing again.'
+                        : `Connection failed (code: ${sc ?? 'unknown'})`;
+ 
+                    cur.status = 'error';
+                    cur.error  = errMsg;
+                    addLog(userId, `❌ ${errMsg}`);
                     activeSocks.delete(phone);
                 }
             });
-
-            // ── TIMEOUT HANDLER ──
+ 
+            // ── TIMEOUT: 6 minutes total for user to enter code ───────────────
             setTimeout(() => {
                 const e = pairingMap.get(requestId);
                 if (e && !['linked', 'error'].includes(e.status)) {
-                    e._reconnect = false; 
-                    e.status = 'error'; 
-                    e.error = 'Timed out (5 min)';
-                    addLog(userId, '⏱️ Pairing timed out');
+                    e._reconnect = false;
+                    e.status     = 'error';
+                    e.error      = 'Timed out — you have 6 minutes to enter the code. Try again.';
+                    addLog(userId, '⏱️ Pairing timed out after 6 minutes');
                     activeSocks.delete(phone);
                     try { sock.end(); } catch {}
                 }
-            }, 5 * 60 * 1000);
-
+            }, 6 * 60 * 1000);
+ 
         } catch (err) {
-            // Global error catch for the connect function
             const e = pairingMap.get(requestId);
             if (e && e._reconnect && !['linked', 'error'].includes(e.status)) {
-                console.error(chalk.red('[CONNECT CRASH]'), err.message, '- Retrying...');
-                await delay(5000); connect(); return;
+                addLog(userId, `⚠️ Connection error: ${err.message} — retrying in 5s...`);
+                console.error(chalk.red('[PAIR CRASH]'), err.message);
+                await delay(5000);
+                connect();
+                return;
             }
-            if (e) { 
-                e.status = 'error'; 
-                e.error = err.message; 
+            if (e) {
+                e.status = 'error';
+                e.error  = err.message;
             }
-            addLog(userId, '❌ ' + err.message);
+            addLog(userId, `❌ Fatal pairing error: ${err.message}`);
             activeSocks.delete(phone);
         }
     }
-
-    // Start the connection process
+ 
     connect();
 }
+ 
 // ══════════════════════════════════════════════════════════════════════════════
 //  PAIRING — QR FLOW
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1636,45 +1707,45 @@ async function startPairing(requestId, rawPhone, userId) {
 async function startQRPairing(requestId, rawPhone, userId) {
     const entry = pairingMap.get(requestId);
     if (!entry) return;
-
+ 
     const phone         = normalisePhone(rawPhone);
     const sessionName   = 'oxbot_' + phone;
     const sessionFolder = path.join(SESSION_DIR, sessionName);
-
+ 
     if (activeSocks.has(phone)) {
         try { activeSocks.get(phone).end(); } catch {}
         activeSocks.delete(phone);
     }
-
     if (activeBots.has(sessionName)) {
         const existing = activeBots.get(sessionName);
         try { existing.sock?.end(); } catch {}
         activeBots.delete(sessionName);
         global.botConnected = activeBots.size > 0;
     }
-
-    // Wipe the session folder cleanly to prevent stale key/session file conflicts
+ 
     if (fs.existsSync(sessionFolder)) {
-        try {
-            fs.rmSync(sessionFolder, { recursive: true, force: true });
-        } catch (err) {
-            console.error('[WIPE ERROR]', err.message);
-        }
+        try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
     }
     fs.mkdirSync(sessionFolder, { recursive: true });
-
-    entry.phone = phone; entry.sessionName = sessionName; entry.sessionFolder = sessionFolder;
-    entry.status = 'connecting'; entry._reconnect = true;
-    addLog(userId, '📷 Starting QR pairing for +' + phone);
-
+ 
+    entry.phone         = phone;
+    entry.sessionName   = sessionName;
+    entry.sessionFolder = sessionFolder;
+    entry.status        = 'connecting';
+    entry._reconnect    = true;
+ 
+    addLog(userId, `📷 QR pairing started for +${phone}`);
+ 
     async function connect() {
         const cur = pairingMap.get(requestId);
         if (!cur || ['linked', 'error'].includes(cur.status)) return;
-
+ 
+        let deliveryStarted = false;
+ 
         try {
             const { version }          = await fetchLatestBaileysVersion();
             const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
-
+ 
             const sock = makeWASocket({
                 version,
                 logger: pino({ level: 'silent' }),
@@ -1682,100 +1753,118 @@ async function startQRPairing(requestId, rawPhone, userId) {
                 browser: Browsers.ubuntu('Chrome'),
                 auth: {
                     creds: state.creds,
-                    keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
+                    keys:  makeCacheableSignalKeyStore(
+                        state.keys,
+                        pino({ level: 'fatal' }).child({ level: 'fatal' })
+                    ),
                 },
-                markOnlineOnConnect: true, generateHighQualityLinkPreview: false,
-                syncFullHistory: false, getMessage: async () => undefined,
-                msgRetryCounterCache: new NodeCache(),
-                keepAliveIntervalMs: 25_000, defaultQueryTimeoutMs: 60_000,
-                connectTimeoutMs: 60_000, retryRequestDelayMs: 2000,
+                markOnlineOnConnect:            true,
+                generateHighQualityLinkPreview: false,
+                syncFullHistory:                false,
+                getMessage:                     async () => undefined,
+                msgRetryCounterCache:           new NodeCache({ stdTTL: 300, checkperiod: 60 }),
+                keepAliveIntervalMs:            20_000,
+                defaultQueryTimeoutMs:          60_000,
+                connectTimeoutMs:               60_000,
+                retryRequestDelayMs:            2000,
             });
-
+ 
             cur.sock = sock;
             activeSocks.set(phone, sock);
             sock.ev.on('creds.update', saveCreds);
-
+ 
             sock.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
-
+ 
                 if (qr) {
                     cur.status = 'qr_ready';
                     cur.qr     = qr;
-                    addLog(userId, '📷 QR ready — scan now');
+                    addLog(userId, '📷 QR code ready — scan now');
                 }
-
-                if (connection === 'connecting') addLog(userId, '🔄 Connecting...');
-
+ 
+                if (connection === 'connecting') {
+                    addLog(userId, '🔄 Connecting...');
+                }
+ 
                 if (connection === 'open') {
-                    cur.status   = 'linked';
-                    cur.waName   = sock.user?.name || sock.user?.notify || 'Unknown';
-                    cur.waNumber = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : phone;
+                    if (deliveryStarted) return;
+                    deliveryStarted = true;
+ 
+                    const curNow = pairingMap.get(requestId);
+                    if (!curNow) return;
+ 
                     await saveCreds();
+ 
+                    const waName   = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
+                    const waNumber = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : phone;
+ 
+                    addLog(userId, `✅ QR linked! Account: ${waName}`);
+                    curNow.waName   = waName;
+                    curNow.waNumber = waNumber;
                     activeSocks.delete(phone);
-                    addLog(userId, '✅ QR linked! → ' + cur.waName);
-                    await deliverSession(sock, phone, sessionFolder, sessionName, userId, cur);
+ 
+                    // Deliver — THEN set linked
+                    await deliverSession(sock, phone, sessionFolder, sessionName, userId, curNow);
+                    curNow.status = 'linked';
                 }
-
+ 
                 if (connection === 'close' && cur.status !== 'linked') {
-                    const sc     = lastDisconnect?.error?.output?.statusCode;
-                    const should = sc !== DisconnectReason.loggedOut && sc !== 403;
-                    
-                    addLog(userId, `❌ QR connection closed during pairing (status: ${sc ?? 'unknown'})`);
-                    
-                    if ((sc === 515 || sc === 428) && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
-                        await delay(3000); connect(); return;
+                    const sc  = lastDisconnect?.error?.output?.statusCode;
+                    addLog(userId, `⚠️ QR connection closed (code: ${sc ?? 'none'})`);
+ 
+                    if ((sc === 515 || sc === 428) && cur._reconnect && !['linked','error'].includes(cur.status)) {
+                        activeSocks.delete(phone);
+                        await delay(3000);
+                        connect();
+                        return;
                     }
-                    if (should && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
-                        await delay(5000); connect(); return;
+                    const fatal = (sc === DisconnectReason.loggedOut || sc === 403);
+                    if (!fatal && cur._reconnect && !['linked','error'].includes(cur.status)) {
+                        activeSocks.delete(phone);
+                        await delay(5000);
+                        connect();
+                        return;
                     }
-                    cur.status = 'error'; cur.error = 'QR connection closed (' + (sc ?? 'unknown') + ')';
-                    addLog(userId, '❌ QR failed'); activeSocks.delete(phone);
+ 
+                    cur.status = 'error';
+                    cur.error  = `QR connection failed (code: ${sc ?? 'unknown'})`;
+                    addLog(userId, `❌ QR pairing failed`);
+                    activeSocks.delete(phone);
                 }
             });
-
+ 
+            // 3 minute QR timeout
             setTimeout(() => {
                 const e = pairingMap.get(requestId);
                 if (e && !['linked', 'error'].includes(e.status)) {
-                    e._reconnect = false; e.status = 'error'; e.error = 'QR timed out (3 min)';
-                    addLog(userId, '⏱️ QR timed out');
+                    e._reconnect = false;
+                    e.status     = 'error';
+                    e.error      = 'QR timed out. Generate a new one.';
+                    addLog(userId, '⏱️ QR timed out after 3 minutes');
                     activeSocks.delete(phone);
                     try { sock.end(); } catch {}
                 }
             }, 3 * 60 * 1000);
-
+ 
         } catch (err) {
             const e = pairingMap.get(requestId);
-            if (e && e._reconnect && !['linked', 'error'].includes(e.status)) {
-                await delay(5000); connect(); return;
+            if (e && e._reconnect && !['linked','error'].includes(e.status)) {
+                await delay(5000);
+                connect();
+                return;
             }
             if (e) { e.status = 'error'; e.error = err.message; }
-            addLog(userId, '❌ QR error: ' + err.message);
+            addLog(userId, `❌ QR error: ${err.message}`);
             activeSocks.delete(phone);
         }
     }
-
+ 
     connect();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  PAIRING ENDPOINTS
 // ══════════════════════════════════════════════════════════════════════════════
-
-app.post('/api/pair-device', getUser, async (req, res) => {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ message: 'Phone number required' });
-    const n = normalisePhone(phone);
-    if (n.length < 7 || n.length > 15) return res.status(400).json({ message: 'Invalid phone number' });
-    const rid = uuidv4();
-    pairingMap.set(rid, {
-        status: 'pending', code: null, error: null, qr: null,
-        phone: n, sock: null, _ts: Date.now(), _reconnect: true,
-        waName: null, waNumber: null,
-    });
-    addLog(req.user.id, '📲 Code pairing started for +' + n);
-    startPairing(rid, n, req.user.id).catch(err => addLog(req.user.id, '❌ ' + err.message));
-    res.json({ success: true, requestId: rid, phone: n });
-});
 
 // ── STRONG PAIRING CODE ROUTE ───────────────────────────────────────────────
 // ── PAIR CODE ROUTE ─────────────────────────────────────────────────────────────

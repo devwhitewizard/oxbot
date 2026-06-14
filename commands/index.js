@@ -1,6 +1,6 @@
 /**
  * commands/index.js — OxBot Command Handler
- * FINAL FIX: Per-Session Memory (botData.seen) & Robust Public/Private Logic
+ * Fixed: old message filtering, DM command support, public mode, menu sticker
  */
 const fs   = require('fs');
 const path = require('path');
@@ -91,25 +91,48 @@ if (stickerPath) {
 }
 
 // ═══════════════════════════════════════════════════
-// TIME FILTERS
+// ANTI-SPAM (Duplicate Message Filter)
 // ═══════════════════════════════════════════════════
-const MESSAGE_AGE_LIMIT = 15000; 
-const botStartTime = Date.now();
+const seen = new Set();
+setInterval(() => { if (seen.size > 1000) seen.clear(); }, 5 * 60 * 1000);
+
+function isDuplicate(id) {
+    if (!id || seen.has(id)) return !!id;
+    seen.add(id);
+    return false;
+}
+
+// ═══════════════════════════════════════════════════
+// ★ CRITICAL: OLD MESSAGE FILTER ★
+// Prevents processing messages from before bot restart
+// ═══════════════════════════════════════════════════
+const MESSAGE_AGE_LIMIT = 15000; // 15 seconds — ignore older messages
 
 function isOldMessage(msg) {
     const ts = msg.messageTimestamp;
-    if (!ts) return false;
+    if (!ts) return false; // If no timestamp, allow it
+    
     const msgTimeMs = ts * 1000;
     const ageMs = Date.now() - msgTimeMs;
-    if (ageMs > MESSAGE_AGE_LIMIT) return true;
+    
+    if (ageMs > MESSAGE_AGE_LIMIT) {
+        console.log(`  ⏭️ Skipping old message (${Math.round(ageMs / 1000)}s ago)`);
+        return true;
+    }
     return false;
 }
+
+// Track bot start time to filter messages from before startup
+const botStartTime = Date.now();
 
 function isBeforeStartup(msg) {
     const ts = msg.messageTimestamp;
     if (!ts) return false;
     const msgTimeMs = ts * 1000;
-    if (msgTimeMs < botStartTime - 5000) return true;
+    if (msgTimeMs < botStartTime - 5000) { // 5s grace period
+        console.log(`  ⏭️ Skipping pre-startup message`);
+        return true;
+    }
     return false;
 }
 
@@ -192,23 +215,16 @@ async function getOwnerNum(db, sessionId) {
     } catch { return null; }
 }
 
-function phonesMatch(phone1, phone2) {
-    if (!phone1 || !phone2) return false;
-    const p1 = String(phone1).replace(/\D/g, '').replace(/^0+/, '');
-    const p2 = String(phone2).replace(/\D/g, '').replace(/^0+/, '');
-    if (!p1 || !p2) return false;
-    return p1 === p2 || p1.endsWith(p2) || p2.endsWith(p1);
-}
-
 async function isOwner(db, sessionId, senderId, sock, chatId) {
     const own = await getOwnerNum(db, sessionId);
     if (!own) return false;
     const clean = cleanNum(senderId);
-    if (phonesMatch(clean, own)) return true;
+    if (clean === own || senderId.includes(own)) return true;
+    // LID fallback for groups
     if (sock && chatId?.endsWith('@g.us') && senderId.includes('@lid')) {
         try {
             const meta = await sock.groupMetadata(chatId);
-            return (meta.participants || []).some(p => phonesMatch(cleanNum(p.id), own));
+            return (meta.participants || []).some(p => cleanNum(p.id) === own);
         } catch {}
     }
     return false;
@@ -223,16 +239,16 @@ async function getMode(db, sessionId) {
     if (c && Date.now() - c.ts < MODE_TTL) return c.v;
     try {
         const [rows] = await db.query('SELECT bot_mode FROM bot_settings WHERE session_id=? LIMIT 1', [sessionId]);
-        const v = rows[0]?.bot_mode || 'public';
+        const v = rows[0]?.bot_mode || 'private';
         modeCache.set(sessionId, { v, ts: Date.now() });
         return v;
-    } catch { return 'public'; }
+    } catch { return 'private'; }
 }
 
 function clearMode(sid) { modeCache.delete(sid); }
 
 // ═══════════════════════════════════════════════════
-// ★ MAIN HANDLER (FINAL ISOLATION FIX) ★
+// ★ MAIN HANDLER (FIXED) ★
 // ═══════════════════════════════════════════════════
 async function handleIncomingMessage(sock, msg, botData) {
     try {
@@ -253,22 +269,16 @@ async function handleIncomingMessage(sock, msg, botData) {
         }
 
         // ═══════════════════════════════════════════
-        // OLD MESSAGE FILTER
+        // ★ OLD MESSAGE FILTER (FIX #1) ★
+        // Skip messages from before restart
         // ═══════════════════════════════════════════
         if (isBeforeStartup(msg)) return;
         if (isOldMessage(msg)) return;
 
         // ═══════════════════════════════════════════
-        // ★ CRITICAL: PER-SESSION DUPLICATE CHECK ★
-        // Each botData has its own 'seen' Set initialized in app.js.
-        // This guarantees 0 conflict between User A's bot and User B's bot.
+        // DUPLICATE CHECK
         // ═══════════════════════════════════════════
-        if (!botData.seen) botData.seen = new Set();
-        if (botData.seen.has(msg.key.id)) return;
-        botData.seen.add(msg.key.id);
-        
-        // Auto-cleanup to prevent memory leak
-        if (botData.seen.size > 1000) botData.seen.clear();
+        if (isDuplicate(msg.key.id)) return;
 
         // ═══════════════════════════════════════════
         // EXTRACT TEXT & CHECK IF COMMAND
@@ -281,11 +291,10 @@ async function handleIncomingMessage(sock, msg, botData) {
         // ═══════════════════════════════════════════
         if (featAntideleteStore) featAntideleteStore(sock, msg, botData).catch(() => {});
         if (featFakeAudio && m.audioMessage) featFakeAudio(sock, chatId, msg, botData).catch(() => {});
-        if (featAntiban)   featAntiban(sock, msg, botData).catch(() => {});
-        if (featAutoReply && !isCommand) featAutoReply(sock, msg, botData).catch(() => {});
         
         // ═══════════════════════════════════════════
-        // PM BLOCKER FIX
+        // ★ PM BLOCKER FIX (FIX #2) ★
+        // DO NOT block if it's a command — let commands through!
         // ═══════════════════════════════════════════
         if (featPmBlocker && !isCommand) {
             const blocked = await featPmBlocker(sock, msg, botData).catch(() => false);
@@ -293,7 +302,13 @@ async function handleIncomingMessage(sock, msg, botData) {
         }
 
         // ═══════════════════════════════════════════
-        // TYPING / AUTOREAD
+        // ANTIBAN & AUTOREPLY
+        // ═══════════════════════════════════════════
+        if (featAntiban)   featAntiban(sock, msg, botData).catch(() => {});
+        if (featAutoReply && !isCommand) featAutoReply(sock, msg, botData).catch(() => {});
+
+        // ═══════════════════════════════════════════
+        // TYPING / AUTOREAD (for any message)
         // ═══════════════════════════════════════════
         if (featAutotyping) featAutotyping(sock, chatId, msg, botData).catch(() => {});
         if (featAutoread)   featAutoread(sock, msg, botData).catch(() => {});
@@ -317,6 +332,9 @@ async function handleIncomingMessage(sock, msg, botData) {
         const senderNum  = cleanNum(sender);
         const isDM       = !chatId.endsWith('@g.us');
         const isGroup    = chatId.endsWith('@g.us');
+
+        // Skip own messages
+        if (senderNum === botNum) return;
 
         console.log(`[${sessionId?.slice(-8)}] .${cmd} ← ${senderNum} [${isDM ? 'DM' : 'GROUP'}]`);
 
@@ -348,15 +366,15 @@ async function handleIncomingMessage(sock, msg, botData) {
         }
 
         // ═══════════════════════════════════════════
-        // ★ MODE GATE (PUBLIC/PRIVATE LOGIC) ★
-        // This ensures User's bot in Private mode ignores Admin's messages.
+        // ★ MODE GATE (FIX #3) ★
+        // Works for both DM and Group
         // ═══════════════════════════════════════════
         const mode = await getMode(db, sessionId);
         
         if (mode === 'private' && !msg.key.fromMe) {
             const own = await isOwner(db, sessionId, sender, sock, chatId);
             if (!own) {
-                // Silent ignore for non-owners in private mode
+                // Silent ignore — don't reveal bot is active
                 return;
             }
         }
@@ -398,5 +416,4 @@ module.exports = {
     handleGroupParticipantUpdate: null,
     handleStatus: null,
     antideleteRevocation,
-    clearMode,
 };
