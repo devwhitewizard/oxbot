@@ -24,7 +24,7 @@ const path = require('path');
 const fs = require('fs');
 const pino = require('pino');
 const { v4: uuidv4 } = require('uuid');
-const { useMultiFileAuthState, fetchLatestBaileysVersion, makeWASocket, DisconnectReason } = require('@whiskeysockets/baileys');
+const { useMultiFileAuthState, fetchLatestBaileysVersion, makeWASocket, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const chalk = require('chalk');
 
 const db = require('../oxbot/database');
@@ -256,7 +256,7 @@ router.post('/api/pair', getUser, async (req, res) => {
                 creds: state.creds,
                 keys: state.keys,
             },
-            browser: ['Mac OS', 'Chrome', '121.0.0'],
+            browser: Browsers.ubuntu('Chrome'),
             markOnlineOnConnect: false,
             generateHighQualityLinkPreview: false,
             keepAliveIntervalMs: 30_000,

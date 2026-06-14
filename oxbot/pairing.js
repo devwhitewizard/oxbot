@@ -23,6 +23,7 @@ const {
     useMultiFileAuthState,
     DisconnectReason,
     fetchLatestBaileysVersion,
+    Browsers,
 } = require('@whiskeysockets/baileys');
 
 const db = require('./database');
@@ -115,7 +116,7 @@ async function startPairing(requestId, rawPhone, userId) {
                 version,
                 logger: pino({ level: 'silent' }),
                 printQRInTerminal: false,
-                browser: ['Mac OS', 'Chrome', '121.0.0'],
+                browser: Browsers.ubuntu('Chrome'),
                 auth: {
                     creds: state.creds,
                     keys:  state.keys,
@@ -349,7 +350,7 @@ async function startQRPairing(requestId, rawPhone, userId) {
                 version,
                 logger: pino({ level: 'silent' }),
                 printQRInTerminal: false,
-                browser: ['Mac OS', 'Chrome', '121.0.0'],
+                browser: Browsers.ubuntu('Chrome'),
                 auth: {
                     creds: state.creds,
                     keys:  state.keys,

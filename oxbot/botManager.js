@@ -26,6 +26,7 @@ const {
     DisconnectReason,
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
+    Browsers,
 } = require('@whiskeysockets/baileys');
 
 const db = require('./database');
@@ -115,7 +116,7 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
         version,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: ['Mac OS', 'Chrome', '121.0.0'],
+        browser: Browsers.ubuntu('Chrome'),
         auth: {
             creds: state.creds,
             keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
