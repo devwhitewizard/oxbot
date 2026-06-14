@@ -231,28 +231,48 @@ async function startPairing(requestId, rawPhone, userId) {
  
                     addLog(userId, `⚠️ Connection closed during pairing (code: ${sc ?? 'none'}, msg: ${msg})`);
 
-                    // 408 = "QR refs attempts ended" — pairing window expired on WhatsApp's side.
-                    // We reconnect to open a fresh connection and generate a new code automatically.
+                    // ── 408 HANDLING ───────────────────────────────────────────
+                    // 408 comes in two flavours:
+                    //   A) Network error (ENOTFOUND / Connection was lost) → transient, retry
+                    //   B) QR refs attempts ended → WhatsApp window expired, wipe + regenerate
                     if (sc === 408 && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
-                        if ((cur._attempts || 0) >= 4) {
+                        const isNetworkError = msg.includes('ENOTFOUND') ||
+                                               msg.includes('Connection was lost') ||
+                                               msg.includes('WebSocket Error') ||
+                                               msg.includes('ECONNRESET') ||
+                                               msg.includes('ETIMEDOUT');
+
+                        if ((cur._attempts || 0) >= 5) {
                             cur.status = 'error';
-                            cur.error  = 'Pairing timed out after multiple attempts. Please try again.';
+                            cur.error  = 'Pairing failed after multiple attempts. Check your internet and try again.';
                             addLog(userId, '❌ Max pairing attempts reached. Try again.');
                             activeSocks.delete(phone);
                             try { sock.ws?.close(); } catch {}
                             try { sock.end(); } catch {}
                             return;
                         }
-                        addLog(userId, `🔄 Pairing window expired, starting fresh connection...`);
-                        activeSocks.delete(phone);
-                        try { sock.ws?.close(); } catch {}
-                        try { sock.end(); } catch {}
-                        // Wipe session so we get a clean auth state for fresh code
-                        try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
-                        fs.mkdirSync(sessionFolder, { recursive: true });
-                        await delay(3000);
-                        connect();
-                        return;
+
+                        if (isNetworkError) {
+                            // Transient network drop — wait longer and retry WITHOUT wiping session
+                            addLog(userId, `🔄 Network error, waiting 8s before reconnect...`);
+                            activeSocks.delete(phone);
+                            try { sock.ws?.close(); } catch {}
+                            try { sock.end(); } catch {}
+                            await delay(8000);
+                            connect();
+                            return;
+                        } else {
+                            // WhatsApp pairing window expired — wipe session and get a fresh code
+                            addLog(userId, `🔄 Pairing window expired, starting fresh connection...`);
+                            activeSocks.delete(phone);
+                            try { sock.ws?.close(); } catch {}
+                            try { sock.end(); } catch {}
+                            try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
+                            fs.mkdirSync(sessionFolder, { recursive: true });
+                            await delay(3000);
+                            connect();
+                            return;
+                        }
                     }
 
                     // Temporary errors — retry
