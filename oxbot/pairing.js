@@ -23,6 +23,7 @@ const {
     useMultiFileAuthState,
     DisconnectReason,
     fetchLatestBaileysVersion,
+    makeCacheableSignalKeyStore,
     Browsers,
 } = require('@whiskeysockets/baileys');
 
@@ -98,20 +99,23 @@ async function startPairing(requestId, rawPhone, userId) {
     entry.sessionFolder = sessionFolder;
     entry.status        = 'connecting';
     entry._reconnect    = true;
+    entry._attempts     = 0;
  
     addLog(userId, `📱 Pairing code flow started for +${phone}`);
  
     async function connect() {
         const cur = pairingMap.get(requestId);
         if (!cur || ['linked', 'error'].includes(cur.status)) return;
+        cur._attempts = (cur._attempts || 0) + 1;
  
         let pairingCodeRequested = false;
         let deliveryStarted      = false;
  
         try {
-            const { version }          = await fetchLatestBaileysVersion();
+            // Use bundled version — avoids incompatible fetched versions causing handshake failures
+            const { version } = await fetchLatestBaileysVersion();
             const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
- 
+
             const sock = makeWASocket({
                 version,
                 logger: pino({ level: 'silent' }),
@@ -119,7 +123,7 @@ async function startPairing(requestId, rawPhone, userId) {
                 browser: Browsers.ubuntu('Chrome'),
                 auth: {
                     creds: state.creds,
-                    keys:  state.keys,
+                    keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
                 },
                 // CRITICAL SETTINGS FOR STABLE PAIRING:
                 markOnlineOnConnect:            false,
@@ -127,7 +131,7 @@ async function startPairing(requestId, rawPhone, userId) {
                 syncFullHistory:                false,
                 getMessage:                     async () => undefined,
                 msgRetryCounterCache:           new NodeCache({ stdTTL: 300, checkperiod: 60 }),
-                keepAliveIntervalMs:            20_000,  // Faster keep-alive during pairing
+                keepAliveIntervalMs:            20_000,
                 defaultQueryTimeoutMs:          60_000,
                 connectTimeoutMs:               60_000,
                 retryRequestDelayMs:            2000,
@@ -141,61 +145,61 @@ async function startPairing(requestId, rawPhone, userId) {
             sock.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
  
-                // ── REQUEST PAIRING CODE ON FIRST CONNECT ──────────────────────
-                if (connection === 'connecting' && !pairingCodeRequested) {
+                // ── REQUEST PAIRING CODE ONCE SOCKET IS OPEN & UNREGISTERED ──────
+                // IMPORTANT: requestPairingCode must be called AFTER connection is ready,
+                // not during the 'connecting' phase. We check !creds.registered to confirm
+                // this is a fresh pairing session that hasn't authenticated yet.
+                if (connection === 'open' && !pairingCodeRequested && !sock.authState.creds.registered) {
                     pairingCodeRequested = true;
-                    addLog(userId, '🔄 Connection established, requesting pairing code...');
- 
-                    // Wait 2s for socket to stabilize before requesting code
-                    setTimeout(async () => {
-                        const e = pairingMap.get(requestId);
-                        if (!e || ['linked', 'error'].includes(e.status)) return;
- 
-                        try {
-                            const rawCode = await sock.requestPairingCode(
-                                phone.replace(/[^0-9]/g, '')
-                            );
-                            // Format as XXXX-XXXX
-                            const code = rawCode?.match(/.{1,4}/g)?.join('-') || rawCode;
- 
-                            const e2 = pairingMap.get(requestId);
-                            if (e2 && !['linked', 'error'].includes(e2.status)) {
-                                e2.status = 'code_ready';
-                                e2.code   = code;
-                                addLog(userId, `📲 Pairing code ready: ${code}`);
-                            }
-                        } catch (codeErr) {
-                            const e2 = pairingMap.get(requestId);
-                            if (e2 && !['linked', 'error'].includes(e2.status)) {
-                                // Retry once after 3s
-                                addLog(userId, `⚠️ Code request failed: ${codeErr.message} — retrying in 3s...`);
-                                await delay(3000);
-                                try {
-                                    const rawCode2 = await sock.requestPairingCode(
-                                        phone.replace(/[^0-9]/g, '')
-                                    );
-                                    const code2 = rawCode2?.match(/.{1,4}/g)?.join('-') || rawCode2;
-                                    const e3 = pairingMap.get(requestId);
-                                    if (e3 && !['linked', 'error'].includes(e3.status)) {
-                                        e3.status = 'code_ready';
-                                        e3.code   = code2;
-                                        addLog(userId, `📲 Pairing code ready (retry): ${code2}`);
-                                    }
-                                } catch (retryErr) {
-                                    const e3 = pairingMap.get(requestId);
-                                    if (e3 && !['linked', 'error'].includes(e3.status)) {
-                                        e3.status = 'error';
-                                        e3.error  = 'Failed to get code: ' + retryErr.message;
-                                        addLog(userId, '❌ Code request failed twice. Try again.');
-                                    }
+                    addLog(userId, '🔄 Connection ready, requesting pairing code...');
+
+                    // Give the socket 1s to fully stabilize after opening
+                    await delay(1000);
+
+                    try {
+                        const rawCode = await sock.requestPairingCode(
+                            phone.replace(/[^0-9]/g, '')
+                        );
+                        // Format as XXXX-XXXX
+                        const code = rawCode?.match(/.{1,4}/g)?.join('-') || rawCode;
+
+                        const e2 = pairingMap.get(requestId);
+                        if (e2 && !['linked', 'error'].includes(e2.status)) {
+                            e2.status = 'code_ready';
+                            e2.code   = code;
+                            addLog(userId, `📲 Pairing code ready: ${code}`);
+                        }
+                    } catch (codeErr) {
+                        const e2 = pairingMap.get(requestId);
+                        if (e2 && !['linked', 'error'].includes(e2.status)) {
+                            // Retry once after 3s
+                            addLog(userId, `⚠️ Code request failed: ${codeErr.message} — retrying in 3s...`);
+                            await delay(3000);
+                            try {
+                                const rawCode2 = await sock.requestPairingCode(
+                                    phone.replace(/[^0-9]/g, '')
+                                );
+                                const code2 = rawCode2?.match(/.{1,4}/g)?.join('-') || rawCode2;
+                                const e3 = pairingMap.get(requestId);
+                                if (e3 && !['linked', 'error'].includes(e3.status)) {
+                                    e3.status = 'code_ready';
+                                    e3.code   = code2;
+                                    addLog(userId, `📲 Pairing code ready (retry): ${code2}`);
+                                }
+                            } catch (retryErr) {
+                                const e3 = pairingMap.get(requestId);
+                                if (e3 && !['linked', 'error'].includes(e3.status)) {
+                                    e3.status = 'error';
+                                    e3.error  = 'Failed to get code: ' + retryErr.message;
+                                    addLog(userId, '❌ Code request failed twice. Try again.');
                                 }
                             }
                         }
-                    }, 2000);
+                    }
                 }
  
                 // ── HANDLE SUCCESSFUL LINK ─────────────────────────────────────
-                if (connection === 'open') {
+                if (connection === 'open' && sock.authState.creds.registered) {
                     if (deliveryStarted) return;
                     deliveryStarted = true;
  
@@ -224,7 +228,31 @@ async function startPairing(requestId, rawPhone, userId) {
                     const msg = lastDisconnect?.error?.message || 'unknown';
  
                     addLog(userId, `⚠️ Connection closed during pairing (code: ${sc ?? 'none'}, msg: ${msg})`);
- 
+
+                    // 408 = "QR refs attempts ended" — pairing window expired on WhatsApp's side.
+                    // We reconnect to open a fresh connection and generate a new code automatically.
+                    if (sc === 408 && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
+                        if ((cur._attempts || 0) >= 4) {
+                            cur.status = 'error';
+                            cur.error  = 'Pairing timed out after multiple attempts. Please try again.';
+                            addLog(userId, '❌ Max pairing attempts reached. Try again.');
+                            activeSocks.delete(phone);
+                            try { sock.ws?.close(); } catch {}
+                            try { sock.end(); } catch {}
+                            return;
+                        }
+                        addLog(userId, `🔄 Pairing window expired, starting fresh connection...`);
+                        activeSocks.delete(phone);
+                        try { sock.ws?.close(); } catch {}
+                        try { sock.end(); } catch {}
+                        // Wipe session so we get a clean auth state for fresh code
+                        try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch {}
+                        fs.mkdirSync(sessionFolder, { recursive: true });
+                        await delay(3000);
+                        connect();
+                        return;
+                    }
+
                     // Temporary errors — retry
                     if ((sc === 515 || sc === 428 || sc === 503) && 
                         cur._reconnect && 
@@ -239,7 +267,7 @@ async function startPairing(requestId, rawPhone, userId) {
                     }
  
                     // General disconnect — retry if not logged out
-                    const fatal = (sc === DisconnectReason.loggedOut || sc === 403 || sc === 401 || sc === 408);
+                    const fatal = (sc === DisconnectReason.loggedOut || sc === 403 || sc === 401);
                     if (!fatal && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
                         addLog(userId, `🔄 Reconnecting in 5s... (code: ${sc})`);
                         activeSocks.delete(phone);
@@ -255,8 +283,6 @@ async function startPairing(requestId, rawPhone, userId) {
                         ? 'Too many linked devices — unlink one in WhatsApp first.'
                         : sc === 401
                         ? 'Session rejected. Try pairing again.'
-                        : sc === 408
-                        ? 'Pairing code expired. Please request a new code.'
                         : `Connection failed (code: ${sc ?? 'unknown'})`;
  
                     cur.status = 'error';
@@ -268,18 +294,18 @@ async function startPairing(requestId, rawPhone, userId) {
                 }
             });
  
-            // ── TIMEOUT: 6 minutes total for user to enter code ───────────────
+            // ── TIMEOUT: 8 minutes total for user to enter code ───────────────
             setTimeout(() => {
                 const e = pairingMap.get(requestId);
                 if (e && !['linked', 'error'].includes(e.status)) {
                     e._reconnect = false;
                     e.status     = 'error';
-                    e.error      = 'Timed out — you have 6 minutes to enter the code. Try again.';
-                    addLog(userId, '⏱️ Pairing timed out after 6 minutes');
+                    e.error      = 'Timed out — you have 8 minutes to enter the code. Try again.';
+                    addLog(userId, '⏱️ Pairing timed out after 8 minutes');
                     activeSocks.delete(phone);
                     try { sock.end(); } catch {}
                 }
-            }, 6 * 60 * 1000);
+            }, 8 * 60 * 1000);
  
         } catch (err) {
             const e = pairingMap.get(requestId);
@@ -353,7 +379,7 @@ async function startQRPairing(requestId, rawPhone, userId) {
                 browser: Browsers.ubuntu('Chrome'),
                 auth: {
                     creds: state.creds,
-                    keys:  state.keys,
+                    keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
                 },
                 markOnlineOnConnect:            false,
                 generateHighQualityLinkPreview: false,
