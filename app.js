@@ -726,7 +726,7 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
         version,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: Browsers.ubuntu('Chrome'),
+        browser: Browsers.macOS('Chrome'),
         auth: {
             creds: state.creds,
             keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
@@ -1536,7 +1536,7 @@ async function startPairing(requestId, rawPhone, userId) {
                 version,
                 logger: pino({ level: 'silent' }),
                 printQRInTerminal: false,
-                browser: Browsers.ubuntu('Chrome'),
+                browser: Browsers.macOS('Chrome'),
                 auth: {
                     creds: state.creds,
                     keys:  makeCacheableSignalKeyStore(
@@ -1784,7 +1784,7 @@ async function startQRPairing(requestId, rawPhone, userId) {
                 version,
                 logger: pino({ level: 'silent' }),
                 printQRInTerminal: false,
-                browser: Browsers.ubuntu('Chrome'),
+                browser: Browsers.macOS('Chrome'),
                 auth: {
                     creds: state.creds,
                     keys:  makeCacheableSignalKeyStore(
@@ -1955,7 +1955,7 @@ app.post('/api/pair', getUser, async (req, res) => {
                 creds: state.creds,
                 keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
             },
-            browser: Browsers.ubuntu('Chrome'),
+            browser: Browsers.macOS('Chrome'),
             markOnlineOnConnect: false,
             generateHighQualityLinkPreview: false,
             // STABILITY SETTINGS
