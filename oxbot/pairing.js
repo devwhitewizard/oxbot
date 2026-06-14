@@ -141,28 +141,27 @@ async function startPairing(requestId, rawPhone, userId) {
             cur.sock = sock;
             activeSocks.set(phone, sock);
             sock.ev.on('creds.update', saveCreds);
- 
-            sock.ev.on('connection.update', async (update) => {
-                const { connection, lastDisconnect, qr } = update;
- 
-                // ── REQUEST PAIRING CODE ONCE SOCKET IS OPEN & UNREGISTERED ──────
-                // IMPORTANT: requestPairingCode must be called AFTER connection is ready,
-                // not during the 'connecting' phase. We check !creds.registered to confirm
-                // this is a fresh pairing session that hasn't authenticated yet.
-                if (connection === 'open' && !pairingCodeRequested && !sock.authState.creds.registered) {
-                    pairingCodeRequested = true;
-                    addLog(userId, '🔄 Connection ready, requesting pairing code...');
 
-                    // Give the socket 1s to fully stabilize after opening
-                    await delay(1000);
+            // ── REQUEST PAIRING CODE (OUTSIDE EVENT HANDLER) ─────────────────
+            // CRITICAL: requestPairingCode must be called right after socket creation,
+            // NOT inside connection.update. The socket never emits 'open' until AFTER
+            // the code is entered — waiting for 'open' creates a deadlock.
+            // We check !creds.registered so we don't request a code on reconnects
+            // after a successful link.
+            if (!sock.authState.creds.registered) {
+                // Run in background — let the event handler register first
+                (async () => {
+                    // Wait 2s for the WebSocket to actually connect before requesting
+                    await delay(2000);
+                    const e = pairingMap.get(requestId);
+                    if (!e || ['linked', 'error'].includes(e.status)) return;
 
+                    addLog(userId, '🔄 Requesting pairing code...');
                     try {
                         const rawCode = await sock.requestPairingCode(
                             phone.replace(/[^0-9]/g, '')
                         );
-                        // Format as XXXX-XXXX
                         const code = rawCode?.match(/.{1,4}/g)?.join('-') || rawCode;
-
                         const e2 = pairingMap.get(requestId);
                         if (e2 && !['linked', 'error'].includes(e2.status)) {
                             e2.status = 'code_ready';
@@ -171,35 +170,38 @@ async function startPairing(requestId, rawPhone, userId) {
                         }
                     } catch (codeErr) {
                         const e2 = pairingMap.get(requestId);
-                        if (e2 && !['linked', 'error'].includes(e2.status)) {
-                            // Retry once after 3s
-                            addLog(userId, `⚠️ Code request failed: ${codeErr.message} — retrying in 3s...`);
-                            await delay(3000);
-                            try {
-                                const rawCode2 = await sock.requestPairingCode(
-                                    phone.replace(/[^0-9]/g, '')
-                                );
-                                const code2 = rawCode2?.match(/.{1,4}/g)?.join('-') || rawCode2;
-                                const e3 = pairingMap.get(requestId);
-                                if (e3 && !['linked', 'error'].includes(e3.status)) {
-                                    e3.status = 'code_ready';
-                                    e3.code   = code2;
-                                    addLog(userId, `📲 Pairing code ready (retry): ${code2}`);
-                                }
-                            } catch (retryErr) {
-                                const e3 = pairingMap.get(requestId);
-                                if (e3 && !['linked', 'error'].includes(e3.status)) {
-                                    e3.status = 'error';
-                                    e3.error  = 'Failed to get code: ' + retryErr.message;
-                                    addLog(userId, '❌ Code request failed twice. Try again.');
-                                }
+                        if (!e2 || ['linked', 'error'].includes(e2.status)) return;
+                        addLog(userId, `⚠️ Code request failed: ${codeErr.message} — retrying in 3s...`);
+                        await delay(3000);
+                        try {
+                            const rawCode2 = await sock.requestPairingCode(
+                                phone.replace(/[^0-9]/g, '')
+                            );
+                            const code2 = rawCode2?.match(/.{1,4}/g)?.join('-') || rawCode2;
+                            const e3 = pairingMap.get(requestId);
+                            if (e3 && !['linked', 'error'].includes(e3.status)) {
+                                e3.status = 'code_ready';
+                                e3.code   = code2;
+                                addLog(userId, `📲 Pairing code ready (retry): ${code2}`);
+                            }
+                        } catch (retryErr) {
+                            const e3 = pairingMap.get(requestId);
+                            if (e3 && !['linked', 'error'].includes(e3.status)) {
+                                e3.status = 'error';
+                                e3.error  = 'Failed to get code: ' + retryErr.message;
+                                addLog(userId, '❌ Code request failed twice. Try again.');
                             }
                         }
                     }
-                }
+                })();
+            }
+
+            sock.ev.on('connection.update', async (update) => {
+                const { connection, lastDisconnect, qr } = update;
  
                 // ── HANDLE SUCCESSFUL LINK ─────────────────────────────────────
-                if (connection === 'open' && sock.authState.creds.registered) {
+                // 'open' fires when the phone confirms the pairing code — this is success.
+                if (connection === 'open') {
                     if (deliveryStarted) return;
                     deliveryStarted = true;
  
