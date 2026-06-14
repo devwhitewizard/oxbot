@@ -1,3 +1,17 @@
+/**
+ * @file oxbot/pairing.js
+ * @description WhatsApp pairing engine orchestrating code and QR code authentication.
+ * 
+ * HOW IT WORKS:
+ * - `startPairing`: Wipes old session folder structures, initializes new Auth State, generates a 6-digit pairing code, and waits for user authentication.
+ * - `startQRPairing`: Sets up a Baileys connection, listens for connection state updates, and serves QR codes.
+ * - `deliverSession`: Sends the long plain-text Baileys session string directly to the user's WhatsApp chat upon successful authentication.
+ * 
+ * CONNECTIONS TO OTHER FILES:
+ * - Imports database.js, state.js, and utils.js.
+ * - Imported by routes/bots.js: maps to `/api/pair`, `/api/pair-device`, and `/api/pair-qr` route handlers.
+ */
+
 const fs   = require('fs');
 const path = require('path');
 const chalk = require('chalk');
@@ -23,6 +37,7 @@ const {
     patchCredsIfNeeded,
     delay
 } = require('./utils');
+
 
 const SESSION_DIR = path.join(__dirname, '..', 'sessions');
 

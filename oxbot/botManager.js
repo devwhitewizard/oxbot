@@ -1,3 +1,19 @@
+/**
+ * @file oxbot/botManager.js
+ * @description Bot manager controller handling active Baileys socket connections, bot lifecycle management (activation, shutdown, restart), event bindings, commands routing, and automatic reconnect loops.
+ * 
+ * HOW IT WORKS:
+ * - `activateBotSession`: Prepares authentication keys, fetches version, constructs the WASocket connection, and binds to connection status, credential update, and incoming messages events.
+ * - Handles auto-reconnection for active bots on server restart (`autoReconnectBots`) and handles failure states and lock control.
+ * 
+ * CONNECTIONS TO OTHER FILES:
+ * - Imports oxbot/database.js and oxbot/state.js to read/update dynamic states.
+ * - Imports oxbot/utils.js for log writing, phone cleanups, and credential patches.
+ * - Imports commands/* to trigger command execution (`handleIncomingMessage`) or deletion warnings (`antideleteRevocation`).
+ * - Loaded by app.js: starts the `autoReconnectBots` routine on application startup.
+ * - Imported by routes/bots.js: runs `activateBotSession` when users request start/activation.
+ */
+
 const fs   = require('fs');
 const path = require('path');
 const chalk = require('chalk');
@@ -22,6 +38,7 @@ const {
     reconnectAttempts
 } = require('./state');
 const { addLog, patchCredsIfNeeded, delay } = require('./utils');
+
 
 // Resolve command imports
 const {

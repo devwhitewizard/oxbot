@@ -1,3 +1,19 @@
+/**
+ * @file oxbot/mailer.js
+ * @description Email services module using Nodemailer to send verification links, reset codes, and ticket notifications.
+ * 
+ * HOW IT WORKS:
+ * - Initializes a Nodemailer SMTP transport using standard SMTP host, port, user, and password from environment variables.
+ * - Exports email templates (HTML/Text) and sender wrapper functions for email verification, support ticket creation, ticket replies, and forgot password codes.
+ * - Houses the list of valid support ticket category descriptors.
+ * 
+ * CONNECTIONS TO OTHER FILES:
+ * - Loaded by app.js during startup to verify connection status to the SMTP server.
+ * - Imported by routes/auth.js to send sign-up verification and password reset emails.
+ * - Imported by routes/tickets.js to email support admins when tickets are created or replies are received.
+ * - Imported by routes/admin.js to email users when support replies to their ticket.
+ */
+
 const nodemailer = require('nodemailer');
 const chalk      = require('chalk');
 
@@ -32,6 +48,7 @@ mailer.verify((err) => {
 async function sendVerificationEmail(toEmail, name, token) {
     const link = `${SITE_URL}/verify-email?token=${token}`;
     console.log(chalk.cyan(`[EMAIL VERIFY] Verification link for ${name} (${toEmail}): ${link}`));
+
 
     const html = `
 <!DOCTYPE html>
