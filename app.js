@@ -500,32 +500,43 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
  
         addLog(userId, `📦 Preparing session delivery for ${sessionName}...`);
  
-        // ── STEP 1: READ CREDS (they exist because connection is open) ──────────
+        // ── STEP 1: WAIT FOR HANDSHAKE & READ CREDS ───────────────────────────
         const credsPath = path.join(sessionFolder, 'creds.json');
  
-        // Give saveCreds() up to 5 seconds to flush to disk
+        // Wait for credentials to be fully registered/synced (up to 20 seconds)
         let credsContent = null;
-        for (let i = 0; i < 10; i++) {
+        let registered = false;
+        
+        for (let i = 0; i < 40; i++) {
             if (fs.existsSync(credsPath)) {
                 try {
                     const raw = fs.readFileSync(credsPath, 'utf8');
-                    JSON.parse(raw); // validate it's real JSON
-                    credsContent = raw;
-                    break;
+                    const parsed = JSON.parse(raw);
+                    // Check if registration handshake is complete and me is present
+                    if (parsed.registered && parsed.me?.id) {
+                        credsContent = raw;
+                        registered = true;
+                        break;
+                    }
                 } catch {}
             }
             await delay(500);
         }
  
-        if (!credsContent) {
-            addLog(userId, '❌ Creds file not found after 5s — retrying in 3s...');
-            await delay(3000);
+        if (!registered) {
+            addLog(userId, '⚠️ Registration handshake not complete after 20s. Fetching current credentials...');
             if (fs.existsSync(credsPath)) {
-                credsContent = fs.readFileSync(credsPath, 'utf8');
-            } else {
-                addLog(userId, '❌ Fatal: creds.json missing. Re-pair device.');
-                return;
+                try {
+                    credsContent = fs.readFileSync(credsPath, 'utf8');
+                } catch (err) {
+                    addLog(userId, `❌ Error reading credentials: ${err.message}`);
+                }
             }
+        }
+ 
+        if (!credsContent) {
+            addLog(userId, '❌ Fatal: creds.json missing. Re-pair device.');
+            return;
         }
  
         // ── STEP 2: BUILD FULL SESSION STRING ───────────────────────────────────
@@ -726,7 +737,7 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
         version,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: Browsers.macOS('Chrome'),
+        browser: ['Mac OS', 'Chrome', '121.0.0'],
         auth: {
             creds: state.creds,
             keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
@@ -1536,13 +1547,10 @@ async function startPairing(requestId, rawPhone, userId) {
                 version,
                 logger: pino({ level: 'silent' }),
                 printQRInTerminal: false,
-                browser: Browsers.macOS('Chrome'),
+                browser: ['Mac OS', 'Chrome', '121.0.0'],
                 auth: {
                     creds: state.creds,
-                    keys:  makeCacheableSignalKeyStore(
-                        state.keys,
-                        pino({ level: 'fatal' }).child({ level: 'fatal' })
-                    ),
+                    keys:  state.keys,
                 },
                 // CRITICAL SETTINGS FOR STABLE PAIRING:
                 markOnlineOnConnect:            false,
@@ -1670,7 +1678,7 @@ async function startPairing(requestId, rawPhone, userId) {
                     }
  
                     // General disconnect — retry if not logged out
-                    const fatal = (sc === DisconnectReason.loggedOut || sc === 403 || sc === 401);
+                    const fatal = (sc === DisconnectReason.loggedOut || sc === 403 || sc === 401 || sc === 408);
                     if (!fatal && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
                         addLog(userId, `🔄 Reconnecting in 5s... (code: ${sc})`);
                         activeSocks.delete(phone);
@@ -1686,6 +1694,8 @@ async function startPairing(requestId, rawPhone, userId) {
                         ? 'Too many linked devices — unlink one in WhatsApp first.'
                         : sc === 401
                         ? 'Session rejected. Try pairing again.'
+                        : sc === 408
+                        ? 'Pairing code expired. Please request a new code.'
                         : `Connection failed (code: ${sc ?? 'unknown'})`;
  
                     cur.status = 'error';
@@ -1784,13 +1794,10 @@ async function startQRPairing(requestId, rawPhone, userId) {
                 version,
                 logger: pino({ level: 'silent' }),
                 printQRInTerminal: false,
-                browser: Browsers.macOS('Chrome'),
+                browser: ['Mac OS', 'Chrome', '121.0.0'],
                 auth: {
                     creds: state.creds,
-                    keys:  makeCacheableSignalKeyStore(
-                        state.keys,
-                        pino({ level: 'fatal' }).child({ level: 'fatal' })
-                    ),
+                    keys:  state.keys,
                 },
                 markOnlineOnConnect:            false,
                 generateHighQualityLinkPreview: false,
@@ -1953,9 +1960,9 @@ app.post('/api/pair', getUser, async (req, res) => {
             printQRInTerminal: false,
             auth: {
                 creds: state.creds,
-                keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
+                keys: state.keys,
             },
-            browser: Browsers.macOS('Chrome'),
+            browser: ['Mac OS', 'Chrome', '121.0.0'],
             markOnlineOnConnect: false,
             generateHighQualityLinkPreview: false,
             // STABILITY SETTINGS
