@@ -7,6 +7,21 @@ async function execute(sock, msg, botData, args) {
     if (!chatId.endsWith('@g.us')) return await sock.sendMessage(chatId, { text: '❌ Group only!' }, { quoted: msg });
 
     const senderId = msg.key.participant || msg.key.remoteJid;
+    const db        = botData?.db;
+    const sessionId = botData?.sessionId;
+    let senderIsOwner = msg.key.fromMe;
+    if (!senderIsOwner && db && sessionId) {
+        try {
+            const [rows] = await db.query(
+                'SELECT u.phone FROM users u JOIN bots b ON b.user_id=u.id WHERE b.session_id=? LIMIT 1',
+                [sessionId]
+            );
+            if (rows.length) {
+                const ownerNum = String(rows[0].phone).replace(/\D/g, '');
+                senderIsOwner = senderId.includes(ownerNum);
+            }
+        } catch {}
+    }
     const botJid   = sock.user?.id?.split('@')[0]?.split(':')[0] + '@s.whatsapp.net';
 
     let meta;

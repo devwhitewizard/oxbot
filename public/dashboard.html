@@ -1615,7 +1615,18 @@ async function doPair(){
 
 function pollLinked(rid,res,btn,html){
   let a=0;const t=setInterval(async()=>{a++;if(a>60){clearInterval(t);return;}
-    try{const sr=await fetch('/api/pair-status/'+rid,{headers:H});const sd=await sr.json();if(sd.status==='linked'){clearInterval(t);showSuccess(res,btn,html,sd.waName,sd.fullSession);}}catch{}
+    try{
+      const sr=await fetch('/api/pair-status/'+rid,{headers:H});
+      const sd=await sr.json();
+      if(sd.status==='linked'){
+        clearInterval(t);
+        showSuccess(res,btn,html,sd.waName,sd.fullSession);
+      } else if(sd.status==='error'){
+        clearInterval(t);
+        if(btn){btn.disabled=false;btn.innerHTML=html;}
+        res.innerHTML='<div class="state-box error"><i class="fas fa-times-circle"></i><h3>Pairing Failed</h3><p>'+esc(sd.error)+'</p></div>';
+      }
+    }catch{}
   },2000);
 }
 function showSuccess(res,btn,html,waName,fullSession){

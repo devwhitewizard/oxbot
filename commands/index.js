@@ -216,15 +216,27 @@ async function getOwnerNum(db, sessionId) {
 }
 
 async function isOwner(db, sessionId, senderId, sock, chatId) {
+    const clean = cleanNum(senderId);
+    if (sock && sock.user && clean === cleanNum(sock.user.id)) return true;
+
     const own = await getOwnerNum(db, sessionId);
     if (!own) return false;
-    const clean = cleanNum(senderId);
-    if (clean === own || senderId.includes(own)) return true;
+
+    const p1 = clean.replace(/\D/g, '');
+    const p2 = own.replace(/\D/g, '');
+    const clean1 = p1.startsWith('0') ? p1.slice(1) : p1;
+    const clean2 = p2.startsWith('0') ? p2.slice(1) : p2;
+    if (clean1 === clean2 || clean1.endsWith(clean2) || clean2.endsWith(clean1)) return true;
+
     // LID fallback for groups
     if (sock && chatId?.endsWith('@g.us') && senderId.includes('@lid')) {
         try {
             const meta = await sock.groupMetadata(chatId);
-            return (meta.participants || []).some(p => cleanNum(p.id) === own);
+            return (meta.participants || []).some(p => {
+                const pClean = cleanNum(p.id).replace(/\D/g, '');
+                const pClean1 = pClean.startsWith('0') ? pClean.slice(1) : pClean;
+                return pClean1 === clean2 || pClean1.endsWith(clean2) || clean2.endsWith(pClean1);
+            });
         } catch {}
     }
     return false;
@@ -268,10 +280,6 @@ async function handleIncomingMessage(sock, msg, botData) {
             return;
         }
 
-        // ═══════════════════════════════════════════
-        // ★ OLD MESSAGE FILTER (FIX #1) ★
-        // Skip messages from before restart
-        // ═══════════════════════════════════════════
         if (isBeforeStartup(msg)) return;
         if (isOldMessage(msg)) return;
 
@@ -333,8 +341,8 @@ async function handleIncomingMessage(sock, msg, botData) {
         const isDM       = !chatId.endsWith('@g.us');
         const isGroup    = chatId.endsWith('@g.us');
 
-        // Skip own messages
-        if (senderNum === botNum) return;
+        // Skip own messages (except when sent from own client)
+        if (senderNum === botNum && !msg.key.fromMe) return;
 
         console.log(`[${sessionId?.slice(-8)}] .${cmd} ← ${senderNum} [${isDM ? 'DM' : 'GROUP'}]`);
 

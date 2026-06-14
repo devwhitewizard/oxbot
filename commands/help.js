@@ -147,6 +147,62 @@ async function execute(sock, msg, botData, args) {
 ┃  ◈ .fakeaudio          ┃
 ┃  ◈ .antidelete         ┃
 ┃  ◈ .pmblocker          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━━━━━━━┓
+┃  🎨 *Ephoto360 Maker*  ┃
+┣━━━━━━━━━━━━━━━━━━━━━━┫
+┃  ◈ .blackpinklogo      ┃
+┃  ◈ .blackpinkstyle     ┃
+┃  ◈ .glossysilver       ┃
+┃  ◈ .glitchtext         ┃
+┃  ◈ .arting             ┃
+┃  ◈ .advancedglow       ┃
+┃  ◈ .cartoonstyle       ┃
+┃  ◈ .deadpool           ┃
+┃  ◈ .deletingtext       ┃
+┃  ◈ .luxurygold         ┃
+┃  ◈ .1917style          ┃
+┃  ◈ .pixelglitch        ┃
+┃  ◈ .multicoloredneon   ┃
+┃  ◈ .effectclouds       ┃
+┃  ◈ .flagtext           ┃
+┃  ◈ .freecreate         ┃
+┃  ◈ .galaxystyle        ┃
+┃  ◈ .bear               ┃
+┃  ◈ .devilwings         ┃
+┃  ◈ .wolfgalaxy         ┃
+┃  ◈ .comic              ┃
+┃  ◈ .textonwetglass     ┃
+┃  ◈ .galaxywallpaper    ┃
+┃  ◈ .firetext           ┃
+┃  ◈ .underwater         ┃
+┃  ◈ .neontext           ┃
+┃  ◈ .metaltext          ┃
+┃  ◈ .snowtext           ┃
+┃  ◈ .icetext            ┃
+┃  ◈ .purpletext         ┃
+┃  ◈ .lighttext          ┃
+┃  ◈ .thundertext        ┃
+┃  ◈ .leavestext         ┃
+┃  ◈ .hackertext         ┃
+┃  ◈ .deviltext          ┃
+┃  ◈ .vintagetext        ┃
+┃  ◈ .wingslogo          ┃
+┃  ◈ .painttext          ┃
+┃  ◈ .naruto             ┃
+┃  ◈ .pubglogo           ┃
+┃  ◈ .glowingtext        ┃
+┃  ◈ .corntext           ┃
+┃  ◈ .makingneon         ┃
+┃  ◈ .matrix             ┃
+┃  ◈ .royaltext          ┃
+┃  ◈ .sand               ┃
+┃  ◈ .summerbeach        ┃
+┃  ◈ .topography         ┃
+┃  ◈ .typography         ┃
+┃  ◈ .flux               ┃
+┃  ◈ .dragonball         ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━┛`;
 
         const footer = `│ 👤 *User:* ${userName}`;

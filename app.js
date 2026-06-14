@@ -483,8 +483,6 @@ function patchCredsIfNeeded(sessionFolder) {
  * 4. Falls back to File only if text completely fails.
  */
  
-const { delay } = require('@whiskeysockets/baileys');
- 
 // ── REPLACE YOUR ENTIRE deliverSession FUNCTION WITH THIS ─────────────────────
 /**
  * deliverSession — called AFTER connection is already open.
@@ -1455,6 +1453,20 @@ app.post('/api/bot-settings/autotyping', getUser, async (req, res) => {
 //  PAIRING — CODE FLOW
 // ══════════════════════════════════════════════════════════════════════════════
 
+function cancelExistingPairings(phone, excludeRequestId) {
+    for (const [id, e] of pairingMap) {
+        if (id !== excludeRequestId && e.phone === phone && !['linked', 'error'].includes(e.status)) {
+            console.log(chalk.yellow(`[PAIR CLEANUP] Cancelling existing pairing request ${id} for +${phone}`));
+            e._reconnect = false;
+            e.status     = 'error';
+            e.error      = 'Superceded by a new pairing request.';
+            if (e.sock) {
+                try { e.sock.end(); } catch {}
+            }
+        }
+    }
+}
+
 async function startPairing(requestId, rawPhone, userId) {
     const entry = pairingMap.get(requestId);
     if (!entry) return;
@@ -1462,6 +1474,9 @@ async function startPairing(requestId, rawPhone, userId) {
     const phone         = normalisePhone(rawPhone);
     const sessionName   = 'oxbot_' + phone;
     const sessionFolder = path.join(SESSION_DIR, sessionName);
+ 
+    // Cancel and clean up any old pairing requests for this phone number
+    cancelExistingPairings(phone, requestId);
  
     // Kill any existing socket for this number
     if (activeSocks.has(phone)) {
@@ -1502,11 +1517,11 @@ async function startPairing(requestId, rawPhone, userId) {
  
         let pairingCodeRequested = false;
         let deliveryStarted      = false;
- 
+
         try {
             const { version }          = await fetchLatestBaileysVersion();
             const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
- 
+
             const sock = makeWASocket({
                 version,
                 logger: pino({ level: 'silent' }),
@@ -1520,7 +1535,7 @@ async function startPairing(requestId, rawPhone, userId) {
                     ),
                 },
                 // CRITICAL SETTINGS FOR STABLE PAIRING:
-                markOnlineOnConnect:            true,
+                markOnlineOnConnect:            false,
                 generateHighQualityLinkPreview: false,
                 syncFullHistory:                false,
                 getMessage:                     async () => undefined,
@@ -1531,31 +1546,31 @@ async function startPairing(requestId, rawPhone, userId) {
                 retryRequestDelayMs:            2000,
                 emitOwnEvents:                  false,
             });
- 
+
             cur.sock = sock;
             activeSocks.set(phone, sock);
             sock.ev.on('creds.update', saveCreds);
- 
+
             sock.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
- 
+
                 // ── REQUEST PAIRING CODE ON FIRST CONNECT ──────────────────────
                 if (connection === 'connecting' && !pairingCodeRequested) {
                     pairingCodeRequested = true;
                     addLog(userId, '🔄 Connection established, requesting pairing code...');
- 
+
                     // Wait 2s for socket to stabilize before requesting code
                     setTimeout(async () => {
                         const e = pairingMap.get(requestId);
                         if (!e || ['linked', 'error'].includes(e.status)) return;
- 
+
                         try {
                             const rawCode = await sock.requestPairingCode(
                                 phone.replace(/[^0-9]/g, '')
                             );
                             // Format as XXXX-XXXX
                             const code = rawCode?.match(/.{1,4}/g)?.join('-') || rawCode;
- 
+
                             const e2 = pairingMap.get(requestId);
                             if (e2 && !['linked', 'error'].includes(e2.status)) {
                                 e2.status = 'code_ready';
@@ -1712,6 +1727,9 @@ async function startQRPairing(requestId, rawPhone, userId) {
     const sessionName   = 'oxbot_' + phone;
     const sessionFolder = path.join(SESSION_DIR, sessionName);
  
+    // Cancel and clean up any old pairing requests for this phone number
+    cancelExistingPairings(phone, requestId);
+ 
     if (activeSocks.has(phone)) {
         try { activeSocks.get(phone).end(); } catch {}
         activeSocks.delete(phone);
@@ -1758,7 +1776,7 @@ async function startQRPairing(requestId, rawPhone, userId) {
                         pino({ level: 'fatal' }).child({ level: 'fatal' })
                     ),
                 },
-                markOnlineOnConnect:            true,
+                markOnlineOnConnect:            false,
                 generateHighQualityLinkPreview: false,
                 syncFullHistory:                false,
                 getMessage:                     async () => undefined,
@@ -1811,8 +1829,10 @@ async function startQRPairing(requestId, rawPhone, userId) {
                 if (connection === 'close' && cur.status !== 'linked') {
                     const sc  = lastDisconnect?.error?.output?.statusCode;
                     addLog(userId, `⚠️ QR connection closed (code: ${sc ?? 'none'})`);
+                    console.log(chalk.blue(`[DEBUG QR CLOSE] requestId: ${requestId}, sc: ${sc}, cur._reconnect: ${cur._reconnect}, cur.status: ${cur.status}`));
  
                     if ((sc === 515 || sc === 428) && cur._reconnect && !['linked','error'].includes(cur.status)) {
+                        console.log(chalk.green(`[DEBUG QR CLOSE] Match temporary error 515/428. Reconnecting...`));
                         activeSocks.delete(phone);
                         await delay(3000);
                         connect();
@@ -1820,12 +1840,14 @@ async function startQRPairing(requestId, rawPhone, userId) {
                     }
                     const fatal = (sc === DisconnectReason.loggedOut || sc === 403);
                     if (!fatal && cur._reconnect && !['linked','error'].includes(cur.status)) {
+                        console.log(chalk.green(`[DEBUG QR CLOSE] Match non-fatal error. Reconnecting...`));
                         activeSocks.delete(phone);
                         await delay(5000);
                         connect();
                         return;
                     }
  
+                    console.log(chalk.red(`[DEBUG QR CLOSE] Reconnection skipped. Setting status to error.`));
                     cur.status = 'error';
                     cur.error  = `QR connection failed (code: ${sc ?? 'unknown'})`;
                     addLog(userId, `❌ QR pairing failed`);
@@ -1998,6 +2020,23 @@ app.post('/api/pair', getUser, async (req, res) => {
         }
     }
 });
+
+app.post('/api/pair-device', getUser, async (req, res) => {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: 'Phone number required' });
+    const n = normalisePhone(phone);
+    if (n.length < 7 || n.length > 15) return res.status(400).json({ message: 'Invalid phone number' });
+    const rid = uuidv4();
+    pairingMap.set(rid, {
+        status: 'pending', code: null, error: null, qr: null,
+        phone: n, sock: null, _ts: Date.now(), _reconnect: true,
+        waName: null, waNumber: null,
+    });
+    addLog(req.user.id, '📲 Code pairing started for +' + n);
+    startPairing(rid, n, req.user.id).catch(err => addLog(req.user.id, '❌ ' + err.message));
+    res.json({ success: true, requestId: rid, phone: n });
+});
+
 app.post('/api/pair-qr', getUser, async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ message: 'Phone number required' });
