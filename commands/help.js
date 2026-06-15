@@ -213,17 +213,15 @@ async function execute(sock, msg, botData, args) {
 │ 🚀 _oxbot.name.ng_
 └─────────────────────────┘`;
 
-        // ★ THE EXACT SECRET CODE FOR NEWSLETTERS ★
-        const buttons = [
-            {
-                nativeFlowInfo: {
-                    name: 'cta_open_channel',
-                    buttonParamsJson: JSON.stringify({
-                        channel_id: '120363421280626994@newsletter'
-                    })
-                }
-            },
-        ];
+        const contextInfo = {
+            forwardingScore: 999,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+                newsletterJid: '120363421280626994@newsletter',
+                newsletterName: 'OxBot',
+                serverMessageId: -1
+            }
+        };
 
         const img = global.menuImage;
 
@@ -231,14 +229,12 @@ async function execute(sock, msg, botData, args) {
             await sock.sendMessage(chatId, {
                 image: img,
                 caption: fullMessage,
-                footer: '🤖 OxBot — oxbot.name.ng',
-                templateButtons: buttons,
+                contextInfo: contextInfo
             }, { quoted: msg });
         } else {
             await sock.sendMessage(chatId, {
                 text: fullMessage,
-                footer: '🤖 OxBot — oxbot.name.ng',
-                templateButtons: buttons,
+                contextInfo: contextInfo
             }, { quoted: msg });
         }
 

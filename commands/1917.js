@@ -37,7 +37,16 @@ module.exports = {
 
       await sock.sendMessage(chatId, { 
         image: { url: result.image }, 
-        caption: `🎬 *1917 EFFECT*\n\n📝 *Text:* ${text}\n\n🛡️ *Powered by OxBot*` 
+        caption: `🎬 *1917 EFFECT*\n\n📝 *Text:* ${text}\n\n🛡️ *Powered by OxBot*`,
+        contextInfo: {
+          forwardingScore: 999,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363421280626994@newsletter',
+            newsletterName: 'OxBot',
+            serverMessageId: -1
+          }
+        }
       }, { quoted: msg });
 
     } catch (e) {
