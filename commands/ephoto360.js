@@ -1,95 +1,87 @@
 /**
  * @file commands/ephoto360.js
- * @description Text & photo effect image generator using TextPro.me.
+ * @description Text & photo effect image generator using ephoto360.com.
  * 
  * HOW IT WORKS:
  * - Users run commands like .firetext, .neontext, .glitchtext, etc.
- * - mumaker.textpro() scrapes textpro.me and returns a generated image URL.
+ * - mumaker.ephoto() scrapes en.ephoto360.com and returns a generated image URL.
  * - The image URL is sent to the chat as a photo.
  * 
- * NOTE: Previously used ephoto360.com but that site changed its JS-based form
- * submission in 2025 making static scraping impossible. TextPro.me uses the same
- * mumaker API and is confirmed working.
- * 
  * CONNECTIONS:
- * - Uses mumaker npm package (mumaker.textpro)
+ * - Uses mumaker npm package (mumaker.ephoto)
  * - Loaded by botManager.js commandLoader
  */
 
 const mumaker = require('mumaker');
 
-// ── WORKING TextPro.me effects (verified 2025) ─────────────────────────────
+// ── WORKING Ephoto360.com effects (verified from Nexus-1MD) ──────────────────
 const templates = {
   // Fire / Flame
-  firetext:         'https://textpro.me/make-glitter-text-effect-online-899.html',
-  flame:            'https://textpro.me/fire-text-effect-free-online-generator-912.html',
+  fire:             'https://en.ephoto360.com/flame-lettering-effect-372.html',
+  flame:            'https://en.ephoto360.com/flame-lettering-effect-372.html',
+  firetext:         'https://en.ephoto360.com/flame-lettering-effect-372.html',
 
   // Neon / Glow
-  neontext:         'https://textpro.me/neon-text-effect-online-free-generator-910.html',
-  neon:             'https://textpro.me/neon-text-effect-online-free-generator-910.html',
-  glowingtext:      'https://textpro.me/neon-glow-text-effect-online-generator-914.html',
-  multicoloredneon: 'https://textpro.me/create-neon-sign-text-effect-online-free-937.html',
+  neon:             'https://en.ephoto360.com/create-colorful-neon-light-text-effects-online-797.html',
+  neontext:         'https://en.ephoto360.com/create-colorful-neon-light-text-effects-online-797.html',
+
+  // Glitch
+  glitch:           'https://en.ephoto360.com/create-digital-glitch-text-effects-online-767.html',
+  glitchtext:       'https://en.ephoto360.com/create-digital-glitch-text-effects-online-767.html',
+
+  // Devil wings
+  devil:            'https://en.ephoto360.com/neon-devil-wings-text-effect-online-683.html',
+  deviltext:        'https://en.ephoto360.com/neon-devil-wings-text-effect-online-683.html',
+
+  // Hacker
+  hacker:           'https://en.ephoto360.com/create-anonymous-hacker-avatars-cyan-neon-677.html',
+  hackertext:       'https://en.ephoto360.com/create-anonymous-hacker-avatars-cyan-neon-677.html',
+
+  // Ice / Snow
+  ice:              'https://en.ephoto360.com/ice-text-effect-online-101.html',
+  icetext:          'https://en.ephoto360.com/ice-text-effect-online-101.html',
+  snow:             'https://en.ephoto360.com/create-a-snow-3d-text-effect-free-online-621.html',
+  snowtext:         'https://en.ephoto360.com/create-a-snow-3d-text-effect-free-online-621.html',
+
+  // Leaves
+  leaves:           'https://en.ephoto360.com/green-brush-text-effect-typography-maker-online-153.html',
+  leavestext:       'https://en.ephoto360.com/green-brush-text-effect-typography-maker-online-153.html',
+
+  // Light
+  light:            'https://en.ephoto360.com/light-text-effect-futuristic-technology-style-648.html',
+  lighttext:        'https://en.ephoto360.com/light-text-effect-futuristic-technology-style-648.html',
+
+  // Matrix
+  matrix:           'https://en.ephoto360.com/matrix-text-effect-154.html',
+  matrixtext:       'https://en.ephoto360.com/matrix-text-effect-154.html',
 
   // Metallic / Gold / Silver
-  metaltext:        'https://textpro.me/glossy-metallic-chrome-3d-text-effect-1185.html',
-  luxurygold:       'https://textpro.me/gold-3d-text-effect-online-generator-908.html',
-  goldtext:         'https://textpro.me/gold-3d-text-effect-online-generator-908.html',
-  glossysilver:     'https://textpro.me/silver-3d-text-effect-online-generator-907.html',
-  silvertext:       'https://textpro.me/silver-3d-text-effect-online-generator-907.html',
+  metallic:         'https://en.ephoto360.com/impressive-decorative-3d-metal-text-effect-798.html',
+  metal:            'https://en.ephoto360.com/impressive-decorative-3d-metal-text-effect-798.html',
+  metaltext:        'https://en.ephoto360.com/impressive-decorative-3d-metal-text-effect-798.html',
 
-  // Ice / Snow / Water
-  icetext:          'https://textpro.me/ice-text-effect-online-free-generator-915.html',
-  snowtext:         'https://textpro.me/snow-text-effect-online-generator-916.html',
-  underwater:       'https://textpro.me/underwater-text-effect-online-free-generator-917.html',
+  // Purple
+  purple:           'https://en.ephoto360.com/purple-text-effect-online-100.html',
+  purpletext:       'https://en.ephoto360.com/purple-text-effect-online-100.html',
 
-  // Galaxy / Space
-  galaxystyle:      'https://textpro.me/galaxy-text-effect-online-free-generator-906.html',
-  galaxy:           'https://textpro.me/galaxy-text-effect-online-free-generator-906.html',
-  galaxywallpaper:  'https://textpro.me/galaxy-text-effect-online-free-generator-906.html',
-  wolfgalaxy:       'https://textpro.me/galaxy-text-effect-online-free-generator-906.html',
+  // Sand
+  sand:             'https://en.ephoto360.com/write-names-and-messages-on-the-sand-online-582.html',
+  sandtext:         'https://en.ephoto360.com/write-names-and-messages-on-the-sand-online-582.html',
 
-  // Matrix / Hacker / Glitch
-  matrix:           'https://textpro.me/matrix-style-text-effect-online-884.html',
-  hackertext:       'https://textpro.me/matrix-style-text-effect-online-884.html',
-  glitchtext:       'https://textpro.me/glitch-text-effect-online-free-generator-923.html',
-  pixelglitch:      'https://textpro.me/glitch-text-effect-online-free-generator-923.html',
-
-  // 3D Effects
-  '3dtext':         'https://textpro.me/create-3d-text-effect-online-free-generator-956.html',
-  cartoonstyle:     'https://textpro.me/create-cartoon-3d-text-effect-free-online-952.html',
-  comic:            'https://textpro.me/create-cartoon-3d-text-effect-free-online-952.html',
+  // Thunder
+  thunder:          'https://en.ephoto360.com/thunder-text-effect-online-97.html',
+  thundertext:      'https://en.ephoto360.com/thunder-text-effect-online-97.html',
 
   // Blackpink / K-Pop
-  blackpinklogo:    'https://textpro.me/create-a-mystical-neon-blackpink-logo-text-effect-1180.html',
-  blackpinkstyle:   'https://textpro.me/create-a-mystical-neon-blackpink-logo-text-effect-1180.html',
+  blackpink:        'https://en.ephoto360.com/create-a-blackpink-style-logo-with-members-signatures-810.html',
+  blackpinklogo:    'https://en.ephoto360.com/create-a-blackpink-style-logo-with-members-signatures-810.html',
 
-  // Naruto / Anime / Gaming
-  naruto:           'https://textpro.me/create-naruto-logo-text-effect-online-929.html',
-  pubglogo:         'https://textpro.me/pubg-style-logo-text-effect-online-free-934.html',
-  deadpool:         'https://textpro.me/deadpool-text-effect-online-free-generator-922.html',
+  // Arena
+  arena:            'https://en.ephoto360.com/create-cover-arena-of-valor-by-mastering-360.html',
 
-  // Nature / Seasonal
-  leavestext:       'https://textpro.me/leaves-text-effect-online-free-generator-918.html',
-  thundertext:      'https://textpro.me/lightning-thunder-text-effect-online-free-920.html',
-
-  // Stylish / Vintage / Royal
-  vintagetext:      'https://textpro.me/vintage-text-effect-online-free-generator-896.html',
-  royaltext:        'https://textpro.me/create-royal-crown-text-effect-online-942.html',
-  luxurytext:       'https://textpro.me/create-royal-crown-text-effect-online-942.html',
-
-  // Misc
-  glitter:          'https://textpro.me/make-glitter-text-effect-online-899.html',
-  arting:           'https://textpro.me/create-artistic-3d-text-effects-from-corn-kernels-1177.html',
-  corntext:         'https://textpro.me/create-artistic-3d-text-effects-from-corn-kernels-1177.html',
-  painttext:        'https://textpro.me/watercolor-paint-text-effect-online-893.html',
-  dragonball:       'https://textpro.me/dragon-ball-z-text-effect-online-generator-931.html',
-  
-  // Newer popular effects
-  hologram:         'https://textpro.me/create-online-3d-hologram-glass-text-effect-1163.html',
-  candy:            'https://textpro.me/online-cute-3d-candy-text-effect-generator-1192.html',
-  crystal:          'https://textpro.me/luxurious-and-creative-sparkling-colored-crystal-text-effect-1190.html',
-  marble:           'https://textpro.me/create-a-luxurious-blue-marble-text-effect-1176.html',
-  pearl:            'https://textpro.me/create-elegant-3d-pearl-text-effects-online-1168.html',
+  // Paint
+  paint:            'https://en.ephoto360.com/create-3d-colorful-paint-text-effect-online-801.html',
+  painttext:        'https://en.ephoto360.com/create-3d-colorful-paint-text-effect-online-801.html',
 };
 
 const commandName = 'firetext';
@@ -99,7 +91,7 @@ module.exports = {
   name: commandName,
   aliases,
   category: 'textmaker',
-  desc: 'Generate stylish text effects using TextPro.me',
+  desc: 'Generate stylish text effects using Ephoto360',
 
   async execute(sock, msg, botData, args) {
     const chatId = msg.key.remoteJid;
@@ -135,7 +127,7 @@ module.exports = {
 
       // 20-second timeout
       const result = await Promise.race([
-        mumaker.textpro(templateUrl, inputText),
+        mumaker.ephoto(templateUrl, inputText),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('TIMEOUT')), 20000)
         )

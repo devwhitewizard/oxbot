@@ -22,10 +22,10 @@ module.exports = {
         text: `⏳ Generating 1917 effect...` 
       }, { quoted: msg });
 
-      // ★ FIX: Switched from broken ephoto360 to working TextPro.me vintage style
+      // ★ FIX: Switched back to working ephoto360 url from Nexus
       const result = await Promise.race([
-        mumaker.textpro(
-          'https://textpro.me/vintage-text-effect-online-free-generator-896.html',
+        mumaker.ephoto(
+          'https://en.ephoto360.com/1917-style-text-effect-523.html',
           text
         ),
         new Promise((_, reject) =>
