@@ -1655,17 +1655,7 @@ function pollLinked(rid,res,btn,html){
 function showSuccess(res,btn,html,waName,fullSession){
   if(btn){btn.disabled=false;btn.innerHTML=html;}
   const extra=waName?'<br>Linked as: <strong style="color:var(--brand)">'+esc(waName)+'</strong>':'';
-  
-  let sessionBox = '';
-  if (fullSession) {
-    sessionBox = `<div style="margin-top:14px; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:left;">
-      <div style="font-size:11px; color:var(--muted2); font-weight:600; margin-bottom:6px;">Your Session ID:</div>
-      <textarea readonly style="width:100%; height:80px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--brand); font-family:monospace; font-size:11px; padding:8px; resize:none; outline:none; word-break:break-all;" onclick="this.select()">${esc(fullSession)}</textarea>
-      <button class="btn btn-sm btn-outline" style="width:100%; margin-top:8px; font-size:11px;" onclick="copyText('${escAttr(fullSession)}')"><i class="fas fa-copy"></i> Copy Session ID</button>
-    </div>`;
-  }
-  
-  res.innerHTML='<div class="state-box success"><i class="fas fa-check-circle"></i><h3>Device Linked Successfully!</h3><p>Session ID generated successfully.'+extra+'</p>'+sessionBox+'<br><p style="font-size:11px; margin-top:10px; line-height: 1.6;">📲 <strong>Check your WhatsApp messages</strong> for the session ID. If you did not receive it, copy it from the box above.<br><br>Then go to <strong style="color:var(--brand);cursor:pointer;" onclick="go(\'s-addbot\',null)">Add Bot →</strong></p></div>';
+  res.innerHTML='<div class="state-box success"><i class="fas fa-check-circle"></i><h3>Device Linked Successfully!</h3><p>Your session has been saved automatically.'+extra+'</p><div style="margin-top:14px;padding:12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;text-align:left;font-size:12px;line-height:1.8;"><span style="color:var(--brand);font-weight:600;">✅ What to do next:</span><br>1. Your session is ready on this device.<br>2. Go to <strong style="color:var(--brand);cursor:pointer;" onclick="go(\'s-addbot\',null)">Add Bot →</strong> and paste your <strong>phone number</strong> as the Session ID.<br>3. If prompted for a session string, check your <strong>WhatsApp messages</strong> — the full ID was sent there.</div></div>';
 }
 function resetPairBtn(){const b=document.getElementById('pairBtn');if(b){b.disabled=false;b.innerHTML='<i class="fas fa-link"></i> Get Pairing Code';}}
 function copyText(t){navigator.clipboard.writeText(t).then(()=>showToast('Copied!')).catch(()=>prompt('Copy:',t));}
