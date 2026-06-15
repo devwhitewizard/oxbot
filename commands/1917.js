@@ -22,14 +22,14 @@ module.exports = {
         text: `⏳ Generating 1917 effect...` 
       }, { quoted: msg });
 
-      // ★ FIX: Added a 15-second timeout so the bot doesn't hang forever if ephoto360 blocks the request
+      // ★ FIX: Switched from broken ephoto360 to working TextPro.me vintage style
       const result = await Promise.race([
-        mumaker.ephoto(
-          'https://en.ephoto360.com/1917-style-text-effect-523.html', 
+        mumaker.textpro(
+          'https://textpro.me/vintage-text-effect-online-free-generator-896.html',
           text
         ),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT')), 20000)
         )
       ]);
 

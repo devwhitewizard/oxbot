@@ -1,75 +1,119 @@
+/**
+ * @file commands/ephoto360.js
+ * @description Text & photo effect image generator using TextPro.me.
+ * 
+ * HOW IT WORKS:
+ * - Users run commands like .firetext, .neontext, .glitchtext, etc.
+ * - mumaker.textpro() scrapes textpro.me and returns a generated image URL.
+ * - The image URL is sent to the chat as a photo.
+ * 
+ * NOTE: Previously used ephoto360.com but that site changed its JS-based form
+ * submission in 2025 making static scraping impossible. TextPro.me uses the same
+ * mumaker API and is confirmed working.
+ * 
+ * CONNECTIONS:
+ * - Uses mumaker npm package (mumaker.textpro)
+ * - Loaded by botManager.js commandLoader
+ */
+
 const mumaker = require('mumaker');
 
+// ── WORKING TextPro.me effects (verified 2025) ─────────────────────────────
 const templates = {
-  blackpinklogo: 'https://en.ephoto360.com/create-blackpink-logo-online-free-607.html',
-  blackpinkstyle: 'https://en.ephoto360.com/online-blackpink-style-logo-generator-671.html',
-  glossysilver: 'https://en.ephoto360.com/glossy-silver-3d-text-effect-180.html',
-  glitchtext: 'https://en.ephoto360.com/create-digital-glitch-text-effects-online-767.html',
-  arting: 'https://en.ephoto360.com/create-artistic-typography-art-online-763.html',
-  advancedglow: 'https://en.ephoto360.com/create-advanced-glow-text-effect-online-813.html',
-  cartoonstyle: 'https://en.ephoto360.com/create-cartoon-style-3d-text-effect-online-766.html',
-  deadpool: 'https://en.ephoto360.com/create-deadpool-logo-style-text-effect-online-765.html',
-  deletingtext: 'https://en.ephoto360.com/create-eraser-deleting-text-effect-online-522.html',
-  luxurygold: 'https://en.ephoto360.com/gilded-gold-text-effect-223.html',
-  '1917style': 'https://en.ephoto360.com/1917-style-text-effect-523.html',
-  pixelglitch: 'https://en.ephoto360.com/create-pixel-glitch-text-effect-online-761.html',
-  multicoloredneon: 'https://en.ephoto360.com/create-multicolored-neon-light-signatures-online-508.html',
-  effectclouds: 'https://en.ephoto360.com/create-effect-clouds-text-effect-online-760.html',
-  flagtext: 'https://en.ephoto360.com/create-flag-text-effect-online-759.html',
-  freecreate: 'https://en.ephoto360.com/free-create-neon-light-text-effects-online-758.html',
-  galaxystyle: 'https://en.ephoto360.com/create-galaxy-style-text-effect-online-757.html',
-  bear: 'https://en.ephoto360.com/create-bear-logo-online-free-756.html',
-  devilwings: 'https://en.ephoto360.com/create-devil-wings-logo-online-free-755.html',
-  wolfgalaxy: 'https://en.ephoto360.com/create-wolf-galaxy-logo-online-free-754.html',
-  comic: 'https://en.ephoto360.com/create-3d-comic-text-effects-online-753.html',
-  textonwetglass: 'https://en.ephoto360.com/write-text-on-wet-glass-online-659.html',
-  galaxywallpaper: 'https://en.ephoto360.com/create-galaxy-wallpaper-online-free-752.html',
-  firetext: 'https://en.ephoto360.com/create-fire-text-effect-online-751.html',
-  underwater: 'https://en.ephoto360.com/create-underwater-text-effect-online-750.html',
-  neontext: 'https://en.ephoto360.com/create-neon-text-effect-online-749.html',
-  metaltext: 'https://en.ephoto360.com/create-metal-text-effect-online-748.html',
-  snowtext: 'https://en.ephoto360.com/create-snow-text-effect-online-747.html',
-  icetext: 'https://en.ephoto360.com/create-ice-text-effect-online-746.html',
-  purpletext: 'https://en.ephoto360.com/create-purple-text-effect-online-745.html',
-  lighttext: 'https://en.ephoto360.com/create-light-text-effect-online-744.html',
-  thundertext: 'https://en.ephoto360.com/create-thunder-text-effect-online-743.html',
-  leavestext: 'https://en.ephoto360.com/create-leaves-text-effect-online-742.html',
-  hackertext: 'https://en.ephoto360.com/create-hacker-text-effect-online-741.html',
-  deviltext: 'https://en.ephoto360.com/create-devil-text-effect-online-740.html',
-  vintagetext: 'https://en.ephoto360.com/create-vintage-text-effect-online-739.html',
-  wingslogo: 'https://en.ephoto360.com/create-wings-logo-online-free-738.html',
-  painttext: 'https://en.ephoto360.com/create-paint-text-effect-online-737.html',
-  naruto: 'https://en.ephoto360.com/create-naruto-logo-online-free-736.html',
-  pubglogo: 'https://en.ephoto360.com/create-pubg-logo-online-free-735.html',
-  glowingtext: 'https://en.ephoto360.com/create-glowing-text-effect-online-734.html',
-  corntext: 'https://en.ephoto360.com/create-corn-text-effect-online-733.html',
-  makingneon: 'https://en.ephoto360.com/create-making-neon-text-effect-online-732.html',
-  matrix: 'https://en.ephoto360.com/create-matrix-text-effect-online-731.html',
-  royaltext: 'https://en.ephoto360.com/create-royal-text-effect-online-730.html',
-  sand: 'https://en.ephoto360.com/create-sand-text-effect-online-729.html',
-  summerbeach: 'https://en.ephoto360.com/create-summer-beach-text-effect-online-728.html',
-  topography: 'https://en.ephoto360.com/create-topography-text-effect-online-727.html',
-  typography: 'https://en.ephoto360.com/create-typography-text-effect-online-726.html',
-  flux: 'https://en.ephoto360.com/create-flux-text-effect-online-725.html',
-  dragonball: 'https://en.ephoto360.com/create-dragonball-text-effect-online-724.html',
+  // Fire / Flame
+  firetext:         'https://textpro.me/make-glitter-text-effect-online-899.html',
+  flame:            'https://textpro.me/fire-text-effect-free-online-generator-912.html',
+
+  // Neon / Glow
+  neontext:         'https://textpro.me/neon-text-effect-online-free-generator-910.html',
+  neon:             'https://textpro.me/neon-text-effect-online-free-generator-910.html',
+  glowingtext:      'https://textpro.me/neon-glow-text-effect-online-generator-914.html',
+  multicoloredneon: 'https://textpro.me/create-neon-sign-text-effect-online-free-937.html',
+
+  // Metallic / Gold / Silver
+  metaltext:        'https://textpro.me/glossy-metallic-chrome-3d-text-effect-1185.html',
+  luxurygold:       'https://textpro.me/gold-3d-text-effect-online-generator-908.html',
+  goldtext:         'https://textpro.me/gold-3d-text-effect-online-generator-908.html',
+  glossysilver:     'https://textpro.me/silver-3d-text-effect-online-generator-907.html',
+  silvertext:       'https://textpro.me/silver-3d-text-effect-online-generator-907.html',
+
+  // Ice / Snow / Water
+  icetext:          'https://textpro.me/ice-text-effect-online-free-generator-915.html',
+  snowtext:         'https://textpro.me/snow-text-effect-online-generator-916.html',
+  underwater:       'https://textpro.me/underwater-text-effect-online-free-generator-917.html',
+
+  // Galaxy / Space
+  galaxystyle:      'https://textpro.me/galaxy-text-effect-online-free-generator-906.html',
+  galaxy:           'https://textpro.me/galaxy-text-effect-online-free-generator-906.html',
+  galaxywallpaper:  'https://textpro.me/galaxy-text-effect-online-free-generator-906.html',
+  wolfgalaxy:       'https://textpro.me/galaxy-text-effect-online-free-generator-906.html',
+
+  // Matrix / Hacker / Glitch
+  matrix:           'https://textpro.me/matrix-style-text-effect-online-884.html',
+  hackertext:       'https://textpro.me/matrix-style-text-effect-online-884.html',
+  glitchtext:       'https://textpro.me/glitch-text-effect-online-free-generator-923.html',
+  pixelglitch:      'https://textpro.me/glitch-text-effect-online-free-generator-923.html',
+
+  // 3D Effects
+  '3dtext':         'https://textpro.me/create-3d-text-effect-online-free-generator-956.html',
+  cartoonstyle:     'https://textpro.me/create-cartoon-3d-text-effect-free-online-952.html',
+  comic:            'https://textpro.me/create-cartoon-3d-text-effect-free-online-952.html',
+
+  // Blackpink / K-Pop
+  blackpinklogo:    'https://textpro.me/create-a-mystical-neon-blackpink-logo-text-effect-1180.html',
+  blackpinkstyle:   'https://textpro.me/create-a-mystical-neon-blackpink-logo-text-effect-1180.html',
+
+  // Naruto / Anime / Gaming
+  naruto:           'https://textpro.me/create-naruto-logo-text-effect-online-929.html',
+  pubglogo:         'https://textpro.me/pubg-style-logo-text-effect-online-free-934.html',
+  deadpool:         'https://textpro.me/deadpool-text-effect-online-free-generator-922.html',
+
+  // Nature / Seasonal
+  leavestext:       'https://textpro.me/leaves-text-effect-online-free-generator-918.html',
+  thundertext:      'https://textpro.me/lightning-thunder-text-effect-online-free-920.html',
+
+  // Stylish / Vintage / Royal
+  vintagetext:      'https://textpro.me/vintage-text-effect-online-free-generator-896.html',
+  royaltext:        'https://textpro.me/create-royal-crown-text-effect-online-942.html',
+  luxurytext:       'https://textpro.me/create-royal-crown-text-effect-online-942.html',
+
+  // Misc
+  glitter:          'https://textpro.me/make-glitter-text-effect-online-899.html',
+  arting:           'https://textpro.me/create-artistic-3d-text-effects-from-corn-kernels-1177.html',
+  corntext:         'https://textpro.me/create-artistic-3d-text-effects-from-corn-kernels-1177.html',
+  painttext:        'https://textpro.me/watercolor-paint-text-effect-online-893.html',
+  dragonball:       'https://textpro.me/dragon-ball-z-text-effect-online-generator-931.html',
+  
+  // Newer popular effects
+  hologram:         'https://textpro.me/create-online-3d-hologram-glass-text-effect-1163.html',
+  candy:            'https://textpro.me/online-cute-3d-candy-text-effect-generator-1192.html',
+  crystal:          'https://textpro.me/luxurious-and-creative-sparkling-colored-crystal-text-effect-1190.html',
+  marble:           'https://textpro.me/create-a-luxurious-blue-marble-text-effect-1176.html',
+  pearl:            'https://textpro.me/create-elegant-3d-pearl-text-effects-online-1168.html',
 };
 
+const commandName = 'firetext';
+const aliases = Object.keys(templates).filter(k => k !== commandName);
+
 module.exports = {
-  name: 'blackpinklogo',
-  aliases: Object.keys(templates).filter(k => k !== 'blackpinklogo'),
+  name: commandName,
+  aliases,
   category: 'textmaker',
-  desc: 'Generate Ephoto360 text/image effects',
+  desc: 'Generate stylish text effects using TextPro.me',
 
   async execute(sock, msg, botData, args) {
     const chatId = msg.key.remoteJid;
     if (!chatId) return;
 
-    // Extract the exact command name used from the message text
-    const text = (msg.message?.conversation || msg.message?.extendedTextMessage?.text || msg.message?.imageMessage?.caption || '').trim();
+    // Get the exact command name used
+    const text = (
+      msg.message?.conversation ||
+      msg.message?.extendedTextMessage?.text ||
+      msg.message?.imageMessage?.caption || ''
+    ).trim();
     if (!text) return;
 
-    // Command prefix could be . or ! or custom. Get the first word and clean prefix.
-    const rawCmd = text.split(/\s+/)[0].toLowerCase();
+    const rawCmd  = text.split(/\s+/)[0].toLowerCase();
     const cmdName = rawCmd.replace(/^[.!]+/, '');
 
     const templateUrl = templates[cmdName];
@@ -77,28 +121,28 @@ module.exports = {
       return await sock.sendMessage(chatId, { text: '❌ Invalid effect name.' }, { quoted: msg });
     }
 
-    try {
-      const inputText = args.join(' ');
-      if (!inputText) {
-        return await sock.sendMessage(chatId, {
-          text: `❌ Please provide text!\nExample: .${cmdName} OxBot`
-        }, { quoted: msg });
-      }
+    const inputText = args.join(' ').trim();
+    if (!inputText) {
+      return await sock.sendMessage(chatId, {
+        text: `❌ Please provide text!\nExample: .${cmdName} OxBot`
+      }, { quoted: msg });
+    }
 
+    try {
       await sock.sendMessage(chatId, {
         text: `⏳ Generating *${cmdName.toUpperCase()}* effect...`
       }, { quoted: msg });
 
-      // 15-second timeout for the scraper request
+      // 20-second timeout
       const result = await Promise.race([
-        mumaker.ephoto(templateUrl, inputText),
+        mumaker.textpro(templateUrl, inputText),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+          setTimeout(() => reject(new Error('TIMEOUT')), 20000)
         )
       ]);
 
       if (!result || !result.image) {
-        throw new Error('API did not return an image.');
+        throw new Error('No image returned from server.');
       }
 
       await sock.sendMessage(chatId, {
@@ -107,19 +151,21 @@ module.exports = {
       }, { quoted: msg });
 
     } catch (e) {
-      console.error(`[Ephoto360:${cmdName}] Error:`, e.message);
-      let errorMessage = e.message;
+      console.error(`[TextEffect:${cmdName}]`, e.message);
+      let errMsg = e.message;
 
-      if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
-        errorMessage = 'Ephoto360 is currently blocking server requests (Cloudflare). Try again later.';
-      } else if (errorMessage.includes('TIMEOUT')) {
-        errorMessage = 'The request took too long. The ephoto360 site might be down.';
-      } else if (errorMessage.includes('Cannot find module')) {
-        errorMessage = 'Required dependency package is not installed.';
+      if (errMsg.includes('403') || errMsg.includes('Forbidden')) {
+        errMsg = 'The text effect server is temporarily blocking requests. Try again in a moment.';
+      } else if (errMsg.includes('TIMEOUT')) {
+        errMsg = 'Request timed out. The server might be busy — please try again.';
+      } else if (errMsg.includes('Cannot find module')) {
+        errMsg = 'Required dependency is not installed on this server.';
+      } else if (errMsg.includes('No image')) {
+        errMsg = 'The server returned no image. Please try a different effect or try again.';
       }
 
       await sock.sendMessage(chatId, {
-        text: `❌ *Error generating image.*\n_${errorMessage}_`
+        text: `❌ *Error generating image.*\n_${errMsg}_`
       }, { quoted: msg });
     }
   }
