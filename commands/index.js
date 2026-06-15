@@ -251,10 +251,12 @@ async function getMode(db, sessionId) {
     if (c && Date.now() - c.ts < MODE_TTL) return c.v;
     try {
         const [rows] = await db.query('SELECT bot_mode FROM bot_settings WHERE session_id=? LIMIT 1', [sessionId]);
-        const v = rows[0]?.bot_mode || 'private';
+        // Default to 'public' so commands work for everyone on a new bot.
+        // Only return 'private' if it's explicitly stored in the DB.
+        const v = rows[0]?.bot_mode || 'public';
         modeCache.set(sessionId, { v, ts: Date.now() });
         return v;
-    } catch { return 'private'; }
+    } catch { return 'public'; }
 }
 
 function clearMode(sid) { modeCache.delete(sid); }
@@ -281,7 +283,6 @@ async function handleIncomingMessage(sock, msg, botData) {
         }
 
         if (isBeforeStartup(msg)) return;
-        if (isOldMessage(msg)) return;
 
         // ═══════════════════════════════════════════
         // DUPLICATE CHECK
@@ -424,4 +425,5 @@ module.exports = {
     handleGroupParticipantUpdate: null,
     handleStatus: null,
     antideleteRevocation,
+    clearMode,
 };

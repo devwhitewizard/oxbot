@@ -152,57 +152,53 @@ async function execute(sock, msg, botData, args) {
 ┏━━━━━━━━━━━━━━━━━━━━━━┓
 ┃  🎨 *Ephoto360 Maker*
 ┣━━━━━━━━━━━━━━━━━━━━━━┫
-┃  ◈ .blackpinklogo
-┃  ◈ .blackpinkstyle
-┃  ◈ .glossysilver
-┃  ◈ .glitchtext
-┃  ◈ .arting
-┃  ◈ .advancedglow
-┃  ◈ .cartoonstyle
-┃  ◈ .deadpool
-┃  ◈ .deletingtext
-┃  ◈ .luxurygold
-┃  ◈ .1917style
-┃  ◈ .pixelglitch
-┃  ◈ .multicoloredneon
-┃  ◈ .effectclouds
-┃  ◈ .flagtext
-┃  ◈ .freecreate
-┃  ◈ .galaxystyle
-┃  ◈ .bear
-┃  ◈ .devilwings
-┃  ◈ .wolfgalaxy
-┃  ◈ .comic
-┃  ◈ .textonwetglass
-┃  ◈ .galaxywallpaper
-┃  ◈ .firetext
-┃  ◈ .underwater
-┃  ◈ .neontext
-┃  ◈ .metaltext
-┃  ◈ .snowtext
-┃  ◈ .icetext
-┃  ◈ .purpletext
-┃  ◈ .lighttext
-┃  ◈ .thundertext
-┃  ◈ .leavestext
-┃  ◈ .hackertext
-┃  ◈ .deviltext
-┃  ◈ .vintagetext
-┃  ◈ .wingslogo
-┃  ◈ .painttext
-┃  ◈ .naruto
-┃  ◈ .pubglogo
-┃  ◈ .glowingtext
-┃  ◈ .corntext
-┃  ◈ .makingneon
-┃  ◈ .matrix
-┃  ◈ .royaltext
-┃  ◈ .sand
-┃  ◈ .summerbeach
-┃  ◈ .topography
-┃  ◈ .typography
-┃  ◈ .flux
-┃  ◈ .dragonball
+┃  ◈ .firetext <text>
+┃  ◈ .neontext <text>
+┃  ◈ .glitchtext <text>
+┃  ◈ .matrix <text>
+┃  ◈ .metaltext <text>
+┃  ◈ .glossysilver <text>
+┃  ◈ .luxurygold <text>
+┃  ◈ .purpletext <text>
+┃  ◈ .lighttext <text>
+┃  ◈ .thundertext <text>
+┃  ◈ .icetext <text>
+┃  ◈ .snowtext <text>
+┃  ◈ .underwater <text>
+┃  ◈ .leavestext <text>
+┃  ◈ .hackertext <text>
+┃  ◈ .deviltext <text>
+┃  ◈ .devilwings <text>
+┃  ◈ .painttext <text>
+┃  ◈ .sand <text>
+┃  ◈ .summerbeach <text>
+┃  ◈ .blackpinklogo <text>
+┃  ◈ .blackpinkstyle <text>
+┃  ◈ .pixelglitch <text>
+┃  ◈ .multicoloredneon <text>
+┃  ◈ .glowingtext <text>
+┃  ◈ .advancedglow <text>
+┃  ◈ .galaxystyle <text>
+┃  ◈ .galaxywallpaper <text>
+┃  ◈ .wolfgalaxy <text>
+┃  ◈ .cartoonstyle <text>
+┃  ◈ .comic <text>
+┃  ◈ .deadpool <text>
+┃  ◈ .naruto <text>
+┃  ◈ .dragonball <text>
+┃  ◈ .1917 <text>
+┃  ◈ .pubglogo <text>
+┃  ◈ .flagtext <text>
+┃  ◈ .effectclouds <text>
+┃  ◈ .textonwetglass <text>
+┃  ◈ .typography <text>
+┃  ◈ .royaltext <text>
+┃  ◈ .vintagetext <text>
+┃  ◈ .wingslogo <text>
+┃  ◈ .makingneon <text>
+┃  ◈ .corntext <text>
+┃  ◈ .flux <text>
+┃  ◈ .arting <text>
 ┗━━━━━━━━━━━━━━━━━━━━━━┛`;
 
         const footer = `│ 👤 *User:* ${userName}`;
