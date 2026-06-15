@@ -6,6 +6,7 @@ temp/
 tmp/
 tmp_old/
 publicmkdir/
+sessionsmkdir/
 *.log
 npm-debug.log*
 .env
