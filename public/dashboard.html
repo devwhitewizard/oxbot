@@ -1170,6 +1170,11 @@ const TITLES = {
 };
 
 function getSavedSection() {
+  const hash = window.location.hash.substring(1);
+  const hashSection = 's-' + hash;
+  if (VALID_SECTIONS.includes(hashSection)) {
+    return hashSection;
+  }
   const s = localStorage.getItem('oxbot_last_section');
   return (s && VALID_SECTIONS.includes(s)) ? s : 's-home';
 }
@@ -1183,6 +1188,12 @@ function go(id, el) {
   if (navEl) navEl.classList.add('active');
   document.getElementById('pageTitle').textContent = TITLES[id] || '';
   localStorage.setItem('oxbot_last_section', id);
+  
+  const route = id.replace('s-', '');
+  if (window.location.hash.substring(1) !== route) {
+    history.pushState(null, null, '#' + route);
+  }
+
   closeSidebar();
   if (id === 's-mybots')  loadBots();
   if (id === 's-console') fetchLogs();
@@ -1193,6 +1204,14 @@ function go(id, el) {
   if (id === 's-home')    loadActiveBots();
   if (id === 's-tickets') loadTickets();
 }
+
+window.onhashchange = () => {
+  const hash = window.location.hash.substring(1);
+  const hashSection = 's-' + hash;
+  if (VALID_SECTIONS.includes(hashSection)) {
+    go(hashSection, null);
+  }
+};
 
 // ── TRIAL CHECK ───────────────────────────────────────────────────
 // FREE TRIAL = 2 DAYS from registration
