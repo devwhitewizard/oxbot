@@ -410,18 +410,42 @@ router.delete('/api/sessions/:name', getUser, (req, res) => {
 
 // ── VALIDATE SESSION ──────────────────────────────────────────────────────────
 router.post('/api/validate-session', getUser, async (req, res) => {
-    const sessionId = extractSessionId(req.body.session_id);
+    const rawInput = String(req.body.session_id || '').trim();
+    if (!rawInput) return res.json({ valid: false, message: 'Session ID required' });
+
+    const sessionId = extractSessionId(rawInput);
     if (!sessionId) return res.json({ valid: false, message: 'Session ID required' });
 
     const folder = path.join(SESSION_DIR, sessionId);
+
+    // ── AUTO-IMPORT: if the user pasted the full oxbot_PHONE::::base64 string ──
+    if (rawInput.includes('::::')) {
+        const parts = rawInput.split('::::');
+        if (parts.length >= 2 && parts[1].length > 20) {
+            try {
+                const credsJson = Buffer.from(parts[1], 'base64').toString('utf8');
+                // Quick sanity check — must be valid JSON with baileys fields
+                const parsed = JSON.parse(credsJson);
+                if (!parsed.noiseKey && !parsed.signedIdentityKey && !parsed.registrationId) {
+                    return res.json({ valid: false, message: 'Invalid session data — please re-pair your device.' });
+                }
+                if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+                fs.writeFileSync(path.join(folder, 'creds.json'), credsJson, 'utf8');
+                addLog(req.user.id, `📥 Session imported from paste: ${sessionId}`);
+            } catch (e) {
+                return res.json({ valid: false, message: 'Could not decode session — make sure you copied the full session ID.' });
+            }
+        }
+    }
+
     patchCredsIfNeeded(folder);
 
-    const creds  = path.join(folder, 'creds.json');
+    const creds = path.join(folder, 'creds.json');
     if (!fs.existsSync(folder) || !fs.existsSync(creds))
         return res.json({ valid: false, message: 'Session not found — pair a device first.' });
     try {
         const data = JSON.parse(fs.readFileSync(creds, 'utf8'));
-        if (!data.registered || !data.signedIdentityKey)
+        if (!data.registered && !data.signedIdentityKey)
             return res.json({ valid: false, message: 'Session incomplete — re-pair the device.' });
         if (activeBots.has(sessionId))
             return res.json({ valid: true, message: 'Already active!', isActive: true });
