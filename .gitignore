@@ -1,7 +1,10 @@
 node_modules/
+node_modules_old/
 sessions/
+sessions_backup/
 temp/
 tmp/
+tmp_old/
 publicmkdir/
 *.log
 npm-debug.log*
