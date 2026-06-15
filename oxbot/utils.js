@@ -90,7 +90,11 @@ function patchCredsIfNeeded(sessionFolder) {
     if (!fs.existsSync(cp)) return;
     try {
         const creds = JSON.parse(fs.readFileSync(cp, 'utf8'));
-        if (!creds.registered && creds.account && creds.me) {
+        // Patch registered=true if the session has valid key material but registered is false.
+        // Handles both internal pairing sessions (me+account present) and external QR sessions
+        // (noiseKey present but me may be missing until the bot first connects).
+        const hasValidKeys = !!(creds.noiseKey || creds.signedIdentityKey);
+        if (!creds.registered && (creds.account && creds.me || hasValidKeys)) {
             creds.registered = true;
             fs.writeFileSync(cp, JSON.stringify(creds, null, 2));
         }
