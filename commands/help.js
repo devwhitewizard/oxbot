@@ -1,8 +1,8 @@
-const version     = '2.0.0';
-const owner       = 'oxdominion.eth';
+const version = '2.0.0';
+const owner = 'oxdominion.eth';
 
 function getRAM() {
-    const used  = process.memoryUsage().heapUsed / 1024 / 1024;
+    const used = process.memoryUsage().heapUsed / 1024 / 1024;
     const total = process.memoryUsage().rss / 1024 / 1024;
     return `${used.toFixed(1)}MB / ${total.toFixed(1)}MB`;
 }
@@ -10,16 +10,16 @@ function getRAM() {
 // Only returns the Day (e.g. "Monday")
 function getDay() {
     const d = new Date();
-    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[d.getDay()];
 }
 
 async function execute(sock, msg, botData, args) {
     try {
-        const chatId    = msg.key.remoteJid;
+        const chatId = msg.key.remoteJid;
         if (!chatId) return null;
 
-        const db        = botData?.db;
+        const db = botData?.db;
         const sessionId = botData?.sessionId;
 
         let userName = 'Unknown';
@@ -27,7 +27,7 @@ async function execute(sock, msg, botData, args) {
         try {
             const status = await sock.fetchStatus(sender);
             if (status?.status) userName = status.status.substring(0, 25);
-        } catch {}
+        } catch { }
 
         const botName = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'OxBot';
 
@@ -42,7 +42,7 @@ async function execute(sock, msg, botData, args) {
                     ownerNumber = String(rows[0].phone).replace(/\D/g, '');
                 }
             }
-        } catch {}
+        } catch { }
 
         let totalCmds = 0;
         try {
@@ -53,17 +53,17 @@ async function execute(sock, msg, botData, args) {
         } catch {
             try {
                 const fs = require('fs');
-                const skip = new Set(['index.js','handler.js','igs.js','imagine.js','img-blur.js','instagram.js','pair.js','simage.js','stickertelegram.js','textmaker.js','tiktok.js']);
+                const skip = new Set(['index.js', 'handler.js', 'igs.js', 'imagine.js', 'img-blur.js', 'instagram.js', 'pair.js', 'simage.js', 'stickertelegram.js', 'textmaker.js', 'tiktok.js']);
                 const files = fs.readdirSync(__dirname).filter(f => f.endsWith('.js') && !skip.has(f));
                 totalCmds = files.length;
-            } catch {}
+            } catch { }
         }
 
-        const ram  = getRAM();
-        const day  = getDay();
+        const ram = getRAM();
+        const day = getDay();
 
         const header = `
-╭─────────────────────────
+┌─────────────────────────┐
 │  🤖 *${botName}*
 │  📌 *Version:* ${version}
 │  👤 *Owner:* ${owner}
@@ -71,91 +71,105 @@ async function execute(sock, msg, botData, args) {
 │  🧠 *RAM:* ${ram}
 │  📦 *Commands:* ${totalCmds}
 │  📅 *${day}*
-╰─────────────────────────`;
+└─────────────────────────┘`;
 
         const menu = `
-╭─ 🎵 *Music & Downloader*
-│  ◈ .song <name/link>
-│  ◈ .video <name/link>
-│  ◈ .play <name/link>
-│  ◈ .mp3 <name/link>
-│  ◈ .ytmp4 <yt link>
-│  ◈ .spotify <query>
-│  ◈ .lyrics <song>
-╰━━━━━━━━━━━━━━━━━━━━━━
+┏━━━━━━━━━━━━━━━━━━━━━━
+┃  🎵 *Music & Downloader*
+┣━━━━━━━━━━━━━━━━━━━━━━
+┃  ◈ .song <name/link>
+┃  ◈ .video <name/link>
+┃  ◈ .play <name/link>
+┃  ◈ .mp3 <name/link>
+┃  ◈ .ytmp4 <yt link>
+┃  ◈ .spotify <query>
+┃  ◈ .lyrics <song>
+┗━━━━━━━━━━━━━━━━━━━━━━
 
-╭─ 🎮 *Fun & Games*
-│  ◈ .truth
-│  ◈ .dare
-│  ◈ .wasted @user
-│  ◈ .circle
-│  ◈ .joke
-│  ◈ .roast @user
-│  ◈ .fact
-│  ◈ .compliment @user
-╰━━━━━━━━━━━━━━━━━━━━━━
+┏━━━━━━━━━━━━━━━━━━━━━━
+┃  🎮 *Fun & Games*
+┣━━━━━━━━━━━━━━━━━━━━━━
+┃  ◈ .truth
+┃  ◈ .dare
+┃  ◈ .wasted @user
+┃  ◈ .circle
+┃  ◈ .joke
+┃  ◈ .roast @user
+┃  ◈ .fact
+┃  ◈ .compliment @user
+┗━━━━━━━━━━━━━━━━━━━━━━
 
-╭─ 🖼️ *Media Tools*
-│  ◈ .sticker
-│  ◈ .take <packname>
-│  ◈ .url (reply media)
-│  ◈ .blur (caption)
-│  ◈ .save
-│  ◈ .vv
-│  ◈ .tts <text>
-╰━━━━━━━━━━━━━━━━━━━━━━
+┏━━━━━━━━━━━━━━━━━━━━━━
+┃  🖼️ *Media Tools*
+┣━━━━━━━━━━━━━━━━━━━━━━
+┃  ◈ .sticker
+┃  ◈ .take <packname>
+┃  ◈ .url (reply media)
+┃  ◈ .blur (caption)
+┃  ◈ .save
+┃  ◈ .vv
+┃  ◈ .tts <text>
+┗━━━━━━━━━━━━━━━━━━━━━━
 
-╭─ 🔍 *Search & Utility*
-│  ◈ .weather <city>
-│  ◈ .translate <text>
-│  ◈ .ping
-│  ◈ .alive
-│  ◈ .gpt <question>
-│  ◈ .gemini <question>
-╰━━━━━━━━━━━━━━━━━━━━━━
+┏━━━━━━━━━━━━━━━━━━━━━━
+┃  🔍 *Search & Utility*
+┣━━━━━━━━━━━━━━━━━━━━━━
+┃  ◈ .weather <city>
+┃  ◈ .translate <text>
+┃  ◈ .ping
+┃  ◈ .alive
+┃  ◈ .gpt <question>
+┃  ◈ .gemini <question>
+┗━━━━━━━━━━━━━━━━━━━━━━
 
-╭─ 👥 *Group Admin*
-│  ◈ .groupinfo
-│  ◈ .promote @user
-│  ◈ .demote @user
-│  ◈ .kick @user
-│  ◈ .add <number>
-│  ◈ .tagall
-│  ◈ .tagnotadmin
-│  ◈ .mute
-│  ◈ .unmute
-╰━━━━━━━━━━━━━━━━━━━━━━
+┏━━━━━━━━━━━━━━━━━━━━━━
+┃  👥 *Group Admin*
+┣━━━━━━━━━━━━━━━━━━━━━━
+┃  ◈ .groupinfo
+┃  ◈ .promote @user
+┃  ◈ .demote @user
+┃  ◈ .kick @user
+┃  ◈ .add <number>
+┃  ◈ .tagall
+┃  ◈ .tagnotadmin
+┃  ◈ .mute
+┃  ◈ .unmute
+┗━━━━━━━━━━━━━━━━━━━━━━
 
-╭─ 🔒 *Owner Only*
-│  ◈ .mode <pub/priv>
-│  ◈ .autotyping
-│  ◈ .autostatus
-│  ◈ .autoreact
-│  ◈ .autoread
-│  ◈ .fakeaudio
-│  ◈ .antidelete
-│  ◈ .pmblocker
-╰━━━━━━━━━━━━━━━━━━━━━━
+┏━━━━━━━━━━━━━━━━━━━━━━
+┃  🔒 *Owner Only*
+┣━━━━━━━━━━━━━━━━━━━━━━
+┃  ◈ .mode <pub/priv>
+┃  ◈ .autotyping
+┃  ◈ .autostatus
+┃  ◈ .autoreact
+┃  ◈ .autoread
+┃  ◈ .fakeaudio
+┃  ◈ .antidelete
+┃  ◈ .pmblocker
+┗━━━━━━━━━━━━━━━━━━━━━━
 
-╭─ 🎨 *Ephoto360 Maker*
-│  ◈ .blackpinklogo
-│  ◈ .blackpinkstyle
-│  ◈ .glossysilver
-│  ◈ .glitchtext
-│  ◈ .arting
-│  ◈ .advancedglow
-│  ◈ .cartoonstyle
-│  ◈ .deadpool
-│  ◈ .deletingtext
-│  ◈ .luxurygold
-│  ◈ .1917style
-│  ◈ .pixelglitch
-│  ◈ .multicoloredneon
-│  ◈ .effectclouds
-│  ◈ .flagtext
-│  ◈ .freecreate
-│  ◈ .galaxystyle
-│  ◈ .bear
+┏━━━━━━━━━━━━━━━━━━━━━━
+┃  🎨 *Ephoto360 Maker*
+┣━━━━━━━━━━━━━━━━━━━━━━
+┃  ◈ .blackpinklogo
+┃  ◈ .blackpinkstyle
+┃  ◈ .glossysilver
+┃  ◈ .glitchtext
+┃  ◈ .arting
+┃  ◈ .advancedglow
+┃  ◈ .cartoonstyle
+┃  ◈ .deadpool
+┃  ◈ .deletingtext
+┃  ◈ .luxurygold
+┃  ◈ .1917style
+┃  ◈ .pixelglitch
+┃  ◈ .multicoloredneon
+┃  ◈ .effectclouds
+┃  ◈ .flagtext
+┃  ◈ .freecreate
+┃  ◈ .galaxystyle
+┃  ◈ .bear
 │  ◈ .devilwings
 │  ◈ .wolfgalaxy
 │  ◈ .comic
@@ -189,15 +203,15 @@ async function execute(sock, msg, botData, args) {
 │  ◈ .typography
 │  ◈ .flux
 │  ◈ .dragonball
-╰━━━━━━━━━━━━━━━━━━━━━━`;
+┗━━━━━━━━━━━━━━━━━━━━━━`;
 
         const footer = `│ 👤 *User:* ${userName}`;
 
         const fullMessage = header + menu + `
-╭─────────────────────────
+┌─────────────────────────┐
  ${footer}
 │ 🚀 _oxbot.name.ng_
-╰─────────────────────────`;
+└─────────────────────────┘`;
 
         const contextInfo = {
             forwardingScore: 999,
@@ -231,7 +245,7 @@ async function execute(sock, msg, botData, args) {
             await sock.sendMessage(msg.key.remoteJid, {
                 text: '❌ Failed to load menu. Try again.',
             }, { quoted: msg });
-        } catch {}
+        } catch { }
         return null;
     }
 }
