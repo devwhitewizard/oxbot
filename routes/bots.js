@@ -378,6 +378,9 @@ router.get('/api/pair-status/:id', getUser, (req, res) => {
         sessionName: e.sessionName || null,
         waName:      e.waName      || null,
         waNumber:    e.waNumber    || null,
+        // NOTE: fullSession is intentionally NOT returned here.
+        // The session string is delivered only to the user's WhatsApp —
+        // it must never be exposed on any browser page (dashboard or render page).
     });
 });
 
@@ -410,42 +413,66 @@ router.delete('/api/sessions/:name', getUser, (req, res) => {
 
 // ── VALIDATE SESSION ──────────────────────────────────────────────────────────
 router.post('/api/validate-session', getUser, async (req, res) => {
-    const rawInput = String(req.body.session_id || '').trim();
-    if (!rawInput) return res.json({ valid: false, message: 'Session ID required' });
-
+    const rawInput  = (req.body.session_id || '').trim();
     const sessionId = extractSessionId(rawInput);
     if (!sessionId) return res.json({ valid: false, message: 'Session ID required' });
 
     const folder = path.join(SESSION_DIR, sessionId);
+    const creds  = path.join(folder, 'creds.json');
 
-    // ── AUTO-IMPORT: if the user pasted the full oxbot_PHONE::::base64 string ──
-    if (rawInput.includes('::::')) {
-        const parts = rawInput.split('::::');
-        if (parts.length >= 2 && parts[1].length > 20) {
+    // ── STEP 1: Try to restore session from DB if files are missing ────────────
+    // This handles sessions created on an external pairing page or on another
+    // server instance — the session string itself contains the creds as base64.
+    if (!fs.existsSync(creds)) {
+        // Check if the raw input includes the base64 payload (oxbot_XXXX::::base64)
+        let restored = false;
+        if (rawInput.includes('::::')) {
             try {
-                const credsJson = Buffer.from(parts[1], 'base64').toString('utf8');
-                // Quick sanity check — must be valid JSON with baileys fields
-                const parsed = JSON.parse(credsJson);
-                if (!parsed.noiseKey && !parsed.signedIdentityKey && !parsed.registrationId) {
-                    return res.json({ valid: false, message: 'Invalid session data — please re-pair your device.' });
+                const b64Part    = rawInput.split('::::')[1];
+                const credsJson  = Buffer.from(b64Part, 'base64').toString('utf8');
+                const parsed     = JSON.parse(credsJson);
+                if (parsed && (parsed.noiseKey || parsed.signedIdentityKey || parsed.me)) {
+                    fs.mkdirSync(folder, { recursive: true });
+                    fs.writeFileSync(creds, credsJson, 'utf8');
+                    restored = true;
+                    addLog(req.user.id, `🔄 Session restored from pasted string: ${sessionId}`);
                 }
-                if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
-                fs.writeFileSync(path.join(folder, 'creds.json'), credsJson, 'utf8');
-                addLog(req.user.id, `📥 Session imported from paste: ${sessionId}`);
-            } catch (e) {
-                return res.json({ valid: false, message: 'Could not decode session — make sure you copied the full session ID.' });
-            }
+            } catch { /* malformed base64 — fall through */ }
         }
+
+        // If base64 not in input, try the paired_sessions DB table
+        if (!restored) {
+            try {
+                const [rows] = await db.query(
+                    'SELECT session_data FROM paired_sessions WHERE session_id=? AND user_id=? LIMIT 1',
+                    [sessionId, req.user.id]
+                );
+                if (rows.length && rows[0].session_data) {
+                    // session_data is the full "oxbot_XXXX::::base64" string
+                    const b64Part   = rows[0].session_data.includes('::::') 
+                                        ? rows[0].session_data.split('::::')[1]
+                                        : rows[0].session_data;
+                    const credsJson = Buffer.from(b64Part, 'base64').toString('utf8');
+                    const parsed    = JSON.parse(credsJson);
+                    if (parsed && (parsed.noiseKey || parsed.signedIdentityKey || parsed.me)) {
+                        fs.mkdirSync(folder, { recursive: true });
+                        fs.writeFileSync(creds, credsJson, 'utf8');
+                        restored = true;
+                        addLog(req.user.id, `🔄 Session restored from database: ${sessionId}`);
+                    }
+                }
+            } catch { /* DB not available — fall through */ }
+        }
+
+        if (!restored)
+            return res.json({ valid: false, message: 'Session not found — pair a device first.' });
     }
 
     patchCredsIfNeeded(folder);
 
-    const creds = path.join(folder, 'creds.json');
-    if (!fs.existsSync(folder) || !fs.existsSync(creds))
-        return res.json({ valid: false, message: 'Session not found — pair a device first.' });
     try {
         const data = JSON.parse(fs.readFileSync(creds, 'utf8'));
-        if (!data.registered && !data.signedIdentityKey)
+        if (!data.registered && !data.me && !data.noiseKey)
             return res.json({ valid: false, message: 'Session incomplete — re-pair the device.' });
         if (activeBots.has(sessionId))
             return res.json({ valid: true, message: 'Already active!', isActive: true });
