@@ -63,7 +63,7 @@ async function execute(sock, msg, botData, args) {
         const day  = getDay();
 
         const header = `
-┌─────────────────────────┐
+╭─────────────────────────
 │  🤖 *${botName}*
 │  📌 *Version:* ${version}
 │  👤 *Owner:* ${owner}
@@ -71,147 +71,133 @@ async function execute(sock, msg, botData, args) {
 │  🧠 *RAM:* ${ram}
 │  📦 *Commands:* ${totalCmds}
 │  📅 *${day}*
-└─────────────────────────┘`;
+╰─────────────────────────`;
 
         const menu = `
-┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🎵 *Music & Downloader*  ┃
-┣━━━━━━━━━━━━━━━━━━━━━━┫
-┃  ◈ .song <name/link>   ┃
-┃  ◈ .video <name/link>  ┃
-┃  ◈ .play <name/link>   ┃
-┃  ◈ .mp3 <name/link>    ┃
-┃  ◈ .ytmp4 <yt link>    ┃
-┃  ◈ .spotify <query>    ┃
-┃  ◈ .lyrics <song>      ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┛
+╭─ 🎵 *Music & Downloader*
+│  ◈ .song <name/link>
+│  ◈ .video <name/link>
+│  ◈ .play <name/link>
+│  ◈ .mp3 <name/link>
+│  ◈ .ytmp4 <yt link>
+│  ◈ .spotify <query>
+│  ◈ .lyrics <song>
+╰━━━━━━━━━━━━━━━━━━━━━━
 
-┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🎮 *Fun & Games*       ┃
-┣━━━━━━━━━━━━━━━━━━━━━━┫
-┃  ◈ .truth              ┃
-┃  ◈ .dare               ┃
-┃  ◈ .wasted @user       ┃
-┃  ◈ .circle             ┃
-┃  ◈ .joke               ┃
-┃  ◈ .roast @user        ┃
-┃  ◈ .fact               ┃
-┃  ◈ .compliment @user   ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┛
+╭─ 🎮 *Fun & Games*
+│  ◈ .truth
+│  ◈ .dare
+│  ◈ .wasted @user
+│  ◈ .circle
+│  ◈ .joke
+│  ◈ .roast @user
+│  ◈ .fact
+│  ◈ .compliment @user
+╰━━━━━━━━━━━━━━━━━━━━━━
 
-┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🖼️ *Media Tools*       ┃
-┣━━━━━━━━━━━━━━━━━━━━━━┫
-┃  ◈ .sticker            ┃
-┃  ◈ .take <packname>    ┃
-┃  ◈ .url (reply media)  ┃
-┃  ◈ .blur (caption)     ┃
-┃  ◈ .save               ┃
-┃  ◈ .vv                 ┃
-┃  ◈ .tts <text>         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┛
+╭─ 🖼️ *Media Tools*
+│  ◈ .sticker
+│  ◈ .take <packname>
+│  ◈ .url (reply media)
+│  ◈ .blur (caption)
+│  ◈ .save
+│  ◈ .vv
+│  ◈ .tts <text>
+╰━━━━━━━━━━━━━━━━━━━━━━
 
-┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🔍 *Search & Utility*  ┃
-┣━━━━━━━━━━━━━━━━━━━━━━┫
-┃  ◈ .weather <city>     ┃
-┃  ◈ .translate <text>   ┃
-┃  ◈ .ping               ┃
-┃  ◈ .alive              ┃
-┃  ◈ .gpt <question>     ┃
-┃  ◈ .gemini <question>  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┛
+╭─ 🔍 *Search & Utility*
+│  ◈ .weather <city>
+│  ◈ .translate <text>
+│  ◈ .ping
+│  ◈ .alive
+│  ◈ .gpt <question>
+│  ◈ .gemini <question>
+╰━━━━━━━━━━━━━━━━━━━━━━
 
-┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃  👥 *Group Admin*       ┃
-┣━━━━━━━━━━━━━━━━━━━━━━┫
-┃  ◈ .groupinfo          ┃
-┃  ◈ .promote @user      ┃
-┃  ◈ .demote @user       ┃
-┃  ◈ .kick @user         ┃
-┃  ◈ .add <number>       ┃
-┃  ◈ .tagall             ┃
-┃  ◈ .tagnotadmin        ┃
-┃  ◈ .mute               ┃
-┃  ◈ .unmute             ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┛
+╭─ 👥 *Group Admin*
+│  ◈ .groupinfo
+│  ◈ .promote @user
+│  ◈ .demote @user
+│  ◈ .kick @user
+│  ◈ .add <number>
+│  ◈ .tagall
+│  ◈ .tagnotadmin
+│  ◈ .mute
+│  ◈ .unmute
+╰━━━━━━━━━━━━━━━━━━━━━━
 
-┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🔒 *Owner Only*        ┃
-┣━━━━━━━━━━━━━━━━━━━━━━┫
-┃  ◈ .mode <pub/priv>    ┃
-┃  ◈ .autotyping         ┃
-┃  ◈ .autostatus         ┃
-┃  ◈ .autoreact          ┃
-┃  ◈ .autoread           ┃
-┃  ◈ .fakeaudio          ┃
-┃  ◈ .antidelete         ┃
-┃  ◈ .pmblocker          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┛
+╭─ 🔒 *Owner Only*
+│  ◈ .mode <pub/priv>
+│  ◈ .autotyping
+│  ◈ .autostatus
+│  ◈ .autoreact
+│  ◈ .autoread
+│  ◈ .fakeaudio
+│  ◈ .antidelete
+│  ◈ .pmblocker
+╰━━━━━━━━━━━━━━━━━━━━━━
 
-┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🎨 *Ephoto360 Maker*  ┃
-┣━━━━━━━━━━━━━━━━━━━━━━┫
-┃  ◈ .blackpinklogo      ┃
-┃  ◈ .blackpinkstyle     ┃
-┃  ◈ .glossysilver       ┃
-┃  ◈ .glitchtext         ┃
-┃  ◈ .arting             ┃
-┃  ◈ .advancedglow       ┃
-┃  ◈ .cartoonstyle       ┃
-┃  ◈ .deadpool           ┃
-┃  ◈ .deletingtext       ┃
-┃  ◈ .luxurygold         ┃
-┃  ◈ .1917style          ┃
-┃  ◈ .pixelglitch        ┃
-┃  ◈ .multicoloredneon   ┃
-┃  ◈ .effectclouds       ┃
-┃  ◈ .flagtext           ┃
-┃  ◈ .freecreate         ┃
-┃  ◈ .galaxystyle        ┃
-┃  ◈ .bear               ┃
-┃  ◈ .devilwings         ┃
-┃  ◈ .wolfgalaxy         ┃
-┃  ◈ .comic              ┃
-┃  ◈ .textonwetglass     ┃
-┃  ◈ .galaxywallpaper    ┃
-┃  ◈ .firetext           ┃
-┃  ◈ .underwater         ┃
-┃  ◈ .neontext           ┃
-┃  ◈ .metaltext          ┃
-┃  ◈ .snowtext           ┃
-┃  ◈ .icetext            ┃
-┃  ◈ .purpletext         ┃
-┃  ◈ .lighttext          ┃
-┃  ◈ .thundertext        ┃
-┃  ◈ .leavestext         ┃
-┃  ◈ .hackertext         ┃
-┃  ◈ .deviltext          ┃
-┃  ◈ .vintagetext        ┃
-┃  ◈ .wingslogo          ┃
-┃  ◈ .painttext          ┃
-┃  ◈ .naruto             ┃
-┃  ◈ .pubglogo           ┃
-┃  ◈ .glowingtext        ┃
-┃  ◈ .corntext           ┃
-┃  ◈ .makingneon         ┃
-┃  ◈ .matrix             ┃
-┃  ◈ .royaltext          ┃
-┃  ◈ .sand               ┃
-┃  ◈ .summerbeach        ┃
-┃  ◈ .topography         ┃
-┃  ◈ .typography         ┃
-┃  ◈ .flux               ┃
-┃  ◈ .dragonball         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┛`;
+╭─ 🎨 *Ephoto360 Maker*
+│  ◈ .blackpinklogo
+│  ◈ .blackpinkstyle
+│  ◈ .glossysilver
+│  ◈ .glitchtext
+│  ◈ .arting
+│  ◈ .advancedglow
+│  ◈ .cartoonstyle
+│  ◈ .deadpool
+│  ◈ .deletingtext
+│  ◈ .luxurygold
+│  ◈ .1917style
+│  ◈ .pixelglitch
+│  ◈ .multicoloredneon
+│  ◈ .effectclouds
+│  ◈ .flagtext
+│  ◈ .freecreate
+│  ◈ .galaxystyle
+│  ◈ .bear
+│  ◈ .devilwings
+│  ◈ .wolfgalaxy
+│  ◈ .comic
+│  ◈ .textonwetglass
+│  ◈ .galaxywallpaper
+│  ◈ .firetext
+│  ◈ .underwater
+│  ◈ .neontext
+│  ◈ .metaltext
+│  ◈ .snowtext
+│  ◈ .icetext
+│  ◈ .purpletext
+│  ◈ .lighttext
+│  ◈ .thundertext
+│  ◈ .leavestext
+│  ◈ .hackertext
+│  ◈ .deviltext
+│  ◈ .vintagetext
+│  ◈ .wingslogo
+│  ◈ .painttext
+│  ◈ .naruto
+│  ◈ .pubglogo
+│  ◈ .glowingtext
+│  ◈ .corntext
+│  ◈ .makingneon
+│  ◈ .matrix
+│  ◈ .royaltext
+│  ◈ .sand
+│  ◈ .summerbeach
+│  ◈ .topography
+│  ◈ .typography
+│  ◈ .flux
+│  ◈ .dragonball
+╰━━━━━━━━━━━━━━━━━━━━━━`;
 
         const footer = `│ 👤 *User:* ${userName}`;
 
         const fullMessage = header + menu + `
-┌─────────────────────────┐
+╭─────────────────────────
  ${footer}
 │ 🚀 _oxbot.name.ng_
-└─────────────────────────┘`;
+╰─────────────────────────`;
 
         const contextInfo = {
             forwardingScore: 999,
