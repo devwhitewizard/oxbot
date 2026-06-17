@@ -456,6 +456,203 @@ select.form-input option{background:var(--card2);color:var(--text);}
 .tk-admin-typing-bubble span:nth-child(2){animation-delay:.15s}
 .tk-admin-typing-bubble span:nth-child(3){animation-delay:.3s}
 @keyframes tkTypeBounce{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
+
+/* ── UPGRADED ADD BOT STYLES ───────────────────────────────────── */
+
+/* Card Header Style */
+#s-addbot .card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-h);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Server Grid Layout */
+#s-addbot .server-grid {
+  grid-template-columns: 1fr 1fr; /* 2 columns on mobile */
+  gap: 12px;
+}
+
+/* Server Option Card */
+#s-addbot .server-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left; /* Align left instead of center */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hover State */
+#s-addbot .server-option:hover {
+  border-color: rgba(22, 163, 74, 0.3);
+  background: rgba(22, 163, 74, 0.05);
+  transform: translateY(-2px);
+}
+
+/* Selected State */
+#s-addbot .server-option.selected {
+  border-color: var(--brand);
+  background: rgba(22, 163, 74, 0.08);
+  box-shadow: 0 0 0 1px var(--brand), 0 4px 12px rgba(22, 163, 74, 0.1);
+}
+
+/* Server Icon (SVG) */
+.server-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--card2);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.server-icon {
+  width: 24px;
+  height: 24px;
+  stroke: var(--muted2);
+  transition: stroke 0.2s;
+}
+#s-addbot .server-option.selected .server-icon {
+  stroke: var(--brand);
+}
+
+/* Location Badge */
+.server-loc-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--border);
+  color: var(--muted2);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 2px solid var(--bg);
+}
+/* Specific colors for badges */
+.server-option[data-region="NG"] .server-loc-badge { background: #16a34a; color: #fff; }
+.server-option[data-region="US"] .server-loc-badge { background: #3b82f6; color: #fff; }
+
+/* Server Info Text */
+.server-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.server-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.server-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.server-ping {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--brand);
+  font-weight: 600;
+  background: rgba(22, 163, 74, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Form Status Check */
+.form-status {
+  min-height: 18px;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.form-status.valid { color: var(--brand); }
+.form-status.invalid { color: var(--red); }
+
+/* Code Tag Styling */
+.code-tag {
+  background: rgba(22, 163, 74, 0.1);
+  color: var(--brand);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Lock Notice Integration */
+.pro-lock-notice {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.pro-lock-notice h4 { margin: 0 0 2px; color: var(--red); font-size: 14px; }
+.pro-lock-notice p { margin: 0; color: var(--muted2); font-size: 12px; }
+
+@media(min-width: 769px) {
+  #s-addbot .server-grid {
+    grid-template-columns: 1fr 1fr; /* Keep 2 columns */
+  }
+}
+
+/* ── LIVE SIGNAL STYLES ───────────────────────────────────── */
+
+.live-signal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Base Signal Animation (Pulse) */
+.live-signal svg {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  transition: color 0.3s;
+}
+
+/* Signal Quality Colors */
+.live-signal.strong svg { color: #22c55e; animation: signalPulse 2s infinite; }
+.live-signal.medium svg { color: #f59e0b; animation: signalPulse 2s infinite; }
+.live-signal.weak svg { color: #ef4444; animation: signalPulse 2s infinite; }
+
+@keyframes signalPulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Ping Text Update Animation */
+.server-ping {
+  transition: color 0.3s;
+  font-variant-numeric: tabular-nums; /* Prevents numbers from jumping around */
+}
+.server-ping.fast { color: #22c55e; }
+.server-ping.med { color: #f59e0b; }
+.server-ping.slow { color: #ef4444; }
 </style>
 </head>
 <body>
@@ -492,7 +689,7 @@ select.form-input option{background:var(--card2);color:var(--text);}
     <a class="nav-item" id="nav-s-settings" onclick="go('s-settings',this)"><i class="fas fa-cog"></i> Settings</a>
   </div>
   <div class="nav-section">Console</div>
-<a class="nav-item" id="nav-s-telegram" href="/console-telegram.php">
+<a class="nav-item" id="nav-s-telegram" href="/console-telegram">
   <i class="fab fa-telegram"></i> Telegram Bot
   <span class="nav-badge" style="background:var(--purple);">NEW</span>
 </a>
@@ -540,51 +737,129 @@ select.form-input option{background:var(--card2);color:var(--text);}
       <div class="card" style="margin-top:14px;"><div class="card-title"><i class="fas fa-robot"></i> Active Bots <button class="btn btn-sm btn-outline" onclick="loadActiveBots()" style="margin-left:auto;"><i class="fas fa-sync-alt"></i></button></div><div id="homeActiveBots"><p style="color:var(--muted);font-size:12px;">Loading...</p></div></div>
     </section>
 
-    <!-- ADD BOT -->
-    <section id="s-addbot" class="section">
-      <div class="page-header"><h2>Add Bot</h2><p>Paste session ID to connect your bot</p></div>
-      <div id="addBotProLock" class="pro-lock-notice" style="display:none">
-        <i class="fas fa-lock"></i>
-        <div><h4>Access Restricted</h4><p id="addBotLockMsg">You cannot add bots right now.</p></div>
+<!-- ADD BOT -->
+<section id="s-addbot" class="section">
+  <div class="page-header">
+    <h2>Add Bot</h2>
+    <p>Connect your WhatsApp session to a server</p>
+  </div>
+
+  <!-- Pro Lock Notice -->
+  <div id="addBotProLock" class="pro-lock-notice" style="display:none">
+    <div style="color:var(--red);font-size:20px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    </div>
+    <div>
+      <h4>Access Restricted</h4>
+      <p id="addBotLockMsg">You cannot add bots right now.</p>
+    </div>
+  </div>
+
+  <!-- Main Form Card -->
+  <div class="card" id="addBotForm">
+    <div class="card-header">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+      <span>New Bot Connection</span>
+    </div>
+
+    <div class="form-grid">
+      
+      <!-- Session ID Input -->
+      <div class="form-group">
+        <label class="form-label">Session ID</label>
+        <textarea id="actSessionId" class="form-input big code-font" placeholder="Paste your session string here..." oninput="liveValidate(this.value)" autocomplete="off" spellcheck="false"></textarea>
+        <div class="form-status" id="sessStatus"></div>
+        <p class="form-hint">Starts with <span class="code-tag">oxbot_</span> — get one from Pair Device</p>
       </div>
-      <div class="card" id="addBotForm">
-        <div class="card-title"><i class="fas fa-plug"></i> New Bot Connection</div>
-        <div class="form-group">
-          <label class="form-label">Session ID</label>
-          <textarea id="actSessionId" class="form-input big" placeholder="Paste your session string here...&#10;e.g. oxbot_2348012345678::::eyJyZWdpc3..." oninput="liveValidate(this.value)" autocomplete="off" spellcheck="false"></textarea>
-          <div id="sessStatus"></div>
-          <p class="form-hint">Starts with <code style="background:rgba(22,163,74,.1);color:var(--brand);padding:1px 4px;border-radius:3px;font-size:10px;">oxbot_</code> — get one from Pair Device</p>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Bot Name</label>
-          <input type="text" id="actBotName" class="form-input" placeholder="My Bot" oninput="checkActBtn()" maxlength="50">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Server</label>
-          <div class="server-grid">
-            <div class="server-option" onclick="pickServer('Server 1 (NG)',this)">
-              <div class="server-flag">⚡</div><div class="server-name">OxBot Server 1</div>
-              <div class="server-loc">Nigeria</div><div class="server-ping">~45ms</div>
+
+      <!-- Bot Name Input -->
+      <div class="form-group">
+        <label class="form-label">Bot Name</label>
+        <input type="text" id="actBotName" class="form-input" placeholder="e.g. My Business Bot" oninput="checkActBtn()" maxlength="50">
+      </div>
+
+           <!-- Server Selection -->
+      <div class="form-group">
+        <label class="form-label">Select Server</label>
+        <div class="server-grid">
+          
+          <!-- Server 1 (NG) -->
+          <div class="server-option" onclick="pickServer('Server 1 (NG)', this)" data-region="NG">
+            <div class="server-visual">
+              <!-- Real Server Rack Icon -->
+              <svg class="server-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+              <span class="server-loc-badge">NS1</span>
             </div>
-            <div class="server-option" onclick="pickServer('Server 2 (US)',this)">
-              <div class="server-flag">🌐</div><div class="server-name">OxBot Server 2</div>
-              <div class="server-loc">United States</div><div class="server-ping">~120ms</div>
+            <div class="server-info">
+              <div class="server-name">OxBot Server 1</div>
+              <div class="server-meta">
+                <!-- ⬇️ ADDED ID: signal-s1 ⬇️ -->
+                <div id="signal-s1" class="live-signal">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+                </div>
+                <!-- ⬇️ ADDED ID: ping-s1 ⬇️ -->
+                <span id="ping-s1" class="server-ping">Checking...</span>
+              </div>
             </div>
           </div>
-          <input type="hidden" id="actServer" value="">
-        </div>
-        <div class="cost-box">
-          <div class="cost-row"><span class="cost-label">Cost</span><span class="cost-val brand">20 coins</span></div>
-          <div class="cost-row"><span class="cost-label">Your Balance</span><span class="cost-val" id="actBal">0 coins</span></div>
-          <div class="cost-row"><span class="cost-label">Current Plan</span><span class="cost-val" id="actPlanName">—</span></div>
-          <div class="cost-row"><span class="cost-label">Bot Limit</span><span class="cost-val" id="actBotLimit">—</span></div>
-          <div class="cost-row"><span class="cost-label">Bot Duration</span><span class="cost-val" id="actBotDuration" style="color:var(--gold)">—</span></div>
-        </div>
-        <button class="btn btn-primary" id="actBtn" onclick="doAddBot()" disabled><i class="fas fa-robot"></i> Add Bot (−20 coins)</button>
-        <div id="actStatus" style="display:none;margin-top:16px;"></div>
-      </div>
-    </section>
 
+          <!-- Server 2 (US) -->
+          <div class="server-option" onclick="pickServer('Server 2 (US)', this)" data-region="US">
+            <div class="server-visual">
+              <!-- Globe Icon for US Server -->
+              <svg class="server-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <span class="server-loc-badge">NS2</span>
+            </div>
+            <div class="server-info">
+              <div class="server-name">OxBot Server 2</div>
+              <div class="server-meta">
+                <!-- ⬇️ ADDED ID: signal-s2 ⬇️ -->
+                <div id="signal-s2" class="live-signal">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+                </div>
+                <!-- ⬇️ ADDED ID: ping-s2 ⬇️ -->
+                <span id="ping-s2" class="server-ping">Checking...</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <input type="hidden" id="actServer" value="">
+      </div>
+      <!-- Cost Breakdown -->
+      <div class="cost-box">
+        <div class="cost-row">
+          <span class="cost-label">Cost</span>
+          <span class="cost-val brand">-20 coins</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">Your Balance</span>
+          <span class="cost-val" id="actBal">0 coins</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">Current Plan</span>
+          <span class="cost-val" id="actPlanName">—</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">Bot Limit</span>
+          <span class="cost-val" id="actBotLimit">—</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">Duration</span>
+          <span class="cost-val" id="actBotDuration" style="color:var(--gold)">—</span>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button class="btn btn-primary" id="actBtn" onclick="doAddBot()" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Add Bot (−20 coins)
+      </button>
+      
+      <div id="actStatus" style="display:none;margin-top:16px;"></div>
+    </div>
+  </div>
+</section>
     <!-- PAIR DEVICE -->
     <section id="s-pair" class="section">
       <div class="page-header"><h2>Pair Device</h2><p>Link WhatsApp to get your session ID</p></div>
@@ -2532,6 +2807,78 @@ function closeBotSettings() {
 document.getElementById('botSettingsOverlay').addEventListener('click', function(e) {
     if (e.target === this) closeBotSettings();
 });
+
+// ── SERVER STATUS CONNECTOR (LIVE UPDATE FIX) ───────────────────────
+  
+  // 1. Function to fetch server status from the Backend
+  async function fetchServerStatus() {
+      try {
+          // ✅ FIX: Added '?t=' + Date.now() to stop browser caching
+          // This forces the browser to fetch fresh data every time
+          const response = await fetch('/api/server-status?t=' + new Date().getTime());
+          const resData = await response.json();
+          
+          if (resData.success && resData.data) {
+              resData.data.forEach(server => {
+                  updateServerUI(server);
+              });
+          }
+      } catch (err) {
+          console.error("Server Check Error:", err);
+      }
+  }
+
+  // 2. Function to update the specific UI elements
+  function updateServerUI(server) {
+      const pingEl = document.getElementById(`ping-${server.id}`);
+      const signalEl = document.getElementById(`signal-${server.id}`);
+      
+      if (!pingEl || !signalEl) return;
+
+      // Update Ping Text
+      pingEl.innerText = `${server.ping}ms`;
+      
+      // Remove old classes
+      pingEl.classList.remove('fast', 'med', 'slow');
+      signalEl.classList.remove('strong', 'medium', 'weak');
+
+      // Logic to determine Signal Quality based on Ping
+      if (server.ping < 60) {
+          // Strong Signal (Green)
+          pingEl.classList.add('fast');
+          signalEl.classList.add('strong');
+          // 3 Bars SVG
+          signalEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>`;
+      } else if (server.ping < 120) {
+          // Medium Signal (Yellow)
+          pingEl.classList.add('med');
+          signalEl.classList.add('medium');
+          // 2 Bars SVG
+          signalEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>`;
+      } else {
+          // Weak Signal (Red)
+          pingEl.classList.add('slow');
+          signalEl.classList.add('weak');
+          // 1 Bar SVG
+          signalEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>`;
+      }
+  }
+
+  // 3. Start the Live Check (Runs every 3 seconds)
+  function startServerMonitor() {
+      console.log("🔄 Starting Live Server Monitor...");
+      fetchServerStatus(); // Run once immediately
+      setInterval(() => {
+          fetchServerStatus(); 
+          // console.log("Updated Ping..."); // Uncomment this to see logs
+      }, 3000); // Runs every 3000ms (3 seconds)
+  }
+
+  // 4. Start monitoring when the page loads
+  window.addEventListener('DOMContentLoaded', () => {
+      startServerMonitor();
+  });
+
 // ── INIT ──────────────────────────────────────────────────────────
 window.onload=async()=>{
   await loadUser();

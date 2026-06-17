@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Telegram Hosting — OxBot</title>
+<!-- Use your Dashboard CSS here to match the look -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --brand:#16a34a;--brand-d:#15803d;--brand-glow:rgba(22,163,74,.15);
+  --bg:#0a0f1a;--card:#111827;--card2:#1a2235;
+  --text:#f1f5f9;--muted:#64748b;--muted2:#94a3b8;--border:#1e2d40;
+  --red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;
+  --font-h:'Outfit',sans-serif;--font-b:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px;}
+
+.container{max-width:600px;width:100%;padding:20px;text-align:center;}
+.hero-icon{font-size:48px;color:#0088cc;margin-bottom:16px;}
+h1{font-family:var(--font-h);font-size:28px;font-weight:800;margin-bottom:12px;color:var(--text);}
+p{color:var(--muted2);margin-bottom:32px;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:left;margin-bottom:20px;}
+.step-list{counter-reset:list-style;padding:0;margin-bottom:20px;}
+.step-list li{position:relative;padding-left:35px;margin-bottom:16px;font-size:15px;color:var(--text);line-height:1.6;counter-increment:step;}
+.step-list li::before{content:counter(step);position:absolute;left:0;top:2px;width:24px;height:24px;background:var(--card2);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--brand);box-shadow:0 0 0 4px rgba(22,163,74,0.2);}
+.step-list li strong{color:var(--brand);}
+.code-block{background:var(--bg);border:1px dashed var(--border);padding:12px;border-radius:8px;font-family:monospace;font-size:13px;color:#22c55e;margin:8px 0;word-break:break-all;}
+.copy-box{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:20px;display:flex;align-items:center;justify-content:space-between;}
+.copy-btn{background:var(--brand);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;}
+.copy-btn:hover{background:var(--brand-d);}
+.hint{font-size:11px;color:var(--muted);margin-top:8px;}
+
+@media(min-width:600px){
+  .container{padding:0 24px;}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <i class="fab fa-telegram hero-icon"></i>
+  <h1>Host Files on Telegram</h1>
+  <p>Securely store your OxBot session files (creds.json) on Telegram for safekeeping and easy sharing.</p>
+
+  <div class="card">
+    <h3 style="font-family:var(--font-h);font-size:18px;margin-bottom:16px;">Why Telegram?</h3>
+    <p style="color:var(--muted2);margin-bottom:20px;">
+      Storing your session ID on a Telegram Channel ensures you never lose access to your bot, even if your VPS is wiped or reinstalled. It acts as a safe cloud backup.
+    </p>
+
+    <ol class="step-list">
+      <li>
+        <strong>Create a Telegram Channel:</strong><br>
+        Open Telegram and create a new Channel. Name it <em>OxBot Backups</em>.
+      </li>
+      <li>
+        <strong>Make Channel Private:</strong><br>
+        Go to Channel Settings → Permissions → Channel Type → Change to <strong>Private</strong>.
+      </li>
+      <li>
+        <strong>Get the ID:</strong><br>
+        In the channel URL `t.me/YourName/12345`, the ID is <strong>12345</strong>. Copy this ID.
+      </li>
+      <li>
+        <strong>Connect to OxBot:</strong><br>
+        Go to the OxBot Dashboard settings and paste the Channel ID to enable auto-backups.
+      </li>
+    </ol>
+
+    <div class="copy-box">
+      <div>
+        <strong>Support Command</strong><br>
+        <span style="font-size:13px;color:var(--muted);display:block;margin-top:4px;">
+          Use <code>.backup</code> in your bot group to send the current session file to your Telegram channel automatically.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--font-h);font-size:18px;margin-bottom:12px;">Need Help?</h3>
+  <p style="color:var(--muted2);">
+    If your file is not uploading, ensure it is a <code>.json</code> or <code>.txt</code> file and is not larger than 50MB. Bot files are small, so this works perfectly.
+  </p>
+
+</div>
+
+<script>
+  // Optional: Copy ID Logic if dynamic
+  function copyId(id) {
+    navigator.clipboard.writeText(id);
+    alert('Copied: ' + id);
+  }
+</script>
+
+</body>
+</html>

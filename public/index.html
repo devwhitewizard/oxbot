@@ -323,13 +323,15 @@ header {
 /* ── PRICING ───────────────────────────────────────────── */
 .plans-wrap {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 28px;
   margin-top: 60px;
-  max-width: 760px;
+  max-width: 900px; /* Increased slightly to accommodate 3 columns */
   margin-left: auto;
   margin-right: auto;
+  align-items: stretch; /* Ensures equal height cards */
 }
+
 .plan {
   background: var(--g0);
   border: 1.5px solid var(--border);
@@ -343,6 +345,12 @@ header {
 .plan.featured {
   border-color: var(--accent);
   box-shadow: 0 16px 48px -10px rgba(22,163,74,.22);
+}
+.plan-trial {
+  /* Specific style for the trial plan */
+  background: #f0fdf4; /* Very light green tint */
+  border-color: var(--accent-l);
+  border-width: 2px;
 }
 .plan-crown {
   position: absolute; top: -14px; left: 50%;
@@ -406,6 +414,11 @@ header {
   box-shadow: 0 4px 14px rgba(22,163,74,.28);
 }
 .plan-btn.solid:hover { background: var(--accent-d); transform: translateY(-1px); }
+.plan-btn.trial {
+  background: var(--text); color: #fff;
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+}
+.plan-btn.trial:hover { background: #000; transform: translateY(-1px); }
 
 /* ── FAQ ───────────────────────────────────────────────── */
 .faq-list {
@@ -495,6 +508,7 @@ footer {
   .burger { display: flex; }
   .section { padding: 72px 0; }
   .hero { padding: 80px 0 96px; }
+  .plans-wrap { grid-template-columns: 1fr; } /* Stack plans on mobile */
 }
 </style>
 </head>
@@ -517,8 +531,8 @@ footer {
         <a href="#faq">FAQ</a>
       </nav>
       <div class="header-right">
-        <a class="btn-ghost-sm" href="login.html">Log in</a>
-        <a class="btn-cta" href="register.html">
+        <a class="btn-ghost-sm" href="/login">Log in</a>
+        <a class="btn-cta" href="/register">
           Start free
           <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
@@ -551,8 +565,8 @@ footer {
       <a href="#faq">FAQ</a>
     </nav>
     <div class="drawer-foot">
-      <a class="btn-ghost-sm" href="login.html">Log in</a>
-      <a class="btn-cta" href="register.html">
+      <a class="btn-ghost-sm" href="/login">Log in</a>
+      <a class="btn-cta" href="/register">
         Start free
         <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </a>
@@ -571,15 +585,15 @@ footer {
       <h1 class="reveal reveal-d1">Automate Your WhatsApp <em>Like a Pro.</em> No Coding.</h1>
       <p class="hero-sub reveal reveal-d2">Scale your presence, reclaim your time, and run automated replies around the clock. OxBot handles the busywork — you handle the growth.</p>
       <div class="hero-actions reveal reveal-d3">
-        <a class="btn-hero-main" href="register.html">
+        <a class="btn-hero-main" href="/register">
           Get started free
           <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         </a>
         <a class="btn-hero-sec" href="#pricing">See pricing</a>
       </div>
       <div class="hero-trust reveal reveal-d4">
-        <span>No credit card needed</span>
         <span>2-day free trial</span>
+        <span>No credit card needed</span>
         <span>Cancel any time</span>
         <span>24/7 uptime</span>
       </div>
@@ -622,7 +636,7 @@ footer {
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </div>
         <h3>Full Customization</h3>
-        <p>Set your bot's name, profile image, and behavior to match your brand. Nothing generic, everything yours.</p>
+        <p>Set bot profile image, and behavior to match your brand. Nothing generic, everything yours.</p>
       </div>
     </div>
   </div>
@@ -666,8 +680,27 @@ footer {
     </div>
     <div class="plans-wrap">
 
+      <!-- Free Trial -->
+      <div class="plan plan-trial reveal reveal-d1">
+        <div class="plan-name">Free Trial</div>
+        <div class="plan-price-row" style="margin-bottom: 18px;">
+          <span class="plan-amount">$0</span>
+          <span class="plan-period">/ 2 days</span>
+        </div>
+        <p style="font-size:14px; color:var(--text-2); margin-bottom:24px; line-height:1.6;">Perfect for testing OxBot features before upgrading.</p>
+        <ul class="plan-feats">
+          <li><span class="plan-check">✓</span><span><strong>1 Bot</strong></span></li>
+          <li><span class="plan-check">✓</span><span>Antiban protection</span></li>
+          <li><span class="plan-check">✓</span><span>24/7 uptime</span></li>
+          <li><span class="plan-check">✓</span><span>All basic commands</span></li>
+          <li><span class="plan-check">✓</span><span>Bot lasts 2 days</span></li>
+          <li><span class="plan-check">✓</span><span>20 coins required</span></li>
+        </ul>
+        <a class="plan-btn trial" href="/register">Start free trial</a>
+      </div>
+
       <!-- Basic -->
-      <div class="plan reveal reveal-d1">
+      <div class="plan reveal reveal-d2">
         <div class="plan-name">Basic</div>
         <div class="plan-coin-badge">🪙 70 coins included</div>
         <div class="plan-price-row">
@@ -682,11 +715,11 @@ footer {
           <li><span class="plan-check">✓</span><span>Bot lasts 30 days</span></li>
           <li><span class="plan-check">✓</span><span>All basic commands</span></li>
         </ul>
-        <a class="plan-btn outline" href="register.html">Choose Basic</a>
+        <a class="plan-btn outline" href="/register">Choose Basic</a>
       </div>
 
       <!-- Pro -->
-      <div class="plan featured reveal reveal-d2">
+      <div class="plan featured reveal reveal-d3">
         <div class="plan-crown">Best Value</div>
         <div class="plan-name">Pro</div>
         <div class="plan-coin-badge">🪙 100 coins included</div>
@@ -704,7 +737,7 @@ footer {
           <li><span class="plan-check">✓</span><span>All commands unlocked</span></li>
           <li><span class="plan-check">✓</span><span>Bot lasts 30 days</span></li>
         </ul>
-        <a class="plan-btn solid" href="register.html">Choose Pro</a>
+        <a class="plan-btn solid" href="/register">Choose Pro</a>
       </div>
 
     </div>
@@ -785,7 +818,7 @@ footer {
     <div class="cta-banner-inner reveal">
       <h2>Start Automating Today</h2>
       <p>Free 2-day trial. No credit card. Setup in under 5 minutes.</p>
-      <a class="btn-banner" href="register.html">
+      <a class="btn-banner" href="/register">
         Create free account
         <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
@@ -807,11 +840,11 @@ footer {
         <a href="#features">Features</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
-        <a href="login.html">Log in</a>
-        <a href="register.html">Sign up</a>
-        <a href="mailto:support@oxbot.name.ng">Contact</a>
+        <a href="/login">Log in</a>
+        <a href="/register">Sign up</a>
+        <a href="mailto:oxbot18@gmail.com">Contact</a>
       </nav>
-      <p class="footer-copy">© 2026 OxBot · All rights reserved · <a href="mailto:support@oxbot.name.ng" style="color:var(--accent)">support@oxbot.name.ng</a></p>
+      <p class="footer-copy">© 2026 OxBot · All rights reserved · <a href="mailto:oxbot18@gmail.com" style="color:var(--accent)">oxbot18@gmail.com</a></p>
     </div>
   </div>
 </footer>

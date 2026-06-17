@@ -1,0 +1,734 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OxBot.name.ng - WhatsApp Pair</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #00ff87;
+      --secondary-color: #00f2fe;
+      --accent-color: #7928ca;
+      --bg-dark: #070913;
+      --card-bg: rgba(13, 18, 33, 0.75);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --glow-color: rgba(0, 255, 135, 0.2);
+      --text-primary: #ffffff;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --error-color: #f43f5e;
+      --success-color: #10b981;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(121, 40, 202, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(0, 242, 254, 0.08) 0px, transparent 50%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient glow blobs */
+    .glow-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      z-index: 0;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .glow-1 {
+      top: 15%;
+      left: 15%;
+      width: 250px;
+      height: 250px;
+      background: var(--accent-color);
+      animation: float-slow 10s ease-in-out infinite;
+    }
+
+    .glow-2 {
+      bottom: 15%;
+      right: 15%;
+      width: 300px;
+      height: 300px;
+      background: var(--secondary-color);
+      animation: float-slow 12s ease-in-out infinite alternate;
+    }
+
+    @keyframes float-slow {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(20px, -20px) scale(1.1); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 0 30px rgba(0, 255, 135, 0.03);
+      border: 1px solid var(--border-color);
+      z-index: 10;
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: 24px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(0, 242, 254, 0.3), rgba(0, 255, 135, 0.05) 50%, rgba(121, 40, 202, 0.3));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #00f2fe 0%, #00ff87 100%);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: #070913;
+      box-shadow: 0 0 25px rgba(0, 255, 135, 0.35);
+      position: relative;
+      animation: pulse-glow 3s infinite alternate;
+    }
+
+    @keyframes pulse-glow {
+      0% {
+        box-shadow: 0 0 15px rgba(0, 255, 135, 0.2);
+        transform: scale(1);
+      }
+      100% {
+        box-shadow: 0 0 30px rgba(0, 242, 254, 0.5);
+        transform: scale(1.03);
+      }
+    }
+
+    .logo i {
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .social-icons a {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 18px;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .social-icons a.telegram:hover {
+      color: #ffffff;
+      background: #0088cc;
+      border-color: #0088cc;
+      box-shadow: 0 0 15px rgba(0, 136, 204, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .social-icons a.whatsapp:hover {
+      color: #ffffff;
+      background: #0cfa10;
+      border-color: #0cfa10;
+      box-shadow: 0 0 15px rgba(12, 250, 16, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .social-icons a.github:hover {
+      color: #ffffff;
+      background: #333333;
+      border-color: #444444;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    /* Toggle Switch Styles */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      padding: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .toggle-option {
+      flex: 1;
+      padding: 12px 16px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .toggle-option.active {
+      background: linear-gradient(135deg, #00f2fe 0%, #00ff87 100%);
+      color: #070913;
+      box-shadow: 0 4px 15px rgba(0, 255, 135, 0.2);
+    }
+
+    .toggle-option:not(.active) {
+      color: var(--text-secondary);
+    }
+
+    .toggle-option:hover:not(.active) {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .input-group {
+      margin-bottom: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .input-group.hidden {
+      display: none;
+    }
+
+    .input-label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--text-secondary);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.2);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 15px rgba(0, 255, 135, 0.15);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #00f2fe 0%, #00ff87 100%);
+      border: none;
+      border-radius: 14px;
+      color: #070913;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 255, 135, 0.35);
+    }
+
+    .generate-btn.hidden {
+      display: none;
+    }
+
+    .code-display {
+      background: rgba(255, 255, 255, 0.02);
+      padding: 16px;
+      border-radius: 14px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      font-family: 'Space Grotesk', monospace;
+    }
+
+    .qr-display {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 25px;
+      border-radius: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      display: none;
+    }
+
+    .qr-image {
+      max-width: 240px;
+      max-height: 240px;
+      margin: 0 auto 20px;
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      border: 4px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .qr-instructions {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .success-message {
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px rgba(0, 255, 135, 0.2);
+    }
+
+    .error-message {
+      color: var(--error-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .loading i {
+      font-size: 26px;
+      color: var(--primary-color);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .copy-btn {
+      width: 100%;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: var(--primary-color);
+      box-shadow: 0 0 15px rgba(0, 255, 135, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 22px;
+        border-radius: 20px;
+      }
+
+      .code-display {
+        font-size: 15px;
+        min-height: 50px;
+      }
+
+      .qr-image {
+        max-width: 200px;
+        max-height: 200px;
+      }
+
+      .qr-display {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient background glow blobs -->
+  <div class="glow-blob glow-1"></div>
+  <div class="glow-blob glow-2"></div>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo"><i class="fas fa-robot"></i></div>
+      <h1 class="title">OxBot.name.ng</h1>
+      <p class="subtitle">Link your WhatsApp device safely</p>
+      <div class="social-icons">
+        <a href="https://t.me/ox_bot18" target="_blank" class="telegram"><i class="fab fa-telegram-plane"></i></a>
+        <a href="https://whatsapp.com/channel/0029VbBwz6gDTkK9heWqFy1v" target="_blank" class="whatsapp"><i class="fab fa-whatsapp"></i></a>
+        <a href="https://oxbot.name.ng" target="_blank" class="github"><i class="fas fa-globe"></i></a>
+      </div>
+    </div>
+
+    <!-- Toggle Switch -->
+    <div class="toggle-container">
+      <div class="toggle-option active" data-mode="pair">
+        <i class="fas fa-key"></i> Pair Code
+      </div>
+      <div class="toggle-option" data-mode="qr">
+        <i class="fas fa-qrcode"></i> QR Code
+      </div>
+    </div>
+
+    <div class="input-group" id="inputGroup">
+      <label class="input-label">Enter your WhatsApp number with country code</label>
+      <input type="text" id="mobileNumber" class="input-field" placeholder="+234023951514" pattern="[+][0-9]{10,}" title="Please enter country code starting with + followed by number">
+    </div>
+
+    <button class="generate-btn" id="submit">
+      <i class="fas fa-key"></i> Generate Pair Code
+    </button>
+
+    <div class="loading" id="loading">
+      <i class="fas fa-spinner"></i>
+    </div>
+
+    <div class="code-display" id="codeDisplay">
+      Your pair code will appear here
+    </div>
+
+    <div class="qr-display" id="qrDisplay">
+      <img id="qrImage" class="qr-image" src="" alt="QR Code">
+      <div class="qr-instructions" id="qrInstructions">
+        Scan this QR code with your WhatsApp app
+      </div>
+    </div>
+
+    <button class="copy-btn" id="copy" onclick="copyCode()">
+      <i class="fas fa-copy"></i> Copy Code
+    </button>
+
+    <div class="footer">
+        <p>© 2026 oxbot.name.ng</p>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.0.0-alpha.1/axios.min.js"></script>
+  <script>
+    let currentMode = 'pair';
+    let pollInterval = null;
+    window.latestSessionID = null;
+
+    function stopPolling() {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    }
+
+    async function startPolling(id) {
+      stopPolling();
+      
+      const codeDisplay = document.getElementById("codeDisplay");
+      const qrDisplay = document.getElementById("qrDisplay");
+      const copyBtn = document.getElementById("copy");
+      const loadingSpinner = document.getElementById("loading");
+      
+      pollInterval = setInterval(async () => {
+        try {
+          const response = await axios(`/status?id=${id}`);
+          const data = response.data;
+          
+          if (data.status === 'qr_ready' && data.qr) {
+            loadingSpinner.style.display = "none";
+            document.getElementById('qrImage').src = data.qr;
+            document.getElementById('qrInstructions').innerHTML = "Scan this QR code with your WhatsApp app<br><span style='color: var(--primary-color); font-size: 11px;'>Refreshes automatically</span>";
+            qrDisplay.style.display = 'block';
+            codeDisplay.style.display = 'none';
+          } else if (data.status === 'code_ready' && data.code) {
+            loadingSpinner.style.display = "none";
+            codeDisplay.innerHTML = `<div class="success-message"><i class="fas fa-key"></i> CODE: ${data.code}</div>`;
+            codeDisplay.style.display = 'flex';
+            qrDisplay.style.display = 'none';
+          } else if (data.status === 'linked') {
+            stopPolling();
+            loadingSpinner.style.display = "none";
+            
+            codeDisplay.innerHTML = `<div class="success-message" style="flex-direction: column; gap: 12px; padding: 8px 0;">
+              <div style="color: var(--primary-color); font-size: 22px;"><i class="fas fa-check-circle"></i></div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--primary-color);">Connected Successfully!</div>
+              <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; text-align: center;">
+                ✅ Your Session ID has been sent to your WhatsApp.<br>
+                Open WhatsApp, <strong style="color: var(--text-primary);">copy the long message</strong> you received,<br>
+                then paste it in your <strong style="color: var(--text-primary);">OxBot Dashboard → Add Bot</strong>.
+              </div>
+            </div>`;
+            codeDisplay.style.display = 'flex';
+            qrDisplay.style.display = 'none';
+            
+            // Store session and update copy button
+            window.latestSessionID = data.sessionID;
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Session ID';
+            copyBtn.style.display = 'flex';
+          } else if (data.status === 'error') {
+            stopPolling();
+            loadingSpinner.style.display = "none";
+            codeDisplay.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${data.error || 'Connection failed'}</div>`;
+            codeDisplay.style.display = 'flex';
+            qrDisplay.style.display = 'none';
+          }
+        } catch (error) {
+          console.error("Error polling status:", error);
+        }
+      }, 3000);
+    }
+
+    // Toggle functionality
+    document.querySelectorAll('.toggle-option').forEach(option => {
+      option.addEventListener('click', function() {
+        const mode = this.dataset.mode;
+        if (mode === currentMode) return;
+
+        stopPolling();
+        window.latestSessionID = null;
+
+        // Update active state
+        document.querySelectorAll('.toggle-option').forEach(opt => opt.classList.remove('active'));
+        this.classList.add('active');
+
+        // Update mode
+        currentMode = mode;
+
+        // Update button and input visibility
+        const submitBtn = document.getElementById('submit');
+        const inputGroup = document.getElementById('inputGroup');
+        const copyBtn = document.getElementById('copy');
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Code';
+        
+        if (mode === 'pair') {
+          submitBtn.innerHTML = '<i class="fas fa-key"></i> Generate Pair Code';
+          submitBtn.classList.remove('hidden');
+          inputGroup.classList.remove('hidden');
+        } else {
+          submitBtn.classList.add('hidden');
+          inputGroup.classList.add('hidden');
+          // Auto-generate QR code when QR mode is selected
+          generateQRCode();
+        }
+
+        // Clear displays
+        document.getElementById('codeDisplay').innerHTML = 'Your pair code will appear here';
+        document.getElementById('qrDisplay').style.display = 'none';
+        document.getElementById('codeDisplay').style.display = 'flex';
+      });
+    });
+
+    async function generateQRCode() {
+      const codeDisplay = document.getElementById("codeDisplay");
+      const qrDisplay = document.getElementById("qrDisplay");
+      const loadingSpinner = document.getElementById("loading");
+
+      loadingSpinner.style.display = "block";
+      codeDisplay.innerHTML = '';
+      qrDisplay.style.display = 'none';
+
+      try {
+        const response = await axios('/qr');
+        
+        if (response.data.success && response.data.id) {
+          // Start polling status
+          startPolling(response.data.id);
+        } else {
+          loadingSpinner.style.display = "none";
+          codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Failed to initialize QR generation</div>';
+          codeDisplay.style.display = 'flex';
+        }
+      } catch (error) {
+        console.error("Error generating QR code:", error);
+        loadingSpinner.style.display = "none";
+        codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Error generating QR code. Please try again.</div>';
+        codeDisplay.style.display = 'flex';
+      }
+    }
+
+    document.getElementById("submit").addEventListener("click", async (e) => {
+      e.preventDefault();
+      
+      const mobileNumberInput = document.getElementById("mobileNumber");
+      const codeDisplay = document.getElementById("codeDisplay");
+      const qrDisplay = document.getElementById("qrDisplay");
+      const loadingSpinner = document.getElementById("loading");
+      const copyBtn = document.getElementById('copy');
+
+      const mobileNumber = mobileNumberInput.value.trim();
+      if (!mobileNumber) {
+        codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Please enter your WhatsApp number</div>';
+        return;
+      }
+
+      stopPolling();
+      window.latestSessionID = null;
+      copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Code';
+
+      loadingSpinner.style.display = "block";
+      codeDisplay.innerHTML = '';
+      qrDisplay.style.display = 'none';
+
+      try {
+        const response = await axios(`/pair?number=${mobileNumber.replace(/[^0-9]/g, "")}`);
+        
+        const code = response.data.code || "Service Unavailable";
+        if (code === "Service Unavailable") {
+          loadingSpinner.style.display = "none";
+          codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Service Unavailable</div>';
+          codeDisplay.style.display = 'flex';
+        } else {
+          codeDisplay.innerHTML = `<div class="success-message"><i class="fas fa-check-circle"></i> CODE: ${code}</div>`;
+          codeDisplay.style.display = 'flex';
+          
+          if (response.data.id) {
+            // Start polling status to detect when user scans/pairs successfully
+            startPolling(response.data.id);
+          } else {
+            loadingSpinner.style.display = "none";
+          }
+        }
+      } catch (error) {
+        console.error("Error generating code:", error);
+        loadingSpinner.style.display = "none";
+        codeDisplay.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Error generating code. Please try again.</div>';
+        codeDisplay.style.display = 'flex';
+      }
+    });
+
+    function copyCode() {
+      let textToCopy = "";
+      if (window.latestSessionID) {
+        textToCopy = window.latestSessionID;
+      } else {
+        const codeDisplay = document.getElementById("codeDisplay").innerText;
+        textToCopy = codeDisplay.replace('CODE: ', '');
+      }
+
+      if (!textToCopy || textToCopy.includes('Your pair code will appear here')) {
+        return;
+      }
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const copyBtn = document.getElementById("copy");
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        setTimeout(() => {
+          copyBtn.innerHTML = originalText;
+        }, 2000);
+      }).catch(err => {
+        console.error("Failed to copy text: ", err);
+      });
+    }
+  </script>
+</body>
+</html>

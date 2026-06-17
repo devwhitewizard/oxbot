@@ -1,36 +1,42 @@
+/**
+ * help.js — OxBot Menu / Command List
+ * Aliases: .menu, .bot, .list, .commands, .help
+ */
+
 const version = '2.0.0';
-const owner = 'oxdominion.eth';
+const owner   = 'oxdominion.eth';
 
 function getRAM() {
-    const used = process.memoryUsage().heapUsed / 1024 / 1024;
+    const used  = process.memoryUsage().heapUsed / 1024 / 1024;
     const total = process.memoryUsage().rss / 1024 / 1024;
     return `${used.toFixed(1)}MB / ${total.toFixed(1)}MB`;
 }
 
-// Only returns the Day (e.g. "Monday")
 function getDay() {
-    const d = new Date();
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[d.getDay()];
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    return days[new Date().getDay()];
 }
 
 async function execute(sock, msg, botData, args) {
     try {
-        const chatId = msg.key.remoteJid;
+        const chatId    = msg.key.remoteJid;
         if (!chatId) return null;
 
-        const db = botData?.db;
+        const db        = botData?.db;
         const sessionId = botData?.sessionId;
 
+        // ── Fetch user WhatsApp status as display name ────────────────────────
         let userName = 'Unknown';
         const sender = msg.key.participant || msg.key.remoteJid;
         try {
             const status = await sock.fetchStatus(sender);
             if (status?.status) userName = status.status.substring(0, 25);
-        } catch { }
+        } catch {}
 
+        // ── Bot name from WhatsApp ─────────────────────────────────────────────
         const botName = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'OxBot';
 
+        // ── Owner phone from DB ───────────────────────────────────────────────
         let ownerNumber = '';
         try {
             if (db && sessionId) {
@@ -42,8 +48,9 @@ async function execute(sock, msg, botData, args) {
                     ownerNumber = String(rows[0].phone).replace(/\D/g, '');
                 }
             }
-        } catch { }
+        } catch {}
 
+        // ── Total command count ───────────────────────────────────────────────
         let totalCmds = 0;
         try {
             const { commands } = require('./index');
@@ -52,15 +59,19 @@ async function execute(sock, msg, botData, args) {
             totalCmds = unique.size;
         } catch {
             try {
-                const fs = require('fs');
-                const skip = new Set(['index.js', 'handler.js', 'igs.js', 'imagine.js', 'img-blur.js', 'instagram.js', 'pair.js', 'simage.js', 'stickertelegram.js', 'textmaker.js', 'tiktok.js']);
+                const fs   = require('fs');
+                const skip = new Set(['index.js','handler.js','igs.js','imagine.js','img-blur.js','instagram.js','pair.js','simage.js','stickertelegram.js','textmaker.js']);
                 const files = fs.readdirSync(__dirname).filter(f => f.endsWith('.js') && !skip.has(f));
                 totalCmds = files.length;
-            } catch { }
+            } catch {}
         }
 
         const ram = getRAM();
         const day = getDay();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // MENU SECTIONS
+        // ══════════════════════════════════════════════════════════════════════
 
         const header = `
 ┌─────────────────────────┐
@@ -87,6 +98,18 @@ async function execute(sock, msg, botData, args) {
 ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ┏━━━━━━━━━━━━━━━━━━━━━━┓
+┃  📱 *Social Media*
+┣━━━━━━━━━━━━━━━━━━━━━━┫
+┃  ◈ .tiktok <link>
+┃  ◈ .tt <link>
+┃  ◈ .tk <link>
+┃  ◈ .tikdown <link>
+┃  ◈ .ss <url>
+┃  ◈ .ssweb <url>
+┃  ◈ .screenshot <url>
+┗━━━━━━━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━━━━━━━┓
 ┃  🎮 *Fun & Games*
 ┣━━━━━━━━━━━━━━━━━━━━━━┫
 ┃  ◈ .truth
@@ -109,10 +132,11 @@ async function execute(sock, msg, botData, args) {
 ┃  ◈ .save
 ┃  ◈ .vv
 ┃  ◈ .tts <text>
+┃  ◈ .regenerate (tag/reply image)
 ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ┏━━━━━━━━━━━━━━━━━━━━━━┓
-┃  🔍 *Search & Utility*
+┃  🔍 *Search & Info*
 ┣━━━━━━━━━━━━━━━━━━━━━━┫
 ┃  ◈ .weather <city>
 ┃  ◈ .translate <text>
@@ -120,6 +144,27 @@ async function execute(sock, msg, botData, args) {
 ┃  ◈ .alive
 ┃  ◈ .gpt <question>
 ┃  ◈ .gemini <question>
+┃  ◈ .news
+┃  ◈ .news tech
+┃  ◈ .news sports
+┃  ◈ .news business
+┃  ◈ .news health
+┃  ◈ .news science
+┃  ◈ .news entertainment
+┗━━━━━━━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━━━━━━━┓
+┃  ⏰ *Reminders*
+┣━━━━━━━━━━━━━━━━━━━━━━┫
+┃  ◈ .remind 30m <msg>
+┃  ◈ .remind 2h <msg>
+┃  ◈ .remind 1d <msg>
+┃  ◈ .remind 1w <msg>
+┃  ◈ .remind tomorrow <msg>
+┃  ◈ .remind next week <msg>
+┃  ◈ .remind 25/12 <msg>
+┃  ◈ .reminders (list all)
+┃  ◈ .remind cancel <ID>
 ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ┏━━━━━━━━━━━━━━━━━━━━━━┓
@@ -147,6 +192,10 @@ async function execute(sock, msg, botData, args) {
 ┃  ◈ .fakeaudio
 ┃  ◈ .antidelete
 ┃  ◈ .pmblocker
+┃  ◈ .setpp (tag/reply image)
+┃  ◈ .autobio set <text>
+┃  ◈ .autobio off
+┃  ◈ .autobio status
 ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ┏━━━━━━━━━━━━━━━━━━━━━━┓
@@ -209,47 +258,49 @@ async function execute(sock, msg, botData, args) {
 │ 🚀 _oxbot.name.ng_
 └─────────────────────────┘`;
 
+        // ── Newsletter context (shows OxBot channel follow button) ────────────
         const contextInfo = {
             forwardingScore: 999,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363421280626994@newsletter',
-                newsletterName: 'OxBot',
-                serverMessageId: -1
-            }
+                newsletterJid:     '120363421280626994@newsletter',
+                newsletterName:    'OxBot',
+                serverMessageId:   -1,
+            },
         };
 
         const img = global.menuImage;
 
         if (img) {
             await sock.sendMessage(chatId, {
-                image: img,
-                caption: fullMessage,
-                contextInfo: contextInfo
+                image:       img,
+                caption:     fullMessage,
+                contextInfo,
             }, { quoted: msg });
         } else {
             await sock.sendMessage(chatId, {
-                text: fullMessage,
-                contextInfo: contextInfo
+                text:        fullMessage,
+                contextInfo,
             }, { quoted: msg });
         }
 
         return null;
+
     } catch (err) {
         console.error('[HELP] Error:', err.message);
         try {
             await sock.sendMessage(msg.key.remoteJid, {
                 text: '❌ Failed to load menu. Try again.',
             }, { quoted: msg });
-        } catch { }
+        } catch {}
         return null;
     }
 }
 
 module.exports = {
-    name: 'help',
-    aliases: ['menu', 'bot', 'list', 'commands'],
-    desc: 'Show all commands',
+    name:     'help',
+    aliases:  ['menu', 'bot', 'list', 'commands'],
+    desc:     'Show all bot commands',
     category: 'general',
     execute,
-};  
+};

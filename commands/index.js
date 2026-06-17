@@ -142,7 +142,7 @@ function isBeforeStartup(msg) {
 const SKIP = new Set([
     'index.js','handler.js','igs.js','imagine.js','img-blur.js',
     'instagram.js','pair.js','simage.js','stickertelegram.js',
-    'textmaker.js','tiktok.js',
+    'textmaker.js',
 ]);
 
 for (const file of fs.readdirSync(cmdDir).filter(f => f.endsWith('.js') && !SKIP.has(f))) {

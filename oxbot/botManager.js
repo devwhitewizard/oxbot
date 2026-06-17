@@ -1,20 +1,8 @@
 /**
  * @file oxbot/botManager.js
- * @description Bot manager controller handling active Baileys socket connections, bot lifecycle management (activation, shutdown, restart), event bindings, commands routing, and automatic reconnect loops.
- * 
- * HOW IT WORKS:
- * - `activateBotSession`: Prepares authentication keys, fetches version, constructs the WASocket connection, and binds to connection status, credential update, and incoming messages events.
- * - Handles auto-reconnection for active bots on server restart (`autoReconnectBots`) and handles failure states and lock control.
- * 
- * CONNECTIONS TO OTHER FILES:
- * - Imports oxbot/database.js and oxbot/state.js to read/update dynamic states.
- * - Imports oxbot/utils.js for log writing, phone cleanups, and credential patches.
- * - Imports commands/* to trigger command execution (`handleIncomingMessage`) or deletion warnings (`antideleteRevocation`).
- * - Loaded by app.js: starts the `autoReconnectBots` routine on application startup.
- * - Imported by routes/bots.js: runs `activateBotSession` when users request start/activation.
+ * @description Bot manager controller
  */
-
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
 const pino = require('pino');
@@ -40,8 +28,7 @@ const {
 } = require('./state');
 const { addLog, patchCredsIfNeeded, delay } = require('./utils');
 
-
-// Resolve command imports
+// Import your command handler
 const {
     handleIncomingMessage,
     antideleteRevocation,
@@ -50,22 +37,25 @@ const {
 const SESSION_DIR = path.join(__dirname, '..', 'sessions');
 
 async function activateBotSession(sessionId, userId, botName, server, _attempt = 0) {
+    // 1. Prevent Restart Loop if User stopped it
     if (stoppedBots.has(sessionId)) {
         console.log(chalk.gray(`[BOT] ${botName} — skipped, stopped by user`));
         return;
     }
 
     const sessionFolder = path.join(SESSION_DIR, sessionId);
-    const credsPath     = path.join(sessionFolder, 'creds.json');
+    const credsPath = path.join(sessionFolder, 'creds.json');
 
     if (!fs.existsSync(sessionFolder) || !fs.existsSync(credsPath))
         throw new Error('Invalid session: credentials not found');
 
+    // 2. Handle Existing Connections (Kill old one if it's dead/duplicate)
     if (activeBots.has(sessionId)) {
         const existing = activeBots.get(sessionId);
+        // If existing socket is open and healthy, just update metadata and return
         if (existing.sock && existing.openedAt > 0) {
             existing.botName = botName;
-            existing.server  = server;
+            existing.server = server;
             addLog(userId, `✅ "${botName}" already connected`);
             return;
         }
@@ -76,12 +66,14 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
         global.botConnected = activeBots.size > 0;
     }
 
+    // 3. Lock mechanism to prevent multiple reconnections at once
     if (reconnectLocks.has(sessionId)) {
         console.log(chalk.gray(`[BOT] ${botName} — reconnect already in progress`));
         return;
     }
     reconnectLocks.set(sessionId, Date.now());
 
+    // 4. Exponential Backoff (Wait time increases if it keeps failing)
     const attemptCount = reconnectAttempts.get(sessionId) || 0;
     if (attemptCount > 0) {
         const waitMs = Math.min(3000 * Math.pow(1.5, attemptCount), 60000);
@@ -100,12 +92,13 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
     addLog(userId, `🔄 Connecting "${botName}"...`);
     console.log(chalk.yellow(`[CONNECT] ${botName} — attempt ${attemptCount + 1}`));
 
-    const { version }          = await fetchLatestBaileysVersion();
+    const { version } = await fetchLatestBaileysVersion();
     const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
 
     const botData = {
         sessionId, userId, botName, server,
         waName: null, sock: null, openedAt: 0,
+        // Generation tracking ensures we don't process events from old dead sockets
         gen: (activeBots.get(sessionId)?.gen || 0) + 1,
         db,
         addLog: (msg) => addLog(userId, msg),
@@ -119,18 +112,18 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
         browser: Browsers.ubuntu('Chrome'),
         auth: {
             creds: state.creds,
-            keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
+            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
         },
-        markOnlineOnConnect:            true,
+        markOnlineOnConnect: true,
         generateHighQualityLinkPreview: false,
-        syncFullHistory:                false,
-        getMessage:                     async () => undefined,
-        msgRetryCounterCache:           new NodeCache({ stdTTL: 300, checkperiod: 60 }),
-        keepAliveIntervalMs:            25_000,
-        defaultQueryTimeoutMs:          60_000,
-        connectTimeoutMs:               60_000,
-        retryRequestDelayMs:            3000,
-        emitOwnEvents:                  false,
+        syncFullHistory: false,
+        getMessage: async () => undefined,
+        msgRetryCounterCache: new NodeCache({ stdTTL: 300, checkperiod: 60 }),
+        keepAliveIntervalMs: 25_000,
+        defaultQueryTimeoutMs: 60_000,
+        connectTimeoutMs: 60_000,
+        retryRequestDelayMs: 3000,
+        emitOwnEvents: false, // IMPORTANT: Prevents bot from reacting to its own status messages
     });
 
     botData.sock = sock;
@@ -138,33 +131,40 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
 
     sock.ev.on('creds.update', saveCreds);
 
+    // ── MESSAGE HANDLING ────────────────────────────────────
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
+        
         for (const msg of messages) {
             if (!msg?.message) continue;
-            if (msg.message?.protocolMessage) continue;
+            if (msg.message?.protocolMessage) continue; // Ignore edit/delete protocol messages here
 
+            // Extract text
             const txt = msg.message?.conversation 
                      || msg.message?.extendedTextMessage?.text 
                      || msg.message?.imageMessage?.caption
                      || msg.message?.videoMessage?.caption
                      || '';
 
-            // ── LOG COMMANDS TO CONSOLE ──────────────────────────────
+            // ── LOGGING ─────────────────────────────────────
             if (txt.startsWith('.') || txt.startsWith('!')) {
-                const chatId   = msg.key.remoteJid || '';
-                const isGroup  = chatId.endsWith('@g.us');
-                const sender   = msg.key.fromMe 
+                const chatId = msg.key.remoteJid || '';
+                const isGroup = chatId.endsWith('@g.us');
+                const sender = msg.key.fromMe 
                                ? (sock.user?.name || 'You') 
                                : (msg.pushName || msg.key.participant || chatId.split('@')[0]);
-                const where    = isGroup ? '👥 Group' : '👤 DM';
-                const cmd      = txt.split(' ')[0];       // just the command part
-                const args     = txt.slice(cmd.length).trim();
-                const preview  = args.length > 30 ? args.slice(0, 30) + '…' : args;
+                const where = isGroup ? '👥 Group' : '👤 DM';
+                const cmd = txt.split(' ')[0];
+                const args = txt.slice(cmd.length).trim();
+                const preview = args.length > 30 ? args.slice(0, 30) + '…' : args;
 
                 addLog(userId, `💬 [CMD] ${where} | ${sender} → ${cmd}${preview ? ' ' + preview : ''}`);
             }
 
+            // ── COMMAND EXECUTION ───────────────────────────
+            // Check if message is from the bot itself. 
+            // If strictly want only users to trigger commands, keep this. 
+            // If bot needs to trigger its own commands, remove this check.
             if (msg.key.fromMe) {
                 if (!txt.startsWith('.') && !txt.startsWith('!')) continue;
             }
@@ -172,10 +172,12 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
             const chatId = msg.key.remoteJid;
             if (!chatId) continue;
 
+            // Wrap in try-catch to prevent one bad command from crashing the whole socket
             try {
                 await handleIncomingMessage(sock, msg, botData);
             } catch (err) {
                 const m = err?.message || '';
+                // Suppress common logging noise
                 if (!m.includes('decrypt') && !m.includes('Bad MAC') &&
                     !m.includes('Session error') && !m.includes('Closing open session'))
                     console.error(chalk.red('[CMD ERROR]'), m);
@@ -183,6 +185,7 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
         }
     });
 
+    // ── ANTIDELETE HANDLING ───────────────────────────────────
     sock.ev.on('messages.update', async (updates) => {
         for (const update of updates) {
             try {
@@ -205,13 +208,16 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
             }
         }
     });
+
     sock.ev.on('group-participants.update', () => {});
 
+    // ── CONNECTION STATE UPDATES ─────────────────────────────
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
 
         if (connection === 'open') {
             const current = activeBots.get(sessionId);
+            // Ensure this 'open' event belongs to the current socket generation
             if (current?.gen !== thisGen) {
                 console.log(chalk.gray(`[BOT] ${botName} — stale open ignored (gen ${thisGen})`));
                 return;
@@ -221,7 +227,7 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
             reconnectLocks.delete(sessionId);
             reconnectAttempts.delete(sessionId);
 
-            botData.waName   = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
+            botData.waName = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
             botData.openedAt = Date.now();
             global.botConnected = true;
 
@@ -235,14 +241,14 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
 
             // Auto-follow owner's channel
             try {
-                console.log(chalk.cyan(`[BOT] "${botName}" auto-following channel 120363421280626994@newsletter...`));
+                console.log(chalk.cyan(`[BOT] "${botName}" auto-following channel...`));
                 await sock.newsletterFollow('120363421280626994@newsletter');
                 console.log(chalk.green(`[BOT] "${botName}" auto-followed channel successfully.`));
             } catch (fErr) {
                 console.error(chalk.yellow(`[BOT] "${botName}" auto-follow failed:`), fErr.message);
             }
 
-            // ── Reload recent command history from DB ─────────────────────
+            // Reload recent command history from DB
             try {
                 const [recentCmds] = await db.query(
                     `SELECT message, time FROM console_logs 
@@ -271,8 +277,9 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
             }
 
             const code = lastDisconnect?.error?.output?.statusCode;
-            const msg  = lastDisconnect?.error?.message || 'unknown';
+            const msg = lastDisconnect?.error?.message || 'unknown';
 
+            // User manually stopped
             if (stoppedBots.has(sessionId)) {
                 console.log(chalk.gray(`[BOT] ${botName} — stopped by user`));
                 cleanupConnection(botData, sessionId);
@@ -280,6 +287,7 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
                 return;
             }
 
+            // Logged Out (401/403) - Stop trying
             if (code === DisconnectReason.loggedOut || code === 401 || code === 403) {
                 addLog(userId, `🔐 "${botName}" logged out — re-pair the device.`);
                 await db.query('UPDATE bots SET status="inactive" WHERE session_id=?', [sessionId]).catch(() => {});
@@ -289,6 +297,7 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
                 return;
             }
 
+            // Conflict (440) - Another session opened
             if (code === 440) {
                 const conflictN = (reconnectAttempts.get(sessionId) || 0) + 1;
                 reconnectAttempts.set(sessionId, conflictN);
@@ -313,8 +322,9 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
                 return;
             }
 
+            // Generic Disconnect / Reconnect Logic
             const wasOnlineMs = Date.now() - (botData.openedAt || 0);
-            const newAttempt  = (reconnectAttempts.get(sessionId) || 0) + 1;
+            const newAttempt = (reconnectAttempts.get(sessionId) || 0) + 1;
             reconnectAttempts.set(sessionId, newAttempt);
 
             activeBots.delete(sessionId);
@@ -352,6 +362,7 @@ async function activateBotSession(sessionId, userId, botName, server, _attempt =
         }
     });
 
+    // Connection Timeout Safety
     setTimeout(() => {
         const current = activeBots.get(sessionId);
         if (current?.gen === thisGen && connectingBots.has(sessionId)) {
@@ -377,7 +388,7 @@ async function autoReconnectBots() {
             'SELECT session_id, user_id, bot_name, server FROM bots WHERE status="active"'
         );
 
-        // ── Reload console logs from DB into memory on startup ──
+        // Reload console logs
         try {
             const [logUsers] = await db.query('SELECT DISTINCT user_id FROM console_logs');
             for (const u of logUsers) {

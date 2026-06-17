@@ -32,6 +32,7 @@
     "node-fetch": "^2.7.0",
     "node-webpmux": "^3.2.1",
     "nodemailer": "^6.9.7",
+    "ping": "^0.4.4",
     "pino": "^8.19.0",
     "pngjs": "^3.4.0",
     "qrcode": "^1.5.3",
