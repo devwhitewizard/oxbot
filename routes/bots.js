@@ -516,7 +516,7 @@ router.post('/api/activate-bot', getUser, async (req, res) => {
         if (sub.plan === 'full') {
             maxBots = 8; botDurationDays = 30; planLabel = 'Best Value';
         } else if (sub.plan === 'half') {
-            maxBots = 5; botDurationDays = 45; planLabel = 'Starter';
+            maxBots = 5; botDurationDays = 30; planLabel = 'Starter';
         }
     } else {
         const [userMeta] = await db.query('SELECT created_at FROM users WHERE id=?', [req.user.id]);
@@ -525,7 +525,7 @@ router.post('/api/activate-bot', getUser, async (req, res) => {
             const diffDays = Math.floor((Date.now() - regDate) / (1000 * 60 * 60 * 24));
 
             if (diffDays <= 30) {
-                maxBots = 1; botDurationDays = 3; planLabel = 'Free (' + (30 - diffDays) + ' days left)';
+                maxBots = 1; botDurationDays = 2; planLabel = 'Free (' + (30 - diffDays) + ' days left)';
             }
         }
     }

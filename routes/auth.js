@@ -7,6 +7,7 @@
  * - Handles bcrypt hashing for secure passwords, and generates unique hex tokens for email confirmations.
  * - Manages forgot password ticket generation via 6-digit email codes.
  * - Confirms referred registration balance payouts upon email confirmation.
+ * - CREDITS 20 COINS TO NEW USERS UPON EMAIL VERIFICATION FOR BOT DEPLOYMENT.
  * 
  * CONNECTIONS TO OTHER FILES:
  * - Mounted in app.js: `app.use(require('./routes/auth'))`.
@@ -104,6 +105,11 @@ router.get('/api/verify-email', async (req, res) => {
             [user.id]
         );
 
+        // ── Credit 20 Coins to the new user for bot deployment ────────────────
+        await db.query('UPDATE users SET balance = balance + 20 WHERE id=?', [user.id]);
+        addLog(user.id, `🎉 Welcome bonus! +20 coins credited for bot deployment.`);
+        console.log(chalk.green(`[BONUS] +20 coins → user ${user.id} (${user.name}) for verifying email.`));
+
         // ── Grant referral reward NOW that the referred user has verified ──────
         const [pendingRefs] = await db.query(
             'SELECT * FROM referrals WHERE referred_id=? AND reward_given=0',
@@ -116,7 +122,10 @@ router.get('/api/verify-email', async (req, res) => {
             console.log(chalk.green(`[REFERRAL] +10 coins → user ${ref.referrer_id} (referred ${user.id})`));
         }
 
-        res.json({ message: 'Email verified successfully! You can now log in.', success: true });
+        res.json({ 
+            message: 'Email verified successfully! You can now log in. 20 coins have been added to your account to deploy your first bot.', 
+            success: true 
+        });
     } catch (err) {
         console.error(chalk.red('Verify email error:'), err.message);
         res.status(500).json({ message: 'Server error.' });

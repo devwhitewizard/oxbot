@@ -1,15 +1,11 @@
 /**
  * @file oxbot/pairing.js
- * @description WhatsApp pairing engine orchestrating code and QR code authentication.
+ * @description WhatsApp pairing engine.
  * 
- * HOW IT WORKS:
- * - `startPairing`: Wipes old session folder structures, initializes new Auth State, generates a 6-digit pairing code, and waits for user authentication.
- * - `startQRPairing`: Sets up a Baileys connection, listens for connection state updates, and serves QR codes.
- * - `deliverSession`: Sends the long plain-text Baileys session string directly to the user's WhatsApp chat upon successful authentication.
- * 
- * CONNECTIONS TO OTHER FILES:
- * - Imports database.js, state.js, and utils.js.
- * - Imported by routes/bots.js: maps to `/api/pair`, `/api/pair-device`, and `/api/pair-qr` route handlers.
+ * LOGIC UPDATE:
+ * - Pairing ONLY saves to 'paired_sessions' and sends ID to DM.
+ * - It does NOT add to 'bots' table.
+ * - Bot only becomes active when the "Add Bot" API manually inserts into 'bots' table.
  */
 
 const fs   = require('fs');
@@ -66,16 +62,13 @@ async function startPairing(requestId, rawPhone, userId) {
     const sessionName   = 'oxbot_' + phone;
     const sessionFolder = path.join(SESSION_DIR, sessionName);
  
-    // Cancel and clean up any old pairing requests for this phone number
     cancelExistingPairings(phone, requestId);
  
-    // Kill any existing socket for this number
     if (activeSocks.has(phone)) {
         try { activeSocks.get(phone).end(); } catch {}
         activeSocks.delete(phone);
     }
  
-    // Kill any running bot for this session
     if (activeBots.has(sessionName)) {
         const existing = activeBots.get(sessionName);
         try { existing.sock?.end(); } catch {}
@@ -83,7 +76,6 @@ async function startPairing(requestId, rawPhone, userId) {
         global.botConnected = activeBots.size > 0;
     }
  
-    // Wipe session folder — prevents 440/515 ghost conflicts
     if (fs.existsSync(sessionFolder)) {
         try {
             fs.rmSync(sessionFolder, { recursive: true, force: true });
@@ -112,7 +104,6 @@ async function startPairing(requestId, rawPhone, userId) {
         let deliveryStarted      = false;
  
         try {
-            // Use bundled version — avoids incompatible fetched versions causing handshake failures
             const { version } = await fetchLatestBaileysVersion();
             const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
 
@@ -120,12 +111,12 @@ async function startPairing(requestId, rawPhone, userId) {
                 version,
                 logger: pino({ level: 'silent' }),
                 printQRInTerminal: false,
-                browser: Browsers.ubuntu('Chrome'),
+                // CHANGED: Using Windows Chrome instead of Ubuntu
+                browser: Browsers.windows('Chrome'),
                 auth: {
                     creds: state.creds,
                     keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
                 },
-                // CRITICAL SETTINGS FOR STABLE PAIRING:
                 markOnlineOnConnect:            false,
                 generateHighQualityLinkPreview: false,
                 syncFullHistory:                false,
@@ -142,16 +133,8 @@ async function startPairing(requestId, rawPhone, userId) {
             activeSocks.set(phone, sock);
             sock.ev.on('creds.update', saveCreds);
 
-            // ── REQUEST PAIRING CODE (OUTSIDE EVENT HANDLER) ─────────────────
-            // CRITICAL: requestPairingCode must be called right after socket creation,
-            // NOT inside connection.update. The socket never emits 'open' until AFTER
-            // the code is entered — waiting for 'open' creates a deadlock.
-            // We check !creds.registered so we don't request a code on reconnects
-            // after a successful link.
             if (!sock.authState.creds.registered) {
-                // Run in background — let the event handler register first
                 (async () => {
-                    // Wait 2s for the WebSocket to actually connect before requesting
                     await delay(2000);
                     const e = pairingMap.get(requestId);
                     if (!e || ['linked', 'error'].includes(e.status)) return;
@@ -199,8 +182,6 @@ async function startPairing(requestId, rawPhone, userId) {
             sock.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
  
-                // ── HANDLE SUCCESSFUL LINK ─────────────────────────────────────
-                // 'open' fires when the phone confirms the pairing code — this is success.
                 if (connection === 'open') {
                     if (deliveryStarted) return;
                     deliveryStarted = true;
@@ -224,17 +205,12 @@ async function startPairing(requestId, rawPhone, userId) {
                     await deliverSession(sock, phone, sessionFolder, sessionName, userId, curNow);
                 }
  
-                // ── HANDLE DISCONNECT ──────────────────────────────────────────
                 if (connection === 'close' && cur.status !== 'linked') {
                     const sc  = lastDisconnect?.error?.output?.statusCode;
                     const msg = lastDisconnect?.error?.message || 'unknown';
  
                     addLog(userId, `⚠️ Connection closed during pairing (code: ${sc ?? 'none'}, msg: ${msg})`);
 
-                    // ── 408 HANDLING ───────────────────────────────────────────
-                    // 408 comes in two flavours:
-                    //   A) Network error (ENOTFOUND / Connection was lost) → transient, retry
-                    //   B) QR refs attempts ended → WhatsApp window expired, wipe + regenerate
                     if (sc === 408 && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
                         const isNetworkError = msg.includes('ENOTFOUND') ||
                                                msg.includes('Connection was lost') ||
@@ -253,7 +229,6 @@ async function startPairing(requestId, rawPhone, userId) {
                         }
 
                         if (isNetworkError) {
-                            // Transient network drop — wait longer and retry WITHOUT wiping session
                             addLog(userId, `🔄 Network error, waiting 8s before reconnect...`);
                             activeSocks.delete(phone);
                             try { sock.ws?.close(); } catch {}
@@ -262,7 +237,6 @@ async function startPairing(requestId, rawPhone, userId) {
                             connect();
                             return;
                         } else {
-                            // WhatsApp pairing window expired — wipe session and get a fresh code
                             addLog(userId, `🔄 Pairing window expired, starting fresh connection...`);
                             activeSocks.delete(phone);
                             try { sock.ws?.close(); } catch {}
@@ -275,7 +249,6 @@ async function startPairing(requestId, rawPhone, userId) {
                         }
                     }
 
-                    // Temporary errors — retry
                     if ((sc === 515 || sc === 428 || sc === 503) && 
                         cur._reconnect && 
                         !['linked', 'error'].includes(cur.status)) {
@@ -288,7 +261,6 @@ async function startPairing(requestId, rawPhone, userId) {
                         return;
                     }
  
-                    // General disconnect — retry if not logged out
                     const fatal = (sc === DisconnectReason.loggedOut || sc === 403 || sc === 401);
                     if (!fatal && cur._reconnect && !['linked', 'error'].includes(cur.status)) {
                         addLog(userId, `🔄 Reconnecting in 5s... (code: ${sc})`);
@@ -300,7 +272,6 @@ async function startPairing(requestId, rawPhone, userId) {
                         return;
                     }
  
-                    // Fatal error
                     const errMsg = sc === 403
                         ? 'Too many linked devices — unlink one in WhatsApp first.'
                         : sc === 401
@@ -316,7 +287,6 @@ async function startPairing(requestId, rawPhone, userId) {
                 }
             });
  
-            // ── TIMEOUT: 8 minutes total for user to enter code ───────────────
             setTimeout(() => {
                 const e = pairingMap.get(requestId);
                 if (e && !['linked', 'error'].includes(e.status)) {
@@ -343,6 +313,7 @@ async function startPairing(requestId, rawPhone, userId) {
                 e.error  = err.message;
             }
             addLog(userId, `❌ Fatal pairing error: ${err.message}`);
+            activeBots.delete(sessionName);
             activeSocks.delete(phone);
         }
     }
@@ -398,7 +369,8 @@ async function startQRPairing(requestId, rawPhone, userId) {
                 version,
                 logger: pino({ level: 'silent' }),
                 printQRInTerminal: false,
-                browser: Browsers.ubuntu('Chrome'),
+                // CHANGED: Using Windows Chrome instead of Ubuntu
+                browser: Browsers.windows('Chrome'),
                 auth: {
                     creds: state.creds,
                     keys:  makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
@@ -488,7 +460,6 @@ async function startQRPairing(requestId, rawPhone, userId) {
                 }
             });
  
-            // 3 minute QR timeout
             setTimeout(() => {
                 const e = pairingMap.get(requestId);
                 if (e && !['linked', 'error'].includes(e.status)) {
@@ -527,7 +498,6 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
         // ── STEP 1: WAIT FOR HANDSHAKE & READ CREDS ───────────────────────────
         const credsPath = path.join(sessionFolder, 'creds.json');
  
-        // Wait for credentials to be fully registered/synced (up to 20 seconds)
         let credsContent = null;
         let registered = false;
         
@@ -536,7 +506,6 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
                 try {
                     const raw = fs.readFileSync(credsPath, 'utf8');
                     const parsed = JSON.parse(raw);
-                    // Check if registration handshake is complete and me is present
                     if (parsed.registered && parsed.me?.id) {
                         credsContent = raw;
                         registered = true;
@@ -567,7 +536,6 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
         const b64         = Buffer.from(credsContent).toString('base64');
         const fullSession = sessionName + '::::' + b64;
  
-        // Store on cur object so status polling can return it
         if (cur) {
             cur.fullSession = fullSession;
             cur.waName      = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
@@ -576,12 +544,14 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
  
         addLog(userId, `✅ Session string built (${fullSession.length} chars)`);
  
-        // ── STEP 3: SAVE TO DB FIRST (safety net — user can always get it here) ─
+        // ── STEP 3: SAVE TO DB (BACKUP ONLY) ─────────────────────────────────
         const waName   = sock.user?.name || sock.user?.verifiedName || sock.user?.notify || 'Unknown';
         const waNumber = sock.user?.id ? sock.user.id.split(':')[0].split('@')[0] : String(phone).replace(/\D/g,'');
  
         try {
-            // 1. Save to paired_sessions
+            // ONLY SAVE TO 'paired_sessions' TABLE.
+            // WE DO NOT TOUCH 'bots' TABLE. 
+            // The 'bots' table is ONLY touched when the user manually clicks "Add Bot".
             await db.query(
                 `INSERT INTO paired_sessions
                  (user_id, session_id, session_name, phone, whatsapp_name, whatsapp_number, session_data, status)
@@ -593,33 +563,21 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
                    status          = 'paired'`,
                 [userId, sessionName, sessionName, phone, waName, waNumber, fullSession]
             );
-
-            // 2. ⚡ CRITICAL FIX: Create/Update the bots table immediately
-            await db.query(
-                `INSERT INTO bots (user_id, session_id, bot_name, server, status, whatsapp_name)
-                 VALUES (?, ?, ?, ?, 'active', ?)
-                 ON DUPLICATE KEY UPDATE 
-                   status = 'active',
-                   whatsapp_name = VALUES(whatsapp_name)`,
-                [userId, sessionName, sessionName, 'OxBot-Server', waName]
-            );
  
-            addLog(userId, `💾 Session saved to database — Owner set to User ID: ${userId}`);
+            addLog(userId, `💾 Session saved to 'paired_sessions' (History only).`);
         } catch (dbErr) {
-            addLog(userId, `⚠️ DB save warning: ${dbErr.message} — continuing with WhatsApp delivery`);
+            addLog(userId, `⚠️ DB save warning: ${dbErr.message}`);
         }
  
-        // ── STEP 4: NORMALIZE TARGET JID ────────────────────────────────────────
+        // ── STEP 4: SEND SESSION ID TO USER'S WHATSAPP DM ─────────────────────
         let targetNum = String(phone).replace(/[^0-9]/g, '');
         if (targetNum.startsWith('0')) targetNum = '234' + targetNum.slice(1);
         const jid = targetNum + '@s.whatsapp.net';
  
         addLog(userId, `📤 Sending session ID to ${jid}...`);
  
-        // ── STEP 5: WAIT FOR SOCKET TO STABILIZE ────────────────────────────────
         await delay(4000);
  
-        // ── STEP 6: SEND AS PLAIN TEXT ──────────────────────────────────────────
         let sent = false;
         const MAX_ATTEMPTS = 5;
  
@@ -629,10 +587,10 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
  
                 await sock.sendMessage(jid, { text: fullSession });
                 await delay(1500);
-                const instructions = `⚠️ *Do not share this session ID with anyone.*\n\nCopy the raw Session ID message above and paste it in your OxBot dashboard to connect your bot.`;
+                const instructions = `⚠️ *Do not share this session ID with anyone.*\n\n1. Copy the ID above.\n2. Go to Dashboard > Add Bot.\n3. Paste it to activate your bot.`;
                 await sock.sendMessage(jid, { text: instructions });
  
-                addLog(userId, `✅ Session ID delivered successfully on attempt ${attempt}!`);
+                addLog(userId, `✅ Session ID delivered successfully!`);
                 sent = true;
                 break;
             } catch (sendErr) {
@@ -646,15 +604,22 @@ async function deliverSession(sock, phone, sessionFolder, sessionName, userId, c
         }
  
         if (!sent) {
-            addLog(userId, `⚠️ WhatsApp delivery failed after ${MAX_ATTEMPTS} attempts.`);
-            addLog(userId, `💡 Your session IS saved. Go to dashboard → Pair Device → you can copy it there.`);
+            addLog(userId, `⚠️ WhatsApp delivery failed.`);
         } else {
-            addLog(userId, `🎉 All done! Session ID sent to your WhatsApp.`);
+            addLog(userId, `🎉 Pairing complete. Waiting for manual activation.`);
         }
  
-        await delay(4000);
+        // ── STEP 5: DISCONNECT IMMEDIATELY ────────────────────────────────────
+        // Since we did not add to 'bots' table, bot.js will not pick this up.
+        // We must disconnect to prevent the pairing socket from staying open.
+        addLog(userId, `🔌 Disconnecting pairing socket...`);
+        await delay(2000);
         try { sock.ws?.close(); } catch {}
         try { sock.end(); } catch {}
+        
+        // Remove from memory just in case
+        activeBots.delete(sessionName);
+        activeSocks.delete(phone);
  
     } catch (err) {
         addLog(userId, `❌ deliverSession error: ${err.message}`);

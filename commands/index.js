@@ -1,7 +1,3 @@
-/**
- * commands/index.js — OxBot Command Handler
- * Fixed: old message filtering, DM command support, public mode, menu sticker
- */
 const fs   = require('fs');
 const path = require('path');
 
@@ -9,7 +5,7 @@ const commands = new Map();
 const cmdDir   = __dirname;
 
 // ═══════════════════════════════════════════════════
-// MENU IMAGE CACHE
+// DEFAULT MENU IMAGE CACHE (Global Fallback)
 // ═══════════════════════════════════════════════════
 global.menuImage = null;
 
@@ -50,7 +46,7 @@ if (imgPath) {
 }
 
 // ═══════════════════════════════════════════════════
-// MENU STICKER CACHE
+// DEFAULT MENU STICKER CACHE (Global Fallback)
 // ═══════════════════════════════════════════════════
 global.menuSticker = null;
 
@@ -77,9 +73,7 @@ const fallbackStickers = [
     path.join(process.cwd(), 'assets', 'menu_sticker.webp'),
     path.join(process.cwd(), 'assets', 'bot_sticker.webp'),
     path.join(process.cwd(), 'public',  'menu_sticker.webp'),
-    path.join(process.cwd(), 'public',  'bot_sticker.webp'),
     path.join(__dirname, '..', 'assets', 'menu_sticker.webp'),
-    path.join(__dirname, '..', 'assets', 'bot_sticker.webp'),
 ];
 
 const stickerPath = scanForSticker(process.cwd(), 0) || fallbackStickers.find(p => fs.existsSync(p));
@@ -91,46 +85,56 @@ if (stickerPath) {
 }
 
 // ═══════════════════════════════════════════════════
-// ANTI-SPAM (Duplicate Message Filter)
+// ★ PER-SESSION STATE STORE ★
 // ═══════════════════════════════════════════════════
-const seen = new Set();
-setInterval(() => { if (seen.size > 1000) seen.clear(); }, 5 * 60 * 1000);
+const sessionStates = new Map();
 
-function isDuplicate(id) {
-    if (!id || seen.has(id)) return !!id;
-    seen.add(id);
-    return false;
-}
-
-// ═══════════════════════════════════════════════════
-// ★ CRITICAL: OLD MESSAGE FILTER ★
-// Prevents processing messages from before bot restart
-// ═══════════════════════════════════════════════════
-const MESSAGE_AGE_LIMIT = 15000; // 15 seconds — ignore older messages
-
-function isOldMessage(msg) {
-    const ts = msg.messageTimestamp;
-    if (!ts) return false; // If no timestamp, allow it
-    
-    const msgTimeMs = ts * 1000;
-    const ageMs = Date.now() - msgTimeMs;
-    
-    if (ageMs > MESSAGE_AGE_LIMIT) {
-        console.log(`  ⏭️ Skipping old message (${Math.round(ageMs / 1000)}s ago)`);
-        return true;
+function getSessionState(sessionId) {
+    if (!sessionId) return null;
+    if (!sessionStates.has(sessionId)) {
+        sessionStates.set(sessionId, {
+            seen:      new Set(),
+            startTime: Date.now(),
+        });
     }
+    return sessionStates.get(sessionId);
+}
+
+function clearSessionState(sessionId) {
+    if (sessionId) sessionStates.delete(sessionId);
+}
+
+// Periodic cleanup — clear seen sets that are too large (memory safety)
+setInterval(() => {
+    for (const [sid, state] of sessionStates) {
+        if (state.seen.size > 2000) {
+            state.seen.clear();
+        }
+    }
+}, 5 * 60 * 1000);
+
+// ─────────────────────────────────────────────────
+// Per-session duplicate check
+// ─────────────────────────────────────────────────
+function isDuplicate(sessionId, msgId) {
+    if (!sessionId || !msgId) return false;
+    const state = getSessionState(sessionId);
+    if (!state) return false;
+    if (state.seen.has(msgId)) return true;
+    state.seen.add(msgId);
     return false;
 }
 
-// Track bot start time to filter messages from before startup
-const botStartTime = Date.now();
-
-function isBeforeStartup(msg) {
+// ─────────────────────────────────────────────────
+// Per-session pre-startup filter
+// ─────────────────────────────────────────────────
+function isBeforeStartup(sessionId, msg) {
     const ts = msg.messageTimestamp;
-    if (!ts) return false;
+    if (!ts || !sessionId) return false;
+    const state = getSessionState(sessionId);
+    if (!state) return false;
     const msgTimeMs = ts * 1000;
-    if (msgTimeMs < botStartTime - 5000) { // 5s grace period
-        console.log(`  ⏭️ Skipping pre-startup message`);
+    if (msgTimeMs < state.startTime - 5000) {
         return true;
     }
     return false;
@@ -141,8 +145,8 @@ function isBeforeStartup(msg) {
 // ═══════════════════════════════════════════════════
 const SKIP = new Set([
     'index.js','handler.js','igs.js','imagine.js','img-blur.js',
-    'instagram.js','pair.js','simage.js','stickertelegram.js',
-    'textmaker.js',
+    'pair.js','simage.js','stickertelegram.js',
+    'textmaker.js', '_helper.js',
 ]);
 
 for (const file of fs.readdirSync(cmdDir).filter(f => f.endsWith('.js') && !SKIP.has(f))) {
@@ -153,7 +157,13 @@ for (const file of fs.readdirSync(cmdDir).filter(f => f.endsWith('.js') && !SKIP
         const exec    = typeof mod === 'function' ? mod : mod.execute;
         if (!exec) { console.warn('  ⚠️ Skipped (no execute): ' + name); continue; }
 
-        const entry = { name: cmdName, execute: exec, desc: mod.desc || '', category: mod.category || 'general', aliases: mod.aliases || [] };
+        const entry = {
+            name:     cmdName,
+            execute:  exec,
+            desc:     mod.desc     || '',
+            category: mod.category || 'general',
+            aliases:  mod.aliases  || [],
+        };
         commands.set(cmdName, entry);
         console.log('  ✅ Loaded: .' + cmdName);
 
@@ -171,7 +181,7 @@ for (const file of fs.readdirSync(cmdDir).filter(f => f.endsWith('.js') && !SKIP
 // ═══════════════════════════════════════════════════
 function tryLoad(modPath, exportName) {
     try {
-        const m = require(modPath);
+        const m  = require(modPath);
         const fn = m[exportName] || null;
         if (fn) console.log('  ✅ Feature loaded: ' + exportName);
         return fn;
@@ -188,12 +198,20 @@ const featAntideleteStore  = tryLoad('./antidelete',  'storeMessage');
 const antideleteRevocation = tryLoad('./antidelete',  'handleMessageRevocation');
 const featAntiban          = tryLoad('./antiban',     'handleAntiban');
 const featAutoReply        = tryLoad('./autoreply',   'handleAutoReply');
+const featAntilink         = tryLoad('./antilink',    'handleAntilink'); // ★ ADDED ANTILINK
 
 // ═══════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════
 function extractText(m) {
     if (!m) return '';
+    
+    // ★★★ THE DM FIX: UNWRAP EPHEMERAL MESSAGES ★★★
+    if (m.ephemeralMessage) m = m.ephemeralMessage.message;
+    if (m.viewOnceMessageV2) m = m.viewOnceMessageV2.message;
+    if (m.viewOnceMessage) m = m.viewOnceMessage.message;
+    if (m.documentWithCaptionMessage) m = m.documentWithCaptionMessage.message;
+
     return m.conversation
         || m.extendedTextMessage?.text
         || m.imageMessage?.caption
@@ -205,168 +223,240 @@ function cleanNum(jid) {
     return jid ? jid.split(':')[0].split('@')[0] : '';
 }
 
-async function getOwnerNum(db, sessionId) {
-    try {
-        const [rows] = await db.query(
-            'SELECT u.phone FROM users u JOIN bots b ON b.user_id=u.id WHERE b.session_id=? LIMIT 1',
-            [sessionId]
-        );
-        return rows.length ? String(rows[0].phone).replace(/\D/g, '') : null;
-    } catch { return null; }
+// ═══════════════════════════════════════════════════
+// ★★★ SOCKET-BASED SESSION & OWNER RESOLUTION ★★★
+// ═══════════════════════════════════════════════════
+
+function getRealSessionId(sock) {
+    if (!sock) return null;
+    if (sock._ownerPhone) return sock._ownerPhone;
+    if (sock.user?.id) return cleanNum(sock.user.id);
+    return null;
 }
 
-async function isOwner(db, sessionId, senderId, sock, chatId) {
-    const clean = cleanNum(senderId);
-    if (sock && sock.user && clean === cleanNum(sock.user.id)) return true;
+function isOwnerSync(sock, senderId) {
+    if (!sock || !senderId) return false;
+    const ownerPhone = getRealSessionId(sock);
+    if (!ownerPhone) return false;
 
-    const own = await getOwnerNum(db, sessionId);
-    if (!own) return false;
+    const senderClean = cleanNum(senderId).replace(/\D/g, '');
+    const ownerClean  = ownerPhone.replace(/\D/g, '');
+    
+    const senderNorm = senderClean.startsWith('0') ? senderClean.slice(1) : senderClean;
+    const ownerNorm  = ownerClean.startsWith('0') ? ownerClean.slice(1) : ownerClean;
 
-    const p1 = clean.replace(/\D/g, '');
-    const p2 = own.replace(/\D/g, '');
-    const clean1 = p1.startsWith('0') ? p1.slice(1) : p1;
-    const clean2 = p2.startsWith('0') ? p2.slice(1) : p2;
-    if (clean1 === clean2 || clean1.endsWith(clean2) || clean2.endsWith(clean1)) return true;
+    if (!senderNorm || !ownerNorm) return false;
+    if (senderNorm === ownerNorm) return true;
+    if (senderNorm.endsWith(ownerNorm)) return true;
+    if (ownerNorm.endsWith(senderNorm)) return true;
 
-    // LID fallback for groups
-    if (sock && chatId?.endsWith('@g.us') && senderId.includes('@lid')) {
+    return false;
+}
+
+async function isOwnerAsync(sock, senderId, chatId) {
+    if (isOwnerSync(sock, senderId)) return true;
+
+    if (chatId?.endsWith('@g.us') && senderId?.includes('@lid')) {
+        const ownerPhone = getRealSessionId(sock);
+        if (!ownerPhone) return false;
+        const ownerFinal = ownerPhone.replace(/\D/g, '');
+        const ownerNorm = ownerFinal.startsWith('0') ? ownerFinal.slice(1) : ownerFinal;
+
         try {
             const meta = await sock.groupMetadata(chatId);
             return (meta.participants || []).some(p => {
                 const pClean = cleanNum(p.id).replace(/\D/g, '');
-                const pClean1 = pClean.startsWith('0') ? pClean.slice(1) : pClean;
-                return pClean1 === clean2 || pClean1.endsWith(clean2) || clean2.endsWith(pClean1);
+                const pNorm  = pClean.startsWith('0') ? pClean.slice(1) : pClean;
+                if (!pNorm || !ownerNorm) return false;
+                return pNorm === ownerNorm || pNorm.endsWith(ownerNorm) || ownerNorm.endsWith(pNorm);
             });
         } catch {}
     }
     return false;
 }
 
-// Per-session mode cache
+// ═══════════════════════════════════════════════════
+// ★★★ PER-SESSION MODE (socket-keyed) ★★★
+// ═══════════════════════════════════════════════════
 const modeCache = new Map();
 const MODE_TTL  = 30_000;
 
-async function getMode(db, sessionId) {
+async function getModeForSocket(sock) {
+    const sessionId = getRealSessionId(sock);
+    if (!sessionId) return 'public';
+
     const c = modeCache.get(sessionId);
     if (c && Date.now() - c.ts < MODE_TTL) return c.v;
+
     try {
-        const [rows] = await db.query('SELECT bot_mode FROM bot_settings WHERE session_id=? LIMIT 1', [sessionId]);
-        // Default to 'public' so commands work for everyone on a new bot.
-        // Only return 'private' if it's explicitly stored in the DB.
-        const v = rows[0]?.bot_mode || 'public';
-        modeCache.set(sessionId, { v, ts: Date.now() });
-        return v;
-    } catch { return 'public'; }
+        const db = sock?._botData?.db;
+        if (db) {
+            const [rows] = await db.query(
+                'SELECT bot_mode FROM bot_settings WHERE session_id = ? LIMIT 1',
+                [sessionId]
+            );
+            const v = rows[0]?.bot_mode || 'public';
+            modeCache.set(sessionId, { v, ts: Date.now() });
+            return v;
+        }
+    } catch {}
+
+    return 'public';
 }
 
-function clearMode(sid) { modeCache.delete(sid); }
+function setModeForSocket(sock, mode) {
+    const sessionId = getRealSessionId(sock);
+    if (sessionId) modeCache.set(sessionId, { v: mode, ts: Date.now() });
+}
+
+function clearMode(sid) { 
+    if (sid) modeCache.delete(sid); 
+}
 
 // ═══════════════════════════════════════════════════
-// ★ MAIN HANDLER (FIXED) ★
+// ★★★ PER-SESSION MENU IMAGE LOADER ★★★
+// 1. Checks Memory Cache (instant)
+// 2. Checks DB for Pro Custom Image (using exact DB ID)
+// 3. Falls back to Default Global Image
+// ═══════════════════════════════════════════════════
+async function getSessionMenuImage(sock) {
+    // ★ FIX: Handle both direct call and method call (.call context)
+    const s = sock || this;
+    if (!s) return null;
+
+    // 1. Check memory cache first (instant)
+    if (s._customMenuImage) return { type: 'image', data: s._customMenuImage };
+
+    const db = s?._botData?.db;
+    const sessionId = s?._botData?.sessionId;
+    
+    // 2. Check database for custom menu image
+    if (db && sessionId) {
+        try {
+            let dbSessionId = null;
+            const [botRows] = await db.query('SELECT session_id FROM bots WHERE session_id = ? LIMIT 1', [sessionId]);
+            if (botRows.length) {
+                dbSessionId = botRows[0].session_id;
+            } else if (!String(sessionId).startsWith('oxbot_')) {
+                const [botRows2] = await db.query('SELECT session_id FROM bots WHERE session_id = ? LIMIT 1', [`oxbot_${sessionId}`]);
+                if (botRows2.length) dbSessionId = botRows2[0].session_id;
+            }
+
+            if (dbSessionId) {
+                const [settings] = await db.query('SELECT menu_image FROM bot_settings WHERE session_id = ?', [dbSessionId]);
+                
+                if (settings.length > 0 && settings[0].menu_image === 'custom') {
+                    const [rows] = await db.query('SELECT image_data FROM bot_images WHERE session_id = ?', [dbSessionId]);
+                    if (rows.length > 0 && rows[0].image_data) {
+                        s._customMenuImage = rows[0].image_data; // Cache it
+                        return { type: 'image', data: rows[0].image_data };
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('[Menu Image DB Error]:', err.message); 
+        }
+    }
+
+    // 3. Fallback to default global assets
+    if (global.menuImage) return { type: 'image', data: global.menuImage };
+    if (global.menuSticker) return { type: 'sticker', data: global.menuSticker };
+    return null;
+}
+
+// ═══════════════════════════════════════════════════
+// ★ MAIN HANDLER — FULLY SOCKET-ISOLATED ★
 // ═══════════════════════════════════════════════════
 async function handleIncomingMessage(sock, msg, botData) {
     try {
         const m = msg?.message;
         if (!m) return;
 
-        const chatId    = msg.key.remoteJid;
-        const db        = botData?.db;
-        const sessionId = botData?.sessionId;
+        const chatId = msg.key.remoteJid;
 
         // ═══════════════════════════════════════════
-        // STATUS BROADCAST HANDLING
+        // ★ STEP 1: Get REAL session directly from socket ★
         // ═══════════════════════════════════════════
+        const realSessionId = getRealSessionId(sock);
+        if (!realSessionId) return;
+
+        // ═══════════════════════════════════════════
+        // ★ STEP 2: Store safe botData & attach Menu Loader ★
+        // ═══════════════════════════════════════════
+        const safeBotData = { ...(botData || {}), sessionId: realSessionId };
+        sock._botData = safeBotData;
+        sock.getSessionMenuImage = getSessionMenuImage; // Attach helper
+
+        // ── STATUS BROADCAST ───────────────────────
         if (chatId === 'status@broadcast') {
-            if (featAutostatus) featAutostatus(sock, msg, botData).catch(() => {});
-            if (featAutoreact)  featAutoreact(sock, msg, botData).catch(() => {});
+            if (featAutostatus) featAutostatus(sock, msg, safeBotData).catch(() => {});
+            if (featAutoreact)  featAutoreact(sock, msg, safeBotData).catch(() => {});
             return;
         }
 
-        if (isBeforeStartup(msg)) return;
-
-        // ═══════════════════════════════════════════
-        // DUPLICATE CHECK
-        // ═══════════════════════════════════════════
-        if (isDuplicate(msg.key.id)) return;
-
-        // ═══════════════════════════════════════════
-        // EXTRACT TEXT & CHECK IF COMMAND
-        // ═══════════════════════════════════════════
-        const text = extractText(m).trim();
-        const isCommand = text.length > 0 && (text[0] === '.' || text[0] === '!');
-
-        // ═══════════════════════════════════════════
-        // BACKGROUND FEATURES (always run)
-        // ═══════════════════════════════════════════
-        if (featAntideleteStore) featAntideleteStore(sock, msg, botData).catch(() => {});
-        if (featFakeAudio && m.audioMessage) featFakeAudio(sock, chatId, msg, botData).catch(() => {});
+        // ── FILTERS (per session) ──────────────────
+        if (isBeforeStartup(realSessionId, msg)) return;
+        if (isDuplicate(realSessionId, msg.key.id)) return;
         
-        // ═══════════════════════════════════════════
-        // ★ PM BLOCKER FIX (FIX #2) ★
-        // DO NOT block if it's a command — let commands through!
-        // ═══════════════════════════════════════════
+        // ── EXTRACT TEXT ───────────────────────────
+        const text      = extractText(m).trim();
+        
+        // ★ Dynamic Prefix Check (Checks socket cache, falls back to . and !)
+        const activePrefix = sock._customPrefix || '. | !';
+        const validPrefixes = activePrefix.split('|').map(p => p.trim());
+        const isCommand = text.length > 0 && validPrefixes.includes(text[0]);
+
+        // ── BACKGROUND FEATURES ────────────────────
+        if (featAntideleteStore) featAntideleteStore(sock, msg, safeBotData).catch(() => {});
+        if (featFakeAudio && m.audioMessage) featFakeAudio(sock, chatId, msg, safeBotData).catch(() => {});
+
         if (featPmBlocker && !isCommand) {
-            const blocked = await featPmBlocker(sock, msg, botData).catch(() => false);
+            const blocked = await featPmBlocker(sock, msg, safeBotData).catch(() => false);
             if (blocked) return;
         }
 
-        // ═══════════════════════════════════════════
-        // ANTIBAN & AUTOREPLY
-        // ═══════════════════════════════════════════
-        if (featAntiban)   featAntiban(sock, msg, botData).catch(() => {});
-        if (featAutoReply && !isCommand) featAutoReply(sock, msg, botData).catch(() => {});
+        if (featAntiban)                    featAntiban(sock, msg, safeBotData).catch(() => {});
+        if (featAntilink)                   featAntilink(sock, msg, safeBotData).catch(() => {}); // ★ ADDED ANTILINK WATCHER
+        if (featAutoReply && !isCommand)    featAutoReply(sock, msg, safeBotData).catch(() => {});
+        if (featAutotyping)                 featAutotyping(sock, chatId, msg, safeBotData).catch(() => {});
+        if (featAutoread)                   featAutoread(sock, msg, safeBotData).catch(() => {});
 
-        // ═══════════════════════════════════════════
-        // TYPING / AUTOREAD (for any message)
-        // ═══════════════════════════════════════════
-        if (featAutotyping) featAutotyping(sock, chatId, msg, botData).catch(() => {});
-        if (featAutoread)   featAutoread(sock, msg, botData).catch(() => {});
-
-        // ═══════════════════════════════════════════
-        // IF NOT A COMMAND, STOP HERE
-        // ═══════════════════════════════════════════
+        // ── NOT A COMMAND — STOP ───────────────────
         if (!isCommand) return;
 
-        // ═══════════════════════════════════════════
-        // PARSE COMMAND
-        // ═══════════════════════════════════════════
-        const body   = text.slice(1).trim();
+        // ── PARSE COMMAND ──────────────────────────
+        const body = text.slice(1).trim();
         if (!body) return;
 
-        const parts      = body.split(/\s+/);
-        const cmd        = parts[0].toLowerCase();
-        const args       = parts.slice(1);
-        const sender     = msg.key.participant || msg.key.remoteJid;
-        const botNum     = cleanNum(sock.user?.id);
-        const senderNum  = cleanNum(sender);
-        const isDM       = !chatId.endsWith('@g.us');
-        const isGroup    = chatId.endsWith('@g.us');
+        const parts     = body.split(/\s+/);
+        const cmd       = parts[0].toLowerCase();
+        const args      = parts.slice(1);
+        const sender    = msg.key.participant || msg.key.remoteJid;
+        const senderNum = cleanNum(sender);
 
-        // Skip own messages (except when sent from own client)
-        if (senderNum === botNum && !msg.key.fromMe) return;
+        console.log(`[${realSessionId}] .${cmd} ← ${senderNum} [${chatId?.endsWith('@g.us') ? 'GROUP' : 'DM'}]`);
 
-        console.log(`[${sessionId?.slice(-8)}] .${cmd} ← ${senderNum} [${isDM ? 'DM' : 'GROUP'}]`);
-
-        // ═══════════════════════════════════════════
-        // .mode BUILT-IN COMMAND
-        // ═══════════════════════════════════════════
+        // ── .mode BUILT-IN ─────────────────────────
         if (cmd === 'mode') {
-            const own = await isOwner(db, sessionId, sender, sock, chatId);
+            const own = await isOwnerAsync(sock, sender, chatId);
             if (!msg.key.fromMe && !own) {
                 return await sock.sendMessage(chatId, { text: '🔒 Only owner can change mode!' }, { quoted: msg });
             }
             const action = args[0]?.toLowerCase();
-            if (!['public','private'].includes(action)) {
-                const cur = await getMode(db, sessionId);
+            if (!['public', 'private'].includes(action)) {
+                const cur = await getModeForSocket(sock);
                 return await sock.sendMessage(chatId, {
                     text: `⚙️ *Bot Mode*\n\nCurrent: *${cur.toUpperCase()}*\n\nUsage:\n• \`.mode public\` — Everyone can use\n• \`.mode private\` — Only owner can use`
                 }, { quoted: msg });
             }
-            await db.query(
-                `INSERT INTO bot_settings (session_id, bot_mode) VALUES (?,?) ON DUPLICATE KEY UPDATE bot_mode=?`,
-                [sessionId, action, action]
-            ).catch(() => {});
-            clearMode(sessionId);
+            const db = safeBotData.db;
+            if (db) {
+                await db.query(
+                    `INSERT INTO bot_settings (session_id, bot_mode) VALUES (?,?) ON DUPLICATE KEY UPDATE bot_mode=?`,
+                    [realSessionId, action, action]
+                ).catch(() => {});
+            }
+            setModeForSocket(sock, action);
             return await sock.sendMessage(chatId, {
                 text: action === 'public'
                     ? '🌐 *PUBLIC MODE*\n\n✅ Everyone can now use bot commands'
@@ -374,48 +464,36 @@ async function handleIncomingMessage(sock, msg, botData) {
             }, { quoted: msg });
         }
 
-        // ═══════════════════════════════════════════
-        // ★ MODE GATE (FIX #3) ★
-        // Works for both DM and Group
-        // ═══════════════════════════════════════════
-        const mode = await getMode(db, sessionId);
-        
+        // ── MODE GATE (socket-based) ───────────────
+        const mode = await getModeForSocket(sock);
         if (mode === 'private' && !msg.key.fromMe) {
-            const own = await isOwner(db, sessionId, sender, sock, chatId);
-            if (!own) {
-                // Silent ignore — don't reveal bot is active
-                return;
-            }
+            const own = await isOwnerAsync(sock, sender, chatId);
+            if (!own) return;
         }
 
-        // ═══════════════════════════════════════════
-        // FIND COMMAND
-        // ═══════════════════════════════════════════
+        // ── FIND COMMAND ───────────────────────────
         const command = commands.get(cmd);
         if (!command) return;
 
-        // ═══════════════════════════════════════════
-        // OWNER-ONLY GATE
-        // ═══════════════════════════════════════════
+        // ── OWNER-ONLY GATE (socket-based) ─────────
         if (command.category === 'owner' && !msg.key.fromMe) {
-            const own = await isOwner(db, sessionId, sender, sock, chatId);
+            const own = await isOwnerAsync(sock, sender, chatId);
             if (!own) {
-                return await sock.sendMessage(chatId, { 
-                    text: '🔒 *Owner Only!*\nThis command is restricted to the bot owner.' 
+                return await sock.sendMessage(chatId, {
+                    text: '🔒 *Owner Only!*\nThis command is restricted to the bot owner.'
                 }, { quoted: msg });
             }
         }
 
-        // ═══════════════════════════════════════════
-        // EXECUTE COMMAND
-        // ═══════════════════════════════════════════
-        const result = await command.execute(sock, msg, botData, args);
+        // ── EXECUTE ────────────────────────────────
+        const result = await command.execute(sock, msg, safeBotData, args);
         if (typeof result === 'string' && result) {
             await sock.sendMessage(chatId, { text: result }, { quoted: msg });
         }
 
     } catch (err) {
-        console.error('[handler] Error:', err.message);
+        const sid = getRealSessionId(sock) || '???';
+        console.error(`[${sid}] Handler error:`, err.message);
     }
 }
 
@@ -423,7 +501,8 @@ module.exports = {
     commands,
     handleIncomingMessage,
     handleGroupParticipantUpdate: null,
-    handleStatus: null,
-    antideleteRevocation,
+    handleStatus:                 null,
+    antideleteRevocation,  
     clearMode,
-};
+    clearSessionState, 
+}; 

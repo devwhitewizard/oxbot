@@ -29,15 +29,32 @@ async function toBuffer(stream) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DB helpers (100% Isolated per user using session_id)
+// ★ ROBUST SESSION RESOLVER ★
+// ═══════════════════════════════════════════════════════════════
+async function getRealDbSessionId(db, sessionId) {
+    if (!db || !sessionId) return null;
+    try {
+        const [r1] = await db.query('SELECT session_id FROM bots WHERE session_id=? LIMIT 1', [sessionId]);
+        if (r1.length) return r1[0].session_id;
+        
+        if (!String(sessionId).startsWith('oxbot_')) {
+            const [r2] = await db.query('SELECT session_id FROM bots WHERE session_id=? LIMIT 1', [`oxbot_${sessionId}`]);
+            if (r2.length) return r2[0].session_id;
+        }
+        return null;
+    } catch { return null; }
+}
+
+function cleanNum(jid) { return jid?.split(':')[0]?.split('@')[0] || ''; }
+
+// ═══════════════════════════════════════════════════════════════
+// DB helpers (Now 100% Isolated per user using REAL session_id)
 // ═══════════════════════════════════════════════════════════════
 async function ensureColumn(db) {
     try {
-        // Modern MySQL supports "IF NOT EXISTS" for columns
         await db.query(`ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS antidelete TINYINT(1) DEFAULT 0`);
     } catch (err) {
-        // Fallback for older MySQL versions
-        if (err.errno === 1060) return; // 1060 = column already exists
+        if (err.errno === 1060) return;
         try {
             await db.query(`ALTER TABLE bot_settings ADD COLUMN antidelete TINYINT(1) DEFAULT 0`);
         } catch (e) {
@@ -48,9 +65,10 @@ async function ensureColumn(db) {
 
 async function getState(db, sessionId) {
     try {
-        if (!db || !sessionId) return false;
+        const actualId = await getRealDbSessionId(db, sessionId);
+        if (!actualId) return false;
         await ensureColumn(db);
-        const [rows] = await db.query('SELECT antidelete FROM bot_settings WHERE session_id = ?', [sessionId]);
+        const [rows] = await db.query('SELECT antidelete FROM bot_settings WHERE session_id = ?', [actualId]);
         return rows.length ? rows[0].antidelete === 1 : false;
     } catch (err) {
         console.error('[antidelete] getState error:', err.message);
@@ -60,35 +78,58 @@ async function getState(db, sessionId) {
 
 async function setState(db, sessionId, val) {
     try {
-        if (!db || !sessionId) return;
+        const actualId = await getRealDbSessionId(db, sessionId);
+        if (!actualId) return;
         await ensureColumn(db);
         await db.query(
             'INSERT INTO bot_settings (session_id, antidelete) VALUES (?, ?) ON DUPLICATE KEY UPDATE antidelete = ?', 
-            [sessionId, val ? 1 : 0, val ? 1 : 0]
+            [actualId, val ? 1 : 0, val ? 1 : 0]
         );
     } catch (err) {
         console.error('[antidelete] setState error:', err.message);
     }
 }
 
-async function getOwnerJid(db, sessionId) {
+// ★ FIXED: Fallback to socket ID if DB phone is missing ★
+async function getOwnerJid(db, sessionId, sock) {
     try {
-        if (!db || !sessionId) return null;
-        const [rows] = await db.query('SELECT u.phone FROM users u JOIN bots b ON b.user_id = u.id WHERE b.session_id = ?', [sessionId]);
-        if (!rows.length || !rows[0].phone) return null;
-        return String(rows[0].phone).replace(/\D/g, '') + '@s.whatsapp.net';
-    } catch { return null; }
+        const actualId = await getRealDbSessionId(db, sessionId);
+        
+        // 1. Try to get phone from DB
+        if (actualId) {
+            const [rows] = await db.query('SELECT u.phone FROM users u JOIN bots b ON b.user_id = u.id WHERE b.session_id = ?', [actualId]);
+            if (rows.length && rows[0].phone) {
+                let ownerNum = String(rows[0].phone).replace(/\D/g, '');
+                if (ownerNum.startsWith('0')) ownerNum = ownerNum.slice(1); 
+                return ownerNum + '@s.whatsapp.net';
+            }
+        }
+        
+        // 2. Fallback to the Bot's own WhatsApp ID (The person who paired the bot IS the owner)
+        if (sock?.user?.id) {
+            console.log('[ANTIDELETE] Using socket ID as owner fallback');
+            return sock.user.id;
+        }
+        
+        return null;
+    } catch { 
+        if (sock?.user?.id) return sock.user.id;
+        return null; 
+    }
 }
-
-function cleanNum(jid) { return jid?.split(':')[0]?.split('@')[0] || ''; }
 
 async function isOwner(db, sessionId, senderId) {
     try {
-        const [rows] = await db.query('SELECT u.phone FROM users u JOIN bots b ON b.user_id = u.id WHERE b.session_id = ?', [sessionId]);
-        if (!rows.length || !rows[0].phone) return false;
-        const ownerNum = String(rows[0].phone).replace(/\D/g, '');
-        return cleanNum(senderId) === ownerNum;
-    } catch { return false; }
+        const actualId = await getRealDbSessionId(db, sessionId);
+        if (!actualId) return false;
+        const [rows] = await db.query('SELECT u.phone FROM users u JOIN bots b ON b.user_id = u.id WHERE b.session_id = ?', [actualId]);
+        if (!rows.length || !rows[0].phone) return true; // ★ Allow toggle if phone is missing
+        let ownerNum = String(rows[0].phone).replace(/\D/g, '');
+        let senderNum = cleanNum(senderId);
+        if (ownerNum.startsWith('0')) ownerNum = ownerNum.slice(1);
+        if (senderNum.startsWith('0')) senderNum = senderNum.slice(1);
+        return senderNum === ownerNum;
+    } catch { return true; } // ★ Allow toggle on DB error
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -123,7 +164,6 @@ async function execute(sock, msg, botData, args) {
 // ═══════════════════════════════════════════════════════════════
 async function storeMessage(sock, message, botData) {
     try {
-        // Checks DB specifically for THIS session_id (User A vs User B)
         if (!await getState(botData?.db, botData?.sessionId)) return;
         if (!message.key?.id || message.key.fromMe) return;
 
@@ -184,7 +224,7 @@ async function storeMessage(sock, message, botData) {
         }, 10 * 60 * 1000);
 
         if (isViewOnce && mediaPath) {
-            const ownerJid = await getOwnerJid(botData?.db, botData?.sessionId);
+            const ownerJid = await getOwnerJid(botData?.db, botData?.sessionId, sock);
             if (ownerJid) {
                 try {
                     const cap = `👁️ *View-Once ${mediaType}*\nFrom: @${cleanNum(sender)}`;
@@ -206,7 +246,6 @@ async function storeMessage(sock, message, botData) {
 // ═══════════════════════════════════════════════════════════════
 async function handleMessageRevocation(sock, message, botData) {
     try {
-        // Checks DB specifically for THIS session_id
         if (!await getState(botData?.db, botData?.sessionId)) return;
 
         const protoMsg = message.message?.protocolMessage;
@@ -216,13 +255,21 @@ async function handleMessageRevocation(sock, message, botData) {
         if (!deletedMsgId) return;
 
         const deletedBy = message.key.participant || message.key.remoteJid;
-        const ownerJid = await getOwnerJid(botData?.db, botData?.sessionId);
-        if (!ownerJid) return;
+        
+        // ★ FIXED: Pass sock to getOwnerJid so it can fallback to socket ID! ★
+        const ownerJid = await getOwnerJid(botData?.db, botData?.sessionId, sock);
+        if (!ownerJid) {
+            console.error('[ANTIDELETE] CRITICAL ERROR: Could not find owner JID to send recovery to!');
+            return;
+        }
 
         if (cleanNum(deletedBy) === cleanNum(ownerJid)) return;
 
         const original = messageStore.get(deletedMsgId);
-        if (!original) return;
+        if (!original) {
+            console.log('[ANTIDELETE] Message was deleted, but it wasn\'t saved in memory (maybe media was too large or it arrived while bot was starting).');
+            return;
+        }
 
         const senderName = cleanNum(original.sender);
         let groupName = '';

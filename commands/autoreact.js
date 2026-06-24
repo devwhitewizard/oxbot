@@ -1,173 +1,121 @@
 /**
- * OxBot — Auto Status Reactor
- * Automatically "Likes" (❤️) new statuses from contacts
- * Owner-only — verifies owner via users table using session_id
- * Uses in-memory cache to handle thousands of users without DB lag
+ * commands/autoreact.js
+ * Handles background auto-reactions AND the .autoreact command
  */
 
-// ═══════════════════════════════════════════════════════════════
-// IN-MEMORY CACHE (Prevents DB spam for thousands of users)
-// ═══════════════════════════════════════════════════════════════
-const reactCache = new Map();
-const CACHE_TTL = 30 * 1000; // Remember setting for 30 seconds
+// ═══════════════════════════════════════════════════
+// BACKGROUND HANDLER (Called by index.js on every message)
+// ═══════════════════════════════════════════════════
+async function handleAutoReact(sock, msg, botData) {
+    const config = sock._autoReactConfig;
+    
+    // If not configured or disabled, do nothing
+    if (!config || !config.enabled) return;
 
-function clearReactCache(sessionId) {
-    reactCache.delete(sessionId);
-}
+    const m = msg?.message;
+    if (!m) return;
 
-// ═══════════════════════════════════════════════════════════════
-// DB Helpers (Per-user isolation)
-// ═══════════════════════════════════════════════════════════════
-function cleanNumber(jid) {
-    if (!jid) return '';
-    return jid.split(':')[0].split('@')[0];
-}
+    // Skip status broadcasts
+    if (msg.key.remoteJid === 'status@broadcast') return;
 
-async function ensureColumn(db) {
+    const text = m.conversation || m.extendedTextMessage?.text || '';
+    const isCommand = text.startsWith('.') || text.startsWith('!') || text.startsWith('#');
+
+    // If mode is 'bot', ONLY react to commands
+    if (config.mode === 'bot' && !isCommand) return;
+
+    // Random emojis for 'all' mode, specific emoji for 'bot' mode
+    const botEmojis = ['⏳', '⌛', '🫡'];
+    const allEmojis = ['❤️', '🔥', '👀', '😂', '😭', '🥺', '💯', '✨', '🙌', '🤝'];
+    
+    const emojiList = config.mode === 'all' ? allEmojis : botEmojis;
+    const randomEmoji = emojiList[Math.floor(Math.random() * emojiList.length)];
+
     try {
-        await db.query(`ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS autoreact TINYINT(1) DEFAULT 0`);
-    } catch (err) {
-        if (err.errno !== 1060) {
-            try { await db.query(`ALTER TABLE bot_settings ADD COLUMN autoreact TINYINT(1) DEFAULT 0`); } catch {}
-        }
-    }
+        await sock.sendMessage(msg.key.remoteJid, { 
+            react: { text: randomEmoji, key: msg.key } 
+        });
+    } catch {}
 }
 
-async function getState(db, sessionId) {
-    try {
-        if (!db || !sessionId) return false;
-        
-        // Check cache first (Speeds up bot for thousands of users)
-        const cached = reactCache.get(sessionId);
-        if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.on;
-
-        await ensureColumn(db);
-        const [rows] = await db.query('SELECT autoreact FROM bot_settings WHERE session_id = ?', [sessionId]);
-        const isEnabled = rows.length ? rows[0].autoreact === 1 : false;
-        
-        // Save to cache
-        reactCache.set(sessionId, { on: isEnabled, ts: Date.now() });
-        return isEnabled;
-    } catch (err) {
-        console.error('[autoreact] getState error:', err.message);
-        return false;
-    }
-}
-
-async function setState(db, sessionId, val) {
-    try {
-        if (!db || !sessionId) return;
-        await ensureColumn(db);
-        await db.query(
-            'INSERT INTO bot_settings (session_id, autoreact) VALUES (?, ?) ON DUPLICATE KEY UPDATE autoreact = ?',
-            [sessionId, val ? 1 : 0, val ? 1 : 0]
-        );
-        // Update cache immediately
-        reactCache.set(sessionId, { on: val, ts: Date.now() });
-    } catch (err) {
-        console.error('[autoreact] setState error:', err.message);
-    }
-}
-
-async function isOwner(db, sessionId, senderId) {
-    try {
-        const [rows] = await db.query('SELECT u.phone FROM users u JOIN bots b ON b.user_id = u.id WHERE b.session_id = ?', [sessionId]);
-        if (!rows.length || !rows[0].phone) return false;
-        const ownerNum = String(rows[0].phone).replace(/\D/g, '');
-        return cleanNumber(senderId) === ownerNum;
-    } catch { return false; }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// .autoreact Command
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// COMMAND HANDLER (Called when user types .autoreact)
+// ═══════════════════════════════════════════════════
 async function execute(sock, msg, botData, args) {
     const chatId = msg.key.remoteJid;
     if (!chatId) return null;
 
-    if (!botData?.sessionId || !botData?.db) {
-        return await sock.sendMessage(chatId, { text: '⚠️ Database error.' }, { quoted: msg });
-    }
-
-    const senderId = msg.key.participant || msg.key.remoteJid;
-    if (!msg.key.fromMe && !await isOwner(botData.db, botData.sessionId, senderId)) {
-        return await sock.sendMessage(chatId, { text: '❌ Owner only!' }, { quoted: msg });
-    }
-
-    const action = (args[0] || '').toLowerCase().trim();
-
-    if (['on', 'enable', '1', 'yes'].includes(action)) {
-        await setState(botData.db, botData.sessionId, true);
-        return await sock.sendMessage(chatId, {
-            text: '❤️ *Auto-React ENABLED!*\n\nBot will automatically like all new statuses.'
-        }, { quoted: msg });
-    }
-
-    if (['off', 'disable', '0', 'no'].includes(action)) {
-        await setState(botData.db, botData.sessionId, false);
-        return await sock.sendMessage(chatId, {
-            text: '🚫 *Auto-React DISABLED!*\n\nBot will no longer like statuses.'
-        }, { quoted: msg });
-    }
-
-    if (action) {
-        return await sock.sendMessage(chatId, {
-            text: '❌ Invalid option! Use:\n\n```.autoreact on```\n```.autoreact off```'
-        }, { quoted: msg });
-    }
-
-    // No args -> toggle
-    const current = await getState(botData.db, botData.sessionId);
-    const newState = !current;
-    await setState(botData.db, botData.sessionId, newState);
-
-    return await sock.sendMessage(chatId, {
-        text: `${newState ? '❤️' : '🚫'} Auto-React has been *${newState ? 'ENABLED' : 'DISABLED'}*!`
-    }, { quoted: msg });
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MAIN HANDLER — Called from index.js when status arrives
-// ═══════════════════════════════════════════════════════════════
-async function handleAutoReact(sock, message, botData) {
     try {
-        if (!botData?.sessionId || !botData?.db) return;
-        if (message.key.remoteJid !== 'status@broadcast') return;
-        if (!message.key.id) return;
+        const db = botData?.db;
+        const sessionId = botData?.sessionId;
+        const opt = args.join(' ').toLowerCase();
 
-        // Check cache/DB (Lightning fast because of cache)
-        const enabled = await getState(botData.db, botData.sessionId);
-        if (!enabled) return;
+        const currentConfig = sock._autoReactConfig || { enabled: false, mode: 'bot' };
 
-        // Send the "Like" (Heart reaction) to the status
-        await sock.sendMessage('status@broadcast', {
-            react: {
-                text: '❤️',
-                key: message.key
-            }
-        });
+        if (!opt) {
+            const status = currentConfig.enabled ? '✅ *Enabled*' : '❌ *Disabled*';
+            const mode = currentConfig.mode === 'all' ? '🌟 All Messages' : '🤖 Bot Commands Only';
+            
+            return await sock.sendMessage(chatId, {
+                text: `📋 *Auto-React Configuration*\n\n` +
+                      `Status: ${status}\n` +
+                      `Mode: ${mode}\n\n` +
+                      `*Options:*\n` +
+                      `• \`.autoreact on\` - Enable auto-react\n` +
+                      `• \`.autoreact off\` - Disable auto-react\n` +
+                      `• \`.autoreact set bot\` - React only to commands (⏳)\n` +
+                      `• \`.autoreact set all\` - React to all messages (random emojis)`
+            }, { quoted: msg });
+        }
 
-        console.log(`[autoreact] ❤️ Liked status: ${message.key.id.substring(0, 15)}...`);
+        let newEnabled = currentConfig.enabled;
+        let newMode = currentConfig.mode;
+
+        if (opt === 'on') newEnabled = true;
+        else if (opt === 'off') newEnabled = false;
+        else if (opt === 'set bot') { newEnabled = true; newMode = 'bot'; }
+        else if (opt === 'set all') { newEnabled = true; newMode = 'all'; }
+        else {
+            return await sock.sendMessage(chatId, {
+                text: '❌ *Invalid option.*\n\nUse: `on` | `off` | `set bot` | `set all`'
+            }, { quoted: msg });
+        }
+
+        // Save to DB
+        if (db && sessionId) {
+            try {
+                await db.query(
+                    `INSERT INTO bot_settings (session_id, autoreact_enabled, autoreact_mode) 
+                     VALUES (?, ?, ?) 
+                     ON DUPLICATE KEY UPDATE autoreact_enabled = ?, autoreact_mode = ?`,
+                    [sessionId, newEnabled ? 1 : 0, newMode, newEnabled ? 1 : 0, newMode]
+                );
+            } catch (err) { console.error('[AUTOREACT CMD] DB Error:', err.message); }
+        }
+
+        // Update socket cache instantly
+        sock._autoReactConfig = { enabled: newEnabled, mode: newMode };
+
+        let replyText = '';
+        if (opt === 'on') replyText = '✅ *Auto-react enabled.*';
+        else if (opt === 'off') replyText = '❌ *Auto-react disabled.*';
+        else if (opt === 'set bot') replyText = '🤖 *Auto-react mode:* Bot commands only (⏳)';
+        else if (opt === 'set all') replyText = '🌟 *Auto-react mode:* All messages (random emojis)';
+
+        await sock.sendMessage(chatId, { text: replyText }, { quoted: msg });
+
     } catch (err) {
-        // Silent fail to prevent loop crashes
-        console.error('[autoreact] error:', err.message);
+        console.error('[AUTOREACT CMD] Error:', err.message);
+        await sock.sendMessage(chatId, { text: '❌ Error configuring auto-react.' }, { quoted: msg });
     }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Init function
-// ═══════════════════════════════════════════════════════════════
-async function init(db) {
-    await ensureColumn(db);
-    console.log('  ✅ Auto-react initialized');
+    return null;
 }
 
 module.exports = {
+    handleAutoReact, // Exported for index.js background feature
     name: 'autoreact',
-    execute: execute,
-    handleAutoReact: handleAutoReact,
-    init: init,
-    desc: 'Auto-like all contacts\' statuses (Owner Only)',
+    aliases: ['ar'],
+    desc: 'Configure automatic reactions to messages',
     category: 'owner',
-    aliases: ['statuslike', 'autolike']
+    execute
 };

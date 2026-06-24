@@ -1,56 +1,89 @@
+/**
+ * commands/demote.js
+ * Demote an admin to member
+ */
+
 const name     = 'demote';
 const desc     = 'Demote an admin to member';
 const category = 'group';
 
+// ✅ Robust JID cleaner (strips @s.whatsapp.net, @lid, :0)
+function cleanNum(jid) {
+    if (!jid) return '';
+    return jid.replace(/[^0-9]/g, '');
+}
+
 async function execute(sock, msg, botData, args) {
-    const chatId   = msg.key.remoteJid;
-    if (!chatId.endsWith('@g.us')) return await sock.sendMessage(chatId, { text: '❌ Group only!' }, { quoted: msg });
+    const chatId = msg.key.remoteJid;
+    if (!chatId) return null;
+
+    if (!chatId.endsWith('@g.us')) {
+        return await sock.sendMessage(chatId, { text: '❌ Group only command!' }, { quoted: msg });
+    }
 
     const senderId = msg.key.participant || msg.key.remoteJid;
-    const db        = botData?.db;
-    const sessionId = botData?.sessionId;
+    
+    // 1. Fast owner check using socket identity
     let senderIsOwner = msg.key.fromMe;
-    if (!senderIsOwner && db && sessionId) {
+    if (!senderIsOwner) {
+        const ownerPhone = sock._ownerPhone;
+        const senderNum = cleanNum(senderId);
+        const ownerNum  = ownerPhone ? cleanNum(ownerPhone) : '';
+        
+        if (senderNum && ownerNum) {
+            const sNorm = senderNum.startsWith('0') ? senderNum.slice(1) : senderNum;
+            const oNorm = ownerNum.startsWith('0') ? ownerNum.slice(1) : ownerNum;
+            senderIsOwner = sNorm === oNorm || sNorm.endsWith(oNorm) || oNorm.endsWith(sNorm);
+        }
+    }
+
+    // 2. If NOT the owner, check if sender is a Group Admin
+    if (!msg.key.fromMe && !senderIsOwner) {
         try {
-            const [rows] = await db.query(
-                'SELECT u.phone FROM users u JOIN bots b ON b.user_id=u.id WHERE b.session_id=? LIMIT 1',
-                [sessionId]
+            const meta = await sock.groupMetadata(chatId);
+            const senderNum = cleanNum(senderId);
+            const senderIsAdmin = meta.participants?.some(p => 
+                cleanNum(p.id) === senderNum && 
+                (p.admin === 'admin' || p.admin === 'superadmin')
             );
-            if (rows.length) {
-                const ownerNum = String(rows[0].phone).replace(/\D/g, '');
-                senderIsOwner = senderId.includes(ownerNum);
+
+            if (!senderIsAdmin) {
+                return await sock.sendMessage(chatId, { text: '❌ Only admins can use this!' }, { quoted: msg });
             }
-        } catch {}
-    }
-    const botJid   = sock.user?.id?.split('@')[0]?.split(':')[0] + '@s.whatsapp.net';
-
-    let meta;
-    try { meta = await sock.groupMetadata(chatId); } catch {
-        return await sock.sendMessage(chatId, { text: '❌ Could not fetch group info.' }, { quoted: msg });
+        } catch {
+            return await sock.sendMessage(chatId, { text: '❌ Could not fetch group info.' }, { quoted: msg });
+        }
     }
 
-    const botMember    = meta.participants.find(p => p.id.split(':')[0].split('@')[0] === botJid.split('@')[0]);
-    const senderMember = meta.participants.find(p => p.id.split(':')[0].split('@')[0] === senderId.split(':')[0].split('@')[0]);
-
-    if (!botMember || !['admin','superadmin'].includes(botMember.admin)) {
-        return await sock.sendMessage(chatId, { text: '❌ I need to be an admin first!' }, { quoted: msg });
-    }
-    if (!msg.key.fromMe && !senderIsOwner && (!senderMember || !["admin","superadmin"].includes(senderMember.admin))) {
-        return await sock.sendMessage(chatId, { text: '❌ Only admins can use this!' }, { quoted: msg });
-    }
-
+    // 3. Extract target users (Mentions or Reply)
     let targets = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
     if (!targets.length && msg.message?.extendedTextMessage?.contextInfo?.participant) {
         targets = [msg.message.extendedTextMessage.contextInfo.participant];
     }
-    if (!targets.length) return await sock.sendMessage(chatId, { text: '❌ Mention or reply to a user!\n*.demote @user*' }, { quoted: msg });
+    
+    if (!targets.length) {
+        return await sock.sendMessage(chatId, { text: '❌ Mention or reply to a user!\n_*.demote @user*_' }, { quoted: msg });
+    }
 
-    await sock.groupParticipantsUpdate(chatId, targets, 'demote');
-    const names = targets.map(j => `@${j.split('@')[0]}`).join(', ');
-    await sock.sendMessage(chatId, {
-        text: `⬇️ *Demoted:* ${names}\n👑 *By:* @${senderId.split('@')[0]}`,
-        mentions: [...targets, senderId]
-    }, { quoted: msg });
+    // 4. ATTEMPT TO DEMOTE (Bypasses Baileys cache bug!)
+    try {
+        await sock.groupParticipantsUpdate(chatId, targets, 'demote');
+        
+        const names = targets.map(j => `@${j.split('@')[0]}`).join(', ');
+        await sock.sendMessage(chatId, {
+            text: `⬇️ *Demoted:* ${names}\n👑 *By:* @${cleanNum(senderId)}`,
+            mentions: [...targets, senderId]
+        }, { quoted: msg });
+    } catch (err) {
+        // If WhatsApp rejects it, it means the bot is truly not an admin
+        if (err?.message?.includes('not-admin') || err?.output?.statusCode === 400) {
+            await sock.sendMessage(chatId, { 
+                text: '❌ *Action failed:* I need to be an admin to demote members.\n\n_⚠️ If you just made me admin, please REMOVE me from the group and ADD me back in to fix this bug._' 
+            }, { quoted: msg });
+        } else {
+            await sock.sendMessage(chatId, { text: `❌ Failed to demote: ${err.message}` }, { quoted: msg });
+        }
+    }
 }
 
 module.exports = { name, desc, category, execute };

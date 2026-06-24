@@ -1,11 +1,12 @@
 /**
- * commands/kick.js
- * Kick a user from group
+ * commands/grouplink.js
+ * Get group invite link (Admin & Owner Only)
  */
 
-const name     = 'kick';
-const desc     = 'Kick a user from group';
-const category = 'group';
+const name     = 'grouplink';
+const aliases  = ['link', 'invite'];
+const desc     = 'Get group invite link';
+const category = 'admin';
 
 // ✅ Robust JID cleaner
 function cleanNum(jid) {
@@ -18,12 +19,12 @@ async function execute(sock, msg, botData, args) {
     if (!chatId) return null;
 
     if (!chatId.endsWith('@g.us')) {
-        return await sock.sendMessage(chatId, { text: '❌ Group only command!' }, { quoted: msg });
+        return await sock.sendMessage(chatId, { text: '❌ Group only!' }, { quoted: msg });
     }
 
     const senderId = msg.key.participant || chatId;
     
-    // 1. Fast owner check using socket identity
+    // 1. Check if sender is Owner
     let senderIsOwner = msg.key.fromMe;
     if (!senderIsOwner) {
         const ownerPhone = sock._ownerPhone;
@@ -55,35 +56,37 @@ async function execute(sock, msg, botData, args) {
         }
     }
 
-    // 3. Extract target users (Mentions or Reply)
-    let targets = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    if (!targets.length && msg.message?.extendedTextMessage?.contextInfo?.participant) {
-        targets = [msg.message.extendedTextMessage.contextInfo.participant];
-    }
-    
-    if (!targets.length) {
-        return await sock.sendMessage(chatId, { text: '❌ Mention or reply to a user!\n_*.kick @user*_' }, { quoted: msg });
-    }
-
-    // 4. ATTEMPT TO KICK (Bypasses Baileys cache bug!)
+    // 3. Get Group Name for a nice display
+    let groupName = 'Unknown Group';
     try {
-        await sock.groupParticipantsUpdate(chatId, targets, 'remove');
-        
-        const names = targets.map(j => `@${j.split('@')[0]}`).join(', ');
-        await sock.sendMessage(chatId, {
-            text: `🚫 *Kicked:* ${names}\n👑 *By:* @${cleanNum(senderId)}`,
-            mentions: [...targets, senderId]
-        }, { quoted: msg });
+        const meta = await sock.groupMetadata(chatId);
+        groupName = meta.subject || 'Unknown Group';
+    } catch (e) {}
+
+    // 4. ATTEMPT TO GET LINK (Bypasses Baileys cache bug!)
+    try {
+        const code = await sock.groupInviteCode(chatId);
+        const link = `https://chat.whatsapp.com/${code}`;
+
+        let text = `╭━━━【 *GROUP INVITE LINK* 】━━━╮\n`;
+        text += `│ 📱 *Group:* ${groupName}\n`;
+        text += `│ 🔗 *Link:* ${link}\n`;
+        text += `╰━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
+        text += `⚠️ _Don't share this link publicly!_`;
+
+        await sock.sendMessage(chatId, { text }, { quoted: msg });
     } catch (err) {
         // If WhatsApp rejects it, it means the bot is truly not an admin
         if (err?.message?.includes('not-admin') || err?.output?.statusCode === 400) {
             await sock.sendMessage(chatId, { 
-                text: '❌ *Action failed:* I need to be an admin to kick members.\n\n_⚠️ If you just made me admin, please REMOVE me from the group and ADD me back in to fix this bug._' 
+                text: '❌ *Action failed:* I need to be an admin to generate the invite link.\n\n_⚠️ If you just made me admin, please REMOVE me from the group and ADD me back in to fix this bug._' 
             }, { quoted: msg });
         } else {
-            await sock.sendMessage(chatId, { text: `❌ Failed to kick: ${err.message}` }, { quoted: msg });
+            await sock.sendMessage(chatId, { text: `❌ Failed to get link: ${err.message}` }, { quoted: msg });
         }
     }
+
+    return null;
 }
 
-module.exports = { name, desc, category, execute };
+module.exports = { name, aliases, desc, category, execute };

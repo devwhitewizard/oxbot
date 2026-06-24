@@ -1,123 +1,107 @@
 /**
  * OxBot — View Once Command (vv)
- * Owner only — fetches owner from users table via session_id
+ * Secretly sends opened view-once media to Owner's DM
  */
 
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 
-// ── Strip device/LID suffix ──
-function cleanNumber(jid) {
-    if (!jid) return '';
-    return jid.split(':')[0].split('@')[0];
-}
+// ✅ Fast JID cleaner (matches handler.js and promote.js)
+const clean = (jid) => jid ? jid.split(':')[0].split('@')[0] : '';
 
-// ── Fetch owner phone from users table for this session ──
-async function getOwnerNumber(db, sessionId) {
-    try {
-        const [rows] = await db.query(
-            'SELECT u.phone FROM users u JOIN bots b ON b.user_id = u.id WHERE b.session_id = ? LIMIT 1',
-            [sessionId]
-        );
-        if (!rows.length || !rows[0].phone) return null;
-        return String(rows[0].phone).replace(/\D/g, '');
-    } catch (err) {
-        console.error('[vv] DB error fetching owner:', err.message);
-        return null;
-    }
-}
+async function execute(sock, msg, botData, args) {
+    const chatId   = msg.key.remoteJid;
+    const senderId = msg.key.participant || msg.key.remoteJid;
 
-// ── Check if sender is the owner ──
-async function isOwner(db, sessionId, senderId, sock, chatId) {
-    const ownerNumber = await getOwnerNumber(db, sessionId);
-    if (!ownerNumber) return false;
-
-    const ownerJid    = ownerNumber + '@s.whatsapp.net';
-    const senderClean = cleanNumber(senderId);
-
-    if (senderId === ownerJid) return true;
-    if (senderClean === ownerNumber) return true;
-    if (senderId.includes(ownerNumber)) return true;
-
-    // Group LID match
-    if (sock && chatId && chatId.endsWith('@g.us') && senderId.includes('@lid')) {
-        try {
-            const metadata     = await sock.groupMetadata(chatId);
-            const participants = metadata.participants || [];
-            const match = participants.find(p => {
-                const pIdClean = cleanNumber(p.id || '');
-                return pIdClean === ownerNumber || (p.id || '') === ownerJid;
-            });
-            if (match) return true;
-        } catch (e) {
-            console.error('[vv] Group LID check error:', e.message);
+    // ── 1. Fast Owner Check ──────────────────────────────────
+    let isOwner = msg.key.fromMe;
+    if (!isOwner && sock._ownerPhone) {
+        const senderNum = clean(senderId).replace(/\D/g, '');
+        const ownerNum  = sock._ownerPhone.replace(/\D/g, '');
+        if (senderNum && ownerNum) {
+            const sN = senderNum.startsWith('0') ? senderNum.slice(1) : senderNum;
+            const oN = ownerNum.startsWith('0') ? ownerNum.slice(1) : ownerNum;
+            isOwner = sN === oN || sN.endsWith(oN) || oN.endsWith(sN);
         }
     }
 
-    return false;
-}
+    // If a non-owner uses this, completely ignore it so they don't even know it exists
+    if (!isOwner) return null;
 
-// ── The .vv command ──
-async function execute(sock, message, botData) {
-    const chatId = message.key.remoteJid;
-
-    if (!botData?.sessionId || !botData?.db) {
-        return await sock.sendMessage(chatId, {
-            text: '⚠️ Database error. Please restart the bot.'
-        }, { quoted: message });
-    }
-
-    const senderId      = message.key.participant || message.key.remoteJid;
-    const senderIsOwner = await isOwner(botData.db, botData.sessionId, senderId, sock, chatId);
-
-    if (!message.key.fromMe && !senderIsOwner) {
-        return await sock.sendMessage(chatId, {
-            text: '❌ This command is only available for the owner!'
-        }, { quoted: message });
-    }
-
-    const quoted      = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    // ── 2. Get Media from Quoted Message ─────────────────────
+    const quoted      = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     const quotedImage = quoted?.imageMessage;
     const quotedVideo = quoted?.videoMessage;
 
+    // Owner's private DM JID
+    const ownerJid = sock._ownerPhone + '@s.whatsapp.net';
+
     try {
+        let buffer, type;
+        let originalCaption = '';
+
         if (quotedImage && quotedImage.viewOnce) {
             const stream = await downloadContentFromMessage(quotedImage, 'image');
-            let buffer = Buffer.from([]);
+            buffer = Buffer.from([]);
             for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
-            return await sock.sendMessage(chatId, {
-                image:    buffer,
-                fileName: 'media.jpg',
-                caption:  quotedImage.caption || ''
-            }, { quoted: message });
-        }
-
-        if (quotedVideo && quotedVideo.viewOnce) {
+            type = 'image';
+            originalCaption = quotedImage.caption || '';
+        } 
+        else if (quotedVideo && quotedVideo.viewOnce) {
             const stream = await downloadContentFromMessage(quotedVideo, 'video');
-            let buffer = Buffer.from([]);
+            buffer = Buffer.from([]);
             for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
-            return await sock.sendMessage(chatId, {
-                video:    buffer,
-                fileName: 'media.mp4',
-                caption:  quotedVideo.caption || ''
-            }, { quoted: message });
+            type = 'video';
+            originalCaption = quotedVideo.caption || '';
+        } 
+        else {
+            // If not a view-once, warn the owner in their DM
+            await sock.sendMessage(ownerJid, { text: '⚠️ Please reply to a view-once image or video.' });
+            return null;
         }
 
-        return await sock.sendMessage(chatId, {
-            text: '❌ Please reply to a view-once image or video.'
-        }, { quoted: message });
+        // ── 3. Send Secretly to Owner's DM ───────────────────
+        const senderTag = `@${clean(senderId)}`;
+        const isGroup   = chatId.endsWith('@g.us');
+        const location  = isGroup ? '👥 Group Chat' : '👤 Direct Message';
+
+        const dmText = `🔓 *View-Once Revealed*\n\n` +
+                       `👤 *From:* ${senderTag}\n` +
+                       `📍 *Location:* ${location}\n` +
+                       (originalCaption ? `💬 *Caption:* ${originalCaption}\n\n` : '\n') +
+                       `_⬆️ Downloaded secretly and sent to your DM_`;
+
+        if (type === 'image') {
+            await sock.sendMessage(ownerJid, {
+                image: buffer,
+                caption: dmText,
+                mentions: [senderId]
+            });
+        } else if (type === 'video') {
+            await sock.sendMessage(ownerJid, {
+                video: buffer,
+                caption: dmText,
+                mentions: [senderId]
+            });
+        }
+
+        // ✅ DO NOT send anything back to the original chat! 
+        // The group/user will have no idea the bot caught it.
+        return null;
 
     } catch (err) {
         console.error('[vv] Download error:', err.message);
-        return await sock.sendMessage(chatId, {
-            text: '❌ Failed to download media: ' + err.message
-        }, { quoted: message });
+        // Send error silently to owner's DM instead of the group
+        await sock.sendMessage(ownerJid, { 
+            text: `❌ Failed to download view-once media: ${err.message}` 
+        }).catch(() => {});
+        return null;
     }
 }
 
 module.exports = {
     name: 'vv',
-    execute,
+    aliases: ['viewonce', 'antiviewonce'],
     desc: 'View once media revealer (Owner Only)',
     category: 'owner',
-    aliases: ['viewonce', 'antiviewonce']
+    execute
 };

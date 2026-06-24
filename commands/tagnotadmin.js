@@ -1,71 +1,100 @@
+/**
+ * commands/tagnotadmin.js
+ * Tag all non-admin members in the group
+ */
+
+const name     = 'tagnotadmin';
+const aliases  = ['tagna', 'tagmembers'];
+const desc     = 'Tag all non-admin members in the group';
+const category = 'group';
+
+// ✅ Robust JID cleaner
+function cleanNum(jid) {
+    if (!jid) return '';
+    return jid.replace(/[^0-9]/g, '');
+}
+
 async function execute(sock, msg, botData, args) {
     const chatId = msg.key.remoteJid;
-    
-    if (!chatId || !chatId.endsWith('@g.us')) {
-        await sock.sendMessage(chatId, { text: '❌ This command can only be used in groups.' }, { quoted: msg });
-        return null;
+    if (!chatId) return null;
+
+    if (!chatId.endsWith('@g.us')) {
+        return await sock.sendMessage(chatId, { text: '❌ This command can only be used in groups.' }, { quoted: msg });
     }
 
-    const senderId = msg.key.participant || msg.key.remoteJid;
+    const senderId = msg.key.participant || chatId;
 
-    try {
-        // Fetch group members once
-        const groupMetadata = await sock.groupMetadata(chatId);
-        const participants = groupMetadata.participants || [];
-
-        // Inline helper to check admin status (handles @lid safely)
-        const checkAdmin = (jid) => {
-            if (!jid) return false;
-            const cleanTarget = jid.split(':')[0];
-            return participants.some(p => {
-                const pClean = p.id.split(':')[0];
-                return pClean === cleanTarget && (p.admin === 'admin' || p.admin === 'superadmin');
-            });
-        };
-
-        const isBotAdmin = checkAdmin(sock.user?.id);
-        const isSenderAdmin = checkAdmin(senderId);
-
-        if (!isBotAdmin) {
-            await sock.sendMessage(chatId, { text: '❌ Make the bot an admin first.' }, { quoted: msg });
-            return null;
+    // 1. Check if sender is Owner
+    let senderIsOwner = msg.key.fromMe;
+    if (!senderIsOwner) {
+        const ownerPhone = sock._ownerPhone;
+        const senderNum = cleanNum(senderId);
+        const ownerNum  = ownerPhone ? cleanNum(ownerPhone) : '';
+        
+        if (senderNum && ownerNum) {
+            const sNorm = senderNum.startsWith('0') ? senderNum.slice(1) : senderNum;
+            const oNorm = ownerNum.startsWith('0') ? ownerNum.slice(1) : ownerNum;
+            senderIsOwner = sNorm === oNorm || sNorm.endsWith(oNorm) || oNorm.endsWith(sNorm);
         }
+    }
+
+    // 2. Fetch group metadata
+    let meta;
+    try { 
+        meta = await sock.groupMetadata(chatId); 
+    } catch {
+        return await sock.sendMessage(chatId, { text: '❌ Could not fetch group info.' }, { quoted: msg });
+    }
+
+    const senderNum = cleanNum(senderId);
+
+    // 3. If NOT the owner, check if sender is a Group Admin
+    if (!msg.key.fromMe && !senderIsOwner) {
+        const isSenderAdmin = meta.participants?.some(p => 
+            cleanNum(p.id) === senderNum && 
+            (p.admin === 'admin' || p.admin === 'superadmin')
+        );
 
         if (!isSenderAdmin) {
-            await sock.sendMessage(chatId, { text: '❌ Only group admins can use .tagnotadmin' }, { quoted: msg });
-            return null;
+            return await sock.sendMessage(chatId, { text: '❌ Only group admins can use this.' }, { quoted: msg });
         }
-
-        // Filter out admins and group owner
-        const nonAdmins = participants.filter(p => !p.admin).map(p => p.id);
-        
-        if (nonAdmins.length === 0) {
-            await sock.sendMessage(chatId, { text: '✅ No non-admin members to tag.' }, { quoted: msg });
-            return null;
-        }
-
-        let text = '📢 *Attention Non-Admins:*\n\n';
-        nonAdmins.forEach(jid => {
-            text += `@${jid.split('@')[0]}\n`;
-        });
-
-        await sock.sendMessage(chatId, { 
-            text, 
-            mentions: nonAdmins 
-        }, { quoted: msg });
-
-    } catch (error) {
-        console.error('[tagnotadmin] Error:', error.message);
-        await sock.sendMessage(chatId, { text: '⚠️ Failed to tag non-admin members.' }, { quoted: msg });
     }
+
+    // 4. Filter out admins and group owner
+    const nonAdmins = meta.participants.filter(p => !p.admin);
+    
+    if (nonAdmins.length === 0) {
+        return await sock.sendMessage(chatId, { text: '✅ No non-admin members to tag.' }, { quoted: msg });
+    }
+
+    // 5. Build mentions array (★ FIX: Force @s.whatsapp.net so WhatsApp actually highlights them!)
+    const mentions = nonAdmins.map(p => {
+        const num = cleanNum(p.id);
+        return num + '@s.whatsapp.net';
+    });
+
+    // 6. Build beautiful formatted text
+    const customMsg = args.join(' ').trim() || 'Attention Non-Admins';
+    const senderTag = (msg.key.participant || msg.key.remoteJid).split('@')[0];
+
+    let text = `╭━━━【 *${customMsg}* 】━━━╮\n`;
+    text += `│ 👥 *Members Tagged: ${nonAdmins.length}*\n`;
+    text += `│ 📢 *By: @${senderTag}*\n`;
+    text += `│\n`;
+    
+    nonAdmins.forEach(p => {
+        const num = cleanNum(p.id);
+        text += `│ ➤ @${num}\n`;
+    });
+    
+    text += `╰━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+    await sock.sendMessage(chatId, { 
+        text, 
+        mentions 
+    }, { quoted: msg });
 
     return null;
 }
 
-module.exports = {
-    name: 'tagnotadmin',
-    aliases: ['tagna', 'tagmembers'],
-    desc: 'Tag all non-admin members in the group',
-    category: 'group',
-    execute
-};
+module.exports = { name, aliases, desc, category, execute };

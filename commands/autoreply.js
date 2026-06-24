@@ -7,14 +7,24 @@ const stateCache = new Map();
 const TTL        = 30_000;
 const lastReplied = new Map(); // Tracks last reply time per JID
 
+// ── Helper: Get autoreply state (handles oxbot_ prefix mismatch) ─────────────
 async function getState(db, sessionId) {
     const c = stateCache.get(sessionId);
     if (c && Date.now() - c.ts < TTL) return c;
     try {
-        const [rows] = await db.query(
+        // Try exact match first
+        let [rows] = await db.query(
             'SELECT autoreply, autoreply_message FROM bot_settings WHERE session_id=? LIMIT 1',
             [sessionId]
         );
+        // Fallback to oxbot_ prefix for background handler
+        if (!rows.length && !String(sessionId).startsWith('oxbot_')) {
+            [rows] = await db.query(
+                'SELECT autoreply, autoreply_message FROM bot_settings WHERE session_id=? LIMIT 1',
+                [`oxbot_${sessionId}`]
+            );
+        }
+
         const v = {
             enabled: rows[0]?.autoreply === 1,
             message: rows[0]?.autoreply_message || '👋 Hi! I am currently unavailable. I will get back to you soon!'
@@ -24,14 +34,25 @@ async function getState(db, sessionId) {
     } catch { return { enabled: false, message: '' }; }
 }
 
+// ── Helper: Robust DB Session Lookup ─────────────────────────────────────────
 async function getOwnerUserId(db, sessionId) {
+    if (!db || !sessionId) return null;
     try {
-        const [rows] = await db.query('SELECT user_id FROM bots WHERE session_id=? LIMIT 1', [sessionId]);
-        return rows[0]?.user_id || null;
+        const [r1] = await db.query('SELECT user_id, session_id FROM bots WHERE session_id=? LIMIT 1', [sessionId]);
+        if (r1.length) return { userId: r1[0].user_id, dbSessionId: r1[0].session_id };
+        
+        // Try oxbot_ prefix
+        if (!String(sessionId).startsWith('oxbot_')) {
+            const [r2] = await db.query('SELECT user_id, session_id FROM bots WHERE session_id=? LIMIT 1', [`oxbot_${sessionId}`]);
+            if (r2.length) return { userId: r2[0].user_id, dbSessionId: r2[0].session_id };
+        }
+        return null;
     } catch { return null; }
 }
 
+// ── Helper: Clean Pro Check ──────────────────────────────────────────────────
 async function isPro(db, userId) {
+    if (!userId) return false;
     try {
         const [rows] = await db.query(
             `SELECT id FROM pro_subscriptions WHERE user_id=? AND status='active' AND expires_at > NOW() LIMIT 1`,
@@ -41,7 +62,7 @@ async function isPro(db, userId) {
     } catch { return false; }
 }
 
-// Called from index.js on every incoming message
+// ── Background Handler (Called from index.js on every incoming message) ──────
 async function handleAutoReply(sock, msg, botData) {
     try {
         if (!botData?.db || !botData?.sessionId) return;
@@ -49,7 +70,7 @@ async function handleAutoReply(sock, msg, botData) {
 
         const chatId = msg.key?.remoteJid;
         if (!chatId || chatId === 'status@broadcast') return;
-        if (chatId.endsWith('@g.us')) return; // Groups only DM
+        if (chatId.endsWith('@g.us')) return; // Only DMs
 
         const state = await getState(botData.db, botData.sessionId);
         if (!state.enabled || !state.message) return;
@@ -72,18 +93,25 @@ async function handleAutoReply(sock, msg, botData) {
     } catch {}
 }
 
+// ── Main Command Execution ───────────────────────────────────────────────────
 async function execute(sock, msg, botData, args) {
     const chatId    = msg.key.remoteJid;
     const db        = botData?.db;
     const sessionId = botData?.sessionId;
 
-    // Check pro
-    const userId = await getOwnerUserId(db, sessionId);
-    const proOn  = userId ? await isPro(db, userId) : false;
+    if (!db || !sessionId) {
+        return await sock.sendMessage(chatId, { text: '❌ Database error.' }, { quoted: msg });
+    }
+
+    // ── CHECK PRO PLAN (Block Free Trial Users) ──────────────────────────────
+    const ownerData = await getOwnerUserId(db, sessionId);
+    const userId = ownerData?.userId;
+    const actualDbSessionId = ownerData?.dbSessionId || sessionId; // ★ Exact DB ID to prevent split data
+    const proOn  = await isPro(db, userId);
 
     if (!proOn) {
         return await sock.sendMessage(chatId, {
-            text: '👑 *Pro Plan Required*\n\nAutoreply is a Pro-only feature.\n\nUpgrade at: https://oxbot.name.ng/dashboard'
+            text: '👑 *Pro Plan Required*\n\n_Autoreply is a premium feature. Free Trial users cannot use this._\n\n_Upgrade to Pro at: https://oxbot.name.ng/dashboard_'
         }, { quoted: msg });
     }
 
@@ -97,17 +125,20 @@ async function execute(sock, msg, botData, args) {
                 text: '❌ Provide a message!\n\nExample:\n*.autoreply set Hi! I am busy, will reply soon* 😊'
             }, { quoted: msg });
         }
+        
+        // ★ Use actualDbSessionId so it updates the SAME row as the dashboard ★
         await db.query(
             `INSERT INTO bot_settings (session_id, autoreply_message) VALUES (?,?) ON DUPLICATE KEY UPDATE autoreply_message=?`,
-            [sessionId, newMsg, newMsg]
+            [actualDbSessionId, newMsg, newMsg]
         ).catch(() => {});
-        stateCache.delete(sessionId);
+        stateCache.delete(sessionId); // Clear cache to show new message
+        
         return await sock.sendMessage(chatId, {
             text: `✅ *Autoreply message saved!*\n\n_"${newMsg}"_`
         }, { quoted: msg });
     }
 
-    if (!['on','off'].includes(action)) {
+    if (!['on', 'off'].includes(action)) {
         const state = await getState(db, sessionId);
         return await sock.sendMessage(chatId, {
             text: `💬 *Autoreply*\n\nStatus: *${state.enabled ? 'ON ✅' : 'OFF ❌'}*\nMessage: _"${state.message}"_\n\nUsage:\n\`.autoreply on\` — Enable\n\`.autoreply off\` — Disable\n\`.autoreply set <your message>\` — Set message\n\n⏱ Replies after 8 seconds to avoid detection`
@@ -115,12 +146,13 @@ async function execute(sock, msg, botData, args) {
     }
 
     const enabled = action === 'on' ? 1 : 0;
+    
+    // ★ Use actualDbSessionId so it updates the SAME row as the dashboard ★
     await db.query(
         `INSERT INTO bot_settings (session_id, autoreply) VALUES (?,?) ON DUPLICATE KEY UPDATE autoreply=?`,
-        [sessionId, enabled, enabled]
+        [actualDbSessionId, enabled, enabled]
     ).catch(() => {});
     stateCache.delete(sessionId);
-    botData.addLog?.(`💬 Autoreply ${enabled ? 'ON' : 'OFF'}`);
 
     return await sock.sendMessage(chatId, {
         text: enabled
