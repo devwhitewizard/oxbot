@@ -1,13 +1,28 @@
+# Dependencies
 node_modules/
 node_modules_old/
+
+# WhatsApp Sessions
 sessions/
-sessions_backup/
+
+# Private folders
+database/
+oxbot/
+routes/
+
+# Environment
+.env
+config.js
+
+# Temporary files
 temp/
 tmp/
 tmp_old/
-publicmkdir/
-sessionsmkdir/
+logs/
 *.log
-npm-debug.log*
-.env
-.DS_Store
+
+# Archives
+*.zip
+
+# PM2
+.pm2/

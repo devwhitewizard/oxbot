@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en" class="scroll-smooth" data-theme="light">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
-:root {
+/* ── LIGHT THEME ──────────────────────────────────────── */
+:root, [data-theme="light"] {
   --g0: #ffffff;
   --g1: #f6faf7;
   --g2: #e8f5ec;
@@ -19,21 +20,65 @@
   --text-2: #3d5247;
   --text-3: #7a9486;
   --border: #d8ece0;
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
-  --radius: 16px;
-  --radius-lg: 24px;
+  --header-bg: rgba(255,255,255,.88);
+  --card-bg: #ffffff;
+  --hero-blob-a: #d1fae5;
+  --hero-blob-b: #bbf7d0;
+  --grid-line: var(--border);
+  --plan-trial-bg: #f0fdf4;
+  --shadow-card: rgba(22,163,74,.12);
+  --shadow-cta: rgba(22,163,74,.28);
+  --shadow-cta-hover: rgba(22,163,74,.36);
+  --drawer-overlay: rgba(13,31,18,.4);
+  --drawer-shadow: rgba(0,0,0,.08);
+  --step-num-bg: var(--text);
+  --step-num-fg: #fff;
+  --toggle-track: #d8ece0;
+  --toggle-knob: #fff;
+  --toggle-icon: var(--text-3);
 }
 
+/* ── DARK THEME ───────────────────────────────────────── */
+[data-theme="dark"] {
+  --g0: #0c1015;
+  --g1: #111820;
+  --g2: #162219;
+  --accent: #22c55e;
+  --accent-d: #4ade80;
+  --accent-l: #14532d;
+  --text: #e8f0eb;
+  --text-2: #a3b8ac;
+  --text-3: #607a6b;
+  --border: #1e2e25;
+  --header-bg: rgba(12,16,21,.88);
+  --card-bg: #131a1f;
+  --hero-blob-a: #0a2e1a;
+  --hero-blob-b: #0c3520;
+  --grid-line: #1a2a20;
+  --plan-trial-bg: #0f1f15;
+  --shadow-card: rgba(34,197,94,.08);
+  --shadow-cta: rgba(34,197,94,.25);
+  --shadow-cta-hover: rgba(34,197,94,.35);
+  --drawer-overlay: rgba(0,0,0,.6);
+  --drawer-shadow: rgba(0,0,0,.3);
+  --step-num-bg: var(--accent);
+  --step-num-fg: #0c1015;
+  --toggle-track: #1e2e25;
+  --toggle-knob: #22c55e;
+  --toggle-icon: var(--text-3);
+}
+
+/* ── BASE ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: var(--font-body);
+  font-family: 'DM Sans', system-ui, sans-serif;
   background: var(--g0);
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  transition: background-color .35s ease, color .35s ease;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -41,7 +86,7 @@ img { display: block; max-width: 100%; }
 
 /* ── UTILITIES ─────────────────────────────────────────── */
 .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-.section { padding: 96px 0; }
+.section { padding: 96px 0; transition: background-color .35s ease; }
 .section-alt { background: var(--g1); }
 
 .label {
@@ -51,6 +96,7 @@ img { display: block; max-width: 100%; }
   background: var(--g2); border: 1px solid var(--accent-l);
   padding: 5px 14px; border-radius: 100px;
   margin-bottom: 18px;
+  transition: background-color .35s, border-color .35s, color .35s;
 }
 
 .label-dot {
@@ -61,13 +107,14 @@ img { display: block; max-width: 100%; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
 .section-title {
-  font-family: var(--font-display);
+  font-family: 'Fraunces', Georgia, serif;
   font-size: clamp(32px, 4vw, 46px);
   font-weight: 800;
   letter-spacing: -.02em;
   color: var(--text);
   line-height: 1.15;
   margin-bottom: 16px;
+  transition: color .35s;
 }
 
 .section-sub {
@@ -75,6 +122,7 @@ img { display: block; max-width: 100%; }
   color: var(--text-2);
   max-width: 480px;
   line-height: 1.7;
+  transition: color .35s;
 }
 
 /* ── FADE IN ───────────────────────────────────────────── */
@@ -92,9 +140,11 @@ img { display: block; max-width: 100%; }
 /* ── HEADER ────────────────────────────────────────────── */
 header {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(255,255,255,.88);
+  background: var(--header-bg);
   backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--border);
+  transition: background-color .35s, border-color .35s;
 }
 .header-inner {
   display: flex; align-items: center; justify-content: space-between;
@@ -102,16 +152,18 @@ header {
 }
 .logo {
   display: flex; align-items: center; gap: 10px;
-  font-family: var(--font-display);
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 21px; font-weight: 900;
   color: var(--text);
+  transition: color .35s;
 }
 .logo-mark {
   width: 34px; height: 34px; border-radius: 10px;
   background: var(--accent);
   display: flex; align-items: center; justify-content: center;
+  transition: background-color .35s;
 }
-.logo-mark svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.logo-mark svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .main-nav { display: flex; align-items: center; gap: 28px; }
 .main-nav a { font-size: 14px; font-weight: 500; color: var(--text-2); transition: color .18s; }
@@ -132,10 +184,37 @@ header {
   padding: 9px 20px; border-radius: 10px;
   display: inline-flex; align-items: center; gap: 7px;
   transition: background .18s, transform .15s, box-shadow .18s;
-  box-shadow: 0 3px 12px rgba(22,163,74,.25);
+  box-shadow: 0 3px 12px var(--shadow-cta);
 }
-.btn-cta:hover { background: var(--accent-d); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(22,163,74,.3); }
+.btn-cta:hover { background: var(--accent-d); transform: translateY(-1px); box-shadow: 0 6px 18px var(--shadow-cta-hover); }
 .btn-cta svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── THEME TOGGLE ─────────────────────────────────────── */
+.theme-toggle {
+  width: 40px; height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--g0);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .2s, border-color .2s, transform .15s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { border-color: var(--accent-l); transform: scale(1.05); }
+.theme-toggle:active { transform: scale(.95); }
+.theme-toggle svg {
+  width: 18px; height: 18px;
+  stroke: var(--toggle-icon);
+  stroke-width: 2; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+  transition: stroke .35s, transform .35s, opacity .35s;
+}
+.icon-sun, .icon-moon { position: absolute; }
+[data-theme="light"] .icon-moon { opacity: 1; transform: rotate(0deg); }
+[data-theme="light"] .icon-sun { opacity: 0; transform: rotate(-90deg) scale(.5); }
+[data-theme="dark"] .icon-sun { opacity: 1; transform: rotate(0deg); }
+[data-theme="dark"] .icon-moon { opacity: 0; transform: rotate(90deg) scale(.5); }
 
 /* hamburger */
 .burger {
@@ -146,12 +225,12 @@ header {
   transition: background .15s;
 }
 .burger:hover { background: var(--g2); }
-.burger svg { width: 22px; height: 22px; stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; }
+.burger svg { width: 22px; height: 22px; stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; transition: stroke .35s; }
 
 /* mobile drawer */
 .drawer {
   display: none; position: fixed; inset: 0; z-index: 200;
-  background: rgba(13,31,18,.4); backdrop-filter: blur(4px);
+  background: var(--drawer-overlay); backdrop-filter: blur(4px);
   opacity: 0; transition: opacity .25s;
 }
 .drawer.open { display: block; }
@@ -162,8 +241,8 @@ header {
   background: var(--g0); padding: 24px;
   display: flex; flex-direction: column;
   transform: translateX(100%);
-  transition: transform .3s cubic-bezier(.16,1,.3,1);
-  box-shadow: -12px 0 40px rgba(0,0,0,.08);
+  transition: transform .3s cubic-bezier(.16,1,.3,1), background-color .35s;
+  box-shadow: -12px 0 40px var(--drawer-shadow);
 }
 .drawer.visible .drawer-panel { transform: none; }
 .drawer-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
@@ -172,18 +251,26 @@ header {
   border-radius: 10px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color .35s;
 }
-.drawer-close svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; }
+.drawer-close svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 2; fill: none; stroke-linecap: round; transition: stroke .35s; }
 .drawer-nav { display: flex; flex-direction: column; gap: 4px; }
 .drawer-nav a {
   padding: 13px 14px; border-radius: 12px;
   font-size: 15px; font-weight: 500; color: var(--text);
-  transition: background .15s;
+  transition: background .15s, color .35s;
 }
 .drawer-nav a:hover { background: var(--g1); }
-.drawer-foot { margin-top: auto; padding-top: 24px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+.drawer-foot { margin-top: auto; padding-top: 24px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; transition: border-color .35s; }
 .drawer-foot .btn-ghost-sm { text-align: center; border: 1px solid var(--border); font-size: 15px; padding: 12px; }
 .drawer-foot .btn-cta { justify-content: center; font-size: 15px; padding: 13px; }
+
+.drawer-theme-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px; border-radius: 12px;
+  font-size: 14px; font-weight: 500; color: var(--text-2);
+  transition: color .35s;
+}
 
 /* ── HERO ──────────────────────────────────────────────── */
 .hero {
@@ -191,44 +278,50 @@ header {
   background: linear-gradient(170deg, var(--g1) 0%, var(--g0) 55%);
   padding: 108px 0 120px;
   text-align: center;
+  transition: background .35s;
 }
 .hero-grid {
   position: absolute; inset: 0; pointer-events: none;
   background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 52px 52px;
   opacity: .35;
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
   -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+  transition: background-image .35s;
 }
 .hero-blob {
   position: absolute; border-radius: 50%;
   filter: blur(90px); pointer-events: none;
+  transition: background-color .35s;
 }
-.hero-blob-a { width: 560px; height: 400px; background: #d1fae5; top: -80px; left: -100px; opacity: .55; }
-.hero-blob-b { width: 400px; height: 380px; background: #bbf7d0; bottom: -60px; right: -80px; opacity: .45; }
+.hero-blob-a { width: 560px; height: 400px; background: var(--hero-blob-a); top: -80px; left: -100px; opacity: .55; }
+.hero-blob-b { width: 400px; height: 380px; background: var(--hero-blob-b); bottom: -60px; right: -80px; opacity: .45; }
 
 .hero-inner { position: relative; max-width: 740px; margin: 0 auto; }
 
 .hero h1 {
-  font-family: var(--font-display);
+  font-family: 'Fraunces', Georgia, serif;
   font-size: clamp(42px, 6vw, 72px);
   font-weight: 900;
   letter-spacing: -.03em;
   line-height: 1.08;
   color: var(--text);
   margin-bottom: 22px;
+  transition: color .35s;
 }
 .hero h1 em {
   font-style: italic;
   color: var(--accent);
+  transition: color .35s;
 }
 
 .hero-sub {
   font-size: 18px; color: var(--text-2);
   line-height: 1.65; max-width: 500px;
   margin: 0 auto 40px;
+  transition: color .35s;
 }
 
 .hero-actions {
@@ -239,28 +332,29 @@ header {
   display: inline-flex; align-items: center; gap: 10px;
   background: var(--accent); color: #fff;
   padding: 17px 36px; border-radius: 14px;
-  font-family: var(--font-display); font-size: 16px; font-weight: 700;
-  box-shadow: 0 10px 28px rgba(22,163,74,.28);
+  font-family: 'Fraunces', Georgia, serif; font-size: 16px; font-weight: 700;
+  box-shadow: 0 10px 28px var(--shadow-cta);
   transition: all .2s;
 }
-.btn-hero-main:hover { background: var(--accent-d); transform: translateY(-2px); box-shadow: 0 16px 36px rgba(22,163,74,.36); }
+.btn-hero-main:hover { background: var(--accent-d); transform: translateY(-2px); box-shadow: 0 16px 36px var(--shadow-cta-hover); }
 .btn-hero-main svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
 .btn-hero-sec {
   display: inline-flex; align-items: center; gap: 10px;
   border: 1.5px solid var(--border); background: var(--g0); color: var(--text);
   padding: 16px 32px; border-radius: 14px;
-  font-family: var(--font-display); font-size: 16px; font-weight: 600;
-  transition: all .2s;
+  font-family: 'Fraunces', Georgia, serif; font-size: 16px; font-weight: 600;
+  transition: all .2s, background-color .35s, border-color .35s, color .35s;
 }
 .btn-hero-sec:hover { border-color: var(--accent-l); background: var(--g1); transform: translateY(-2px); }
 
 .hero-trust {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 28px;
   font-size: 13px; color: var(--text-3); font-weight: 500;
+  transition: color .35s;
 }
 .hero-trust span { display: flex; align-items: center; gap: 7px; }
-.hero-trust span::before { content: '✓'; color: var(--accent); font-weight: 700; font-size: 15px; }
+.hero-trust span::before { content: '✓'; color: var(--accent); font-weight: 700; font-size: 15px; transition: color .35s; }
 
 /* ── FEATURES ──────────────────────────────────────────── */
 .features-grid {
@@ -271,28 +365,28 @@ header {
 }
 
 .feat-card {
-  background: var(--g0);
+  background: var(--card-bg);
   border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: 24px;
   padding: 32px 28px;
-  transition: transform .28s, border-color .28s, box-shadow .28s;
+  transition: transform .28s, border-color .28s, box-shadow .28s, background-color .35s, border-color .35s;
 }
 .feat-card:hover {
   transform: translateY(-5px);
   border-color: var(--accent-l);
-  box-shadow: 0 18px 40px -8px rgba(22,163,74,.12);
+  box-shadow: 0 18px 40px -8px var(--shadow-card);
 }
 .feat-icon {
   width: 50px; height: 50px; border-radius: 14px;
   background: var(--g2);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 22px; color: var(--accent);
-  transition: transform .28s, background .28s;
+  transition: transform .28s, background-color .28s, color .35s;
 }
 .feat-card:hover .feat-icon { transform: scale(1.1); background: var(--accent-l); }
 .feat-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.feat-card h3 { font-family: var(--font-display); font-size: 19px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
-.feat-card p { font-size: 15px; color: var(--text-2); line-height: 1.7; }
+.feat-card h3 { font-family: 'Fraunces', Georgia, serif; font-size: 19px; font-weight: 700; margin-bottom: 10px; color: var(--text); transition: color .35s; }
+.feat-card p { font-size: 15px; color: var(--text-2); line-height: 1.7; transition: color .35s; }
 
 /* ── HOW IT WORKS ──────────────────────────────────────── */
 .hiw-grid {
@@ -302,23 +396,25 @@ header {
   margin-top: 56px;
 }
 .hiw-step {
-  background: var(--g0);
+  background: var(--card-bg);
   border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: 24px;
   padding: 32px 28px;
   position: relative;
+  transition: background-color .35s, border-color .35s;
 }
 .step-num {
   width: 38px; height: 38px;
-  background: var(--text);
+  background: var(--step-num-bg);
   border-radius: 11px;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display);
-  font-size: 16px; font-weight: 800; color: #fff;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 16px; font-weight: 800; color: var(--step-num-fg);
   margin-bottom: 22px;
+  transition: background-color .35s, color .35s;
 }
-.hiw-step h3 { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 9px; }
-.hiw-step p { font-size: 15px; color: var(--text-2); line-height: 1.7; }
+.hiw-step h3 { font-family: 'Fraunces', Georgia, serif; font-size: 18px; font-weight: 700; margin-bottom: 9px; color: var(--text); transition: color .35s; }
+.hiw-step p { font-size: 15px; color: var(--text-2); line-height: 1.7; transition: color .35s; }
 
 /* ── PRICING ───────────────────────────────────────────── */
 .plans-wrap {
@@ -326,29 +422,28 @@ header {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 28px;
   margin-top: 60px;
-  max-width: 900px; /* Increased slightly to accommodate 3 columns */
+  max-width: 920px;
   margin-left: auto;
   margin-right: auto;
-  align-items: stretch; /* Ensures equal height cards */
+  align-items: stretch;
 }
 
 .plan {
-  background: var(--g0);
+  background: var(--card-bg);
   border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: 24px;
   padding: 38px 32px;
   display: flex; flex-direction: column;
   position: relative;
-  transition: transform .25s, box-shadow .25s;
+  transition: transform .25s, box-shadow .25s, background-color .35s, border-color .35s;
 }
-.plan:hover { transform: translateY(-4px); box-shadow: 0 20px 44px -10px rgba(0,0,0,.06); }
+.plan:hover { transform: translateY(-4px); box-shadow: 0 20px 44px -10px var(--shadow-card); }
 .plan.featured {
   border-color: var(--accent);
-  box-shadow: 0 16px 48px -10px rgba(22,163,74,.22);
+  box-shadow: 0 16px 48px -10px var(--shadow-card);
 }
 .plan-trial {
-  /* Specific style for the trial plan */
-  background: #f0fdf4; /* Very light green tint */
+  background: var(--plan-trial-bg);
   border-color: var(--accent-l);
   border-width: 2px;
 }
@@ -360,11 +455,13 @@ header {
   text-transform: uppercase;
   padding: 5px 16px; border-radius: 100px;
   white-space: nowrap;
+  transition: background-color .35s;
 }
 .plan-name {
-  font-family: var(--font-display);
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 22px; font-weight: 800;
   margin-bottom: 6px; color: var(--text);
+  transition: color .35s;
 }
 .plan-coin-badge {
   display: inline-flex; align-items: center; gap: 5px;
@@ -373,16 +470,22 @@ header {
   padding: 3px 10px; border-radius: 20px;
   margin-bottom: 16px;
 }
+[data-theme="dark"] .plan-coin-badge {
+  color: #fbbf24;
+  background: #422006;
+  border-color: #713f12;
+}
 .plan-price-row {
   display: flex; align-items: baseline; gap: 4px;
   margin-bottom: 28px;
 }
 .plan-amount {
-  font-family: var(--font-display);
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 48px; font-weight: 900;
   color: var(--text); line-height: 1;
+  transition: color .35s;
 }
-.plan-period { font-size: 15px; color: var(--text-3); font-weight: 500; }
+.plan-period { font-size: 15px; color: var(--text-3); font-weight: 500; transition: color .35s; }
 .plan-feats {
   list-style: none;
   display: flex; flex-direction: column; gap: 13px;
@@ -391,6 +494,7 @@ header {
 .plan-feats li {
   display: flex; align-items: flex-start; gap: 10px;
   font-size: 15px; color: var(--text);
+  transition: color .35s;
 }
 .plan-check {
   width: 20px; height: 20px; border-radius: 50%;
@@ -398,12 +502,13 @@ header {
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700;
   flex-shrink: 0; margin-top: 1px;
+  transition: background-color .35s, color .35s;
 }
 .plan-btn {
   display: flex; align-items: center; justify-content: center;
   padding: 15px; border-radius: 12px;
-  font-family: var(--font-display); font-size: 16px; font-weight: 700;
-  transition: all .2s;
+  font-family: 'Fraunces', Georgia, serif; font-size: 16px; font-weight: 700;
+  transition: all .2s, background-color .35s, border-color .35s, color .35s;
 }
 .plan-btn.outline {
   border: 1.5px solid var(--border); color: var(--text); background: var(--g0);
@@ -411,14 +516,14 @@ header {
 .plan-btn.outline:hover { border-color: var(--accent-l); background: var(--g1); }
 .plan-btn.solid {
   background: var(--accent); color: #fff;
-  box-shadow: 0 4px 14px rgba(22,163,74,.28);
+  box-shadow: 0 4px 14px var(--shadow-cta);
 }
 .plan-btn.solid:hover { background: var(--accent-d); transform: translateY(-1px); }
 .plan-btn.trial {
-  background: var(--text); color: #fff;
+  background: var(--text); color: var(--g0);
   box-shadow: 0 4px 14px rgba(0,0,0,.25);
 }
-.plan-btn.trial:hover { background: #000; transform: translateY(-1px); }
+.plan-btn.trial:hover { filter: brightness(1.15); transform: translateY(-1px); }
 
 /* ── FAQ ───────────────────────────────────────────────── */
 .faq-list {
@@ -426,17 +531,18 @@ header {
   display: flex; flex-direction: column; gap: 10px;
 }
 .faq-item {
-  background: var(--g0);
+  background: var(--card-bg);
   border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 16px;
   overflow: hidden;
+  transition: background-color .35s, border-color .35s;
 }
 .faq-q {
   width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px;
   padding: 19px 22px; background: none; border: none; cursor: pointer;
-  font-family: var(--font-body);
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 15px; font-weight: 600; color: var(--text);
-  text-align: left; transition: background .15s;
+  text-align: left; transition: background .15s, color .35s;
 }
 .faq-q:hover { background: var(--g1); }
 .faq-icon { color: var(--text-3); transition: transform .3s, color .2s; flex-shrink: 0; }
@@ -447,6 +553,7 @@ header {
   transition: max-height .32s ease, padding .32s ease;
   font-size: 15px; color: var(--text-2); line-height: 1.75;
   padding: 0 22px;
+  transition: max-height .32s ease, padding .32s ease, color .35s;
 }
 .faq-item.open .faq-a { max-height: 320px; padding: 0 22px 22px; }
 
@@ -455,7 +562,9 @@ header {
   background: var(--accent-d);
   padding: 100px 0; text-align: center;
   position: relative; overflow: hidden;
+  transition: background-color .35s;
 }
+[data-theme="dark"] .cta-banner { background: #0a1f12; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .cta-banner::before {
   content: '';
   position: absolute; top: -80px; right: -80px;
@@ -470,21 +579,25 @@ header {
 }
 .cta-banner-inner { position: relative; }
 .cta-banner h2 {
-  font-family: var(--font-display);
+  font-family: 'Fraunces', Georgia, serif;
   font-size: clamp(32px, 5vw, 52px);
   font-weight: 900; color: #fff;
   letter-spacing: -.02em; margin-bottom: 14px; line-height: 1.1;
 }
-.cta-banner p { font-size: 17px; color: rgba(255,255,255,.7); margin-bottom: 36px; }
+[data-theme="dark"] .cta-banner h2 { color: var(--text); }
+.cta-banner p { font-size: 17px; color: rgba(255,255,255,.7); margin-bottom: 36px; transition: color .35s; }
+[data-theme="dark"] .cta-banner p { color: var(--text-2); }
 .btn-banner {
   display: inline-flex; align-items: center; gap: 10px;
   background: #fff; color: var(--accent-d);
   padding: 17px 38px; border-radius: 14px;
-  font-family: var(--font-display); font-size: 16px; font-weight: 800;
+  font-family: 'Fraunces', Georgia, serif; font-size: 16px; font-weight: 800;
   box-shadow: 0 10px 32px rgba(0,0,0,.18);
   transition: all .2s;
 }
-.btn-banner:hover { background: var(--g1); transform: translateY(-2px); }
+[data-theme="dark"] .btn-banner { background: var(--accent); color: #fff; box-shadow: 0 10px 32px var(--shadow-cta); }
+.btn-banner:hover { transform: translateY(-2px); filter: brightness(.95); }
+[data-theme="dark"] .btn-banner:hover { background: var(--accent-d); }
 .btn-banner svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ── FOOTER ────────────────────────────────────────────── */
@@ -492,6 +605,7 @@ footer {
   background: var(--g0);
   border-top: 1px solid var(--border);
   padding: 48px 0 32px;
+  transition: background-color .35s, border-color .35s;
 }
 .footer-inner {
   display: flex; flex-direction: column; align-items: center; gap: 24px;
@@ -500,7 +614,7 @@ footer {
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
 .footer-links a { font-size: 14px; font-weight: 500; color: var(--text-3); transition: color .18s; }
 .footer-links a:hover { color: var(--accent); }
-.footer-copy { font-size: 13px; color: var(--text-3); margin-top: 8px; }
+.footer-copy { font-size: 13px; color: var(--text-3); margin-top: 8px; transition: color .35s; }
 
 /* ── RESPONSIVE ────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -508,7 +622,7 @@ footer {
   .burger { display: flex; }
   .section { padding: 72px 0; }
   .hero { padding: 80px 0 96px; }
-  .plans-wrap { grid-template-columns: 1fr; } /* Stack plans on mobile */
+  .plans-wrap { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -520,7 +634,14 @@ footer {
     <div class="header-inner">
       <a class="logo" href="/">
         <div class="logo-mark">
-          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="7" width="14" height="11" rx="3"/>
+            <line x1="12" y1="2" x2="12" y2="5"/>
+            <circle cx="12" cy="2" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="9" cy="12.5" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="15" cy="12.5" r="1.5" fill="#fff" stroke="none"/>
+            <line x1="9" y1="15.5" x2="15" y2="15.5"/>
+          </svg>
         </div>
         OxBot
       </a>
@@ -531,6 +652,10 @@ footer {
         <a href="#faq">FAQ</a>
       </nav>
       <div class="header-right">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
         <a class="btn-ghost-sm" href="/login">Log in</a>
         <a class="btn-cta" href="/register">
           Start free
@@ -550,7 +675,14 @@ footer {
     <div class="drawer-top">
       <a class="logo" href="/">
         <div class="logo-mark" style="width:30px;height:30px;border-radius:8px">
-          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round">
+            <rect x="5" y="7" width="14" height="11" rx="3"/>
+            <line x1="12" y1="2" x2="12" y2="5"/>
+            <circle cx="12" cy="2" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="9" cy="12.5" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="15" cy="12.5" r="1.5" fill="#fff" stroke="none"/>
+            <line x1="9" y1="15.5" x2="15" y2="15.5"/>
+          </svg>
         </div>
         OxBot
       </a>
@@ -565,6 +697,13 @@ footer {
       <a href="#faq">FAQ</a>
     </nav>
     <div class="drawer-foot">
+      <div class="drawer-theme-row">
+        <span>Dark mode</span>
+        <button class="theme-toggle" id="themeToggleDrawer" aria-label="Toggle dark mode" style="width:36px;height:36px;border-radius:8px">
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
       <a class="btn-ghost-sm" href="/login">Log in</a>
       <a class="btn-cta" href="/register">
         Start free
@@ -679,13 +818,11 @@ footer {
       <p class="section-sub" style="margin:0 auto">Coins are used to activate bots. 1 bot costs 20 coins to activate.</p>
     </div>
     <div class="plans-wrap">
-
-      <!-- Free Trial -->
       <div class="plan plan-trial reveal reveal-d1">
         <div class="plan-name">Free Trial</div>
         <div class="plan-price-row" style="margin-bottom: 18px;">
           <span class="plan-amount">$0</span>
-          <span class="plan-period">/ 2 days</span>
+          <span class="plan-period">/ 7 days</span>
         </div>
         <p style="font-size:14px; color:var(--text-2); margin-bottom:24px; line-height:1.6;">Perfect for testing OxBot features before upgrading.</p>
         <ul class="plan-feats">
@@ -693,13 +830,12 @@ footer {
           <li><span class="plan-check">✓</span><span>Antiban protection</span></li>
           <li><span class="plan-check">✓</span><span>24/7 uptime</span></li>
           <li><span class="plan-check">✓</span><span>All basic commands</span></li>
-          <li><span class="plan-check">✓</span><span>Bot lasts 2 days</span></li>
+          <li><span class="plan-check">✓</span><span>Bot lasts 7 days</span></li>
           <li><span class="plan-check">✓</span><span>20 coins required</span></li>
         </ul>
         <a class="plan-btn trial" href="/register">Start free trial</a>
       </div>
 
-      <!-- Basic -->
       <div class="plan reveal reveal-d2">
         <div class="plan-name">Basic</div>
         <div class="plan-coin-badge">🪙 70 coins included</div>
@@ -718,7 +854,6 @@ footer {
         <a class="plan-btn outline" href="/register">Choose Basic</a>
       </div>
 
-      <!-- Pro -->
       <div class="plan featured reveal reveal-d3">
         <div class="plan-crown">Best Value</div>
         <div class="plan-name">Pro</div>
@@ -739,7 +874,6 @@ footer {
         </ul>
         <a class="plan-btn solid" href="/register">Choose Pro</a>
       </div>
-
     </div>
   </div>
 </section>
@@ -832,7 +966,14 @@ footer {
     <div class="footer-inner">
       <a class="logo" href="/">
         <div class="logo-mark">
-          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="7" width="14" height="11" rx="3"/>
+            <line x1="12" y1="2" x2="12" y2="5"/>
+            <circle cx="12" cy="2" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="9" cy="12.5" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="15" cy="12.5" r="1.5" fill="#fff" stroke="none"/>
+            <line x1="9" y1="15.5" x2="15" y2="15.5"/>
+          </svg>
         </div>
         OxBot
       </a>
@@ -850,6 +991,28 @@ footer {
 </footer>
 
 <script>
+/* ── Theme toggle ── */
+function getPreferredTheme() {
+  const stored = localStorage.getItem('oxbot-theme');
+  if (stored) return stored;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('oxbot-theme', theme);
+}
+
+setTheme(getPreferredTheme());
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+document.getElementById('themeToggleDrawer').addEventListener('click', toggleTheme);
+
 /* ── Scroll reveal ── */
 const ro = new IntersectionObserver(entries => {
   entries.forEach(e => {

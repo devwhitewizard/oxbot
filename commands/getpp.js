@@ -84,4 +84,4 @@ module.exports = {
     desc: 'Get profile picture of a user',
     category: 'general',
     execute
-};
+}; 

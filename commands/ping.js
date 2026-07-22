@@ -1,87 +1,95 @@
 /**
- * commands/ping.js
- * Per-user ping, real session uptime, and version
+ * ping.js — Per-session ping, real uptime, speed test
+ * Aliases: .ping, .p
+ * 
+ * Shows THIS user's WhatsApp session uptime, not server uptime.
+ * Uses message edit (like KnightBot) for cleaner UX.
  */
 
-const version = '2.0.0';
-const { activeBots } = require('../oxbot/state'); // Pull real connection state
-
 function formatTime(ms) {
+    if (ms <= 0) return '0s';
     let seconds = Math.floor(ms / 1000);
-    const days = Math.floor(seconds / (24 * 60 * 60));
-    seconds = seconds % (24 * 60 * 60);
-    const hours = Math.floor(seconds / (60 * 60));
-    seconds = seconds % (60 * 60);
+    const days    = Math.floor(seconds / 86400);
+    seconds %= 86400;
+    const hours   = Math.floor(seconds / 3600);
+    seconds %= 3600;
     const minutes = Math.floor(seconds / 60);
-    seconds = seconds % 60;
-    let time = '';
-    if (days > 0)    time += `${days}d `;
-    if (hours > 0)   time += `${hours}h `;
-    if (minutes > 0) time += `${minutes}m `;
-    if (seconds > 0 || time === '') time += `${seconds}s`;
-    return time.trim();
+    seconds %= 60;
+
+    let parts = [];
+    if (days > 0)    parts.push(days + 'd');
+    if (hours > 0)   parts.push(hours + 'h');
+    if (minutes > 0) parts.push(minutes + 'm');
+    if (seconds > 0) parts.push(seconds + 's');
+    return parts.join(' ') || '0s';
 }
 
 async function execute(sock, msg, botData, args) {
+    const chatId = msg.key.remoteJid;
+    if (!chatId) return null;
+
     try {
-        const chatId = msg.key.remoteJid;
-        if (!chatId) return null;
-
-        // ── Calculate Ping Speed ──────────────────────────────────────────────
+        // ── Step 1: Send "Pinging..." message ─────────────────────────────────
         const start = Date.now();
-        await sock.sendMessage(chatId, { text: 'Pong!' }, { quoted: msg });
-        const end  = Date.now();
-        const ping = Math.round((end - start) / 2);
+        const sent = await sock.sendMessage(chatId, {
+            text: '🏓 *Pinging...*'
+        }, { quoted: msg });
 
-        // ── Determine Color & Status ──────────────────────────────────────────
-        let pingIcon, pingStatus;
-        if (ping < 500) {
-            pingIcon = '🟢';
-            pingStatus = 'Excellent';
-        } else if (ping <= 1500) {
-            pingIcon = '🟡';
-            pingStatus = 'Normal';
+        // ── Step 2: Calculate ping (time to send + process) ──────────────────
+        const end = Date.now();
+        const ping = end - start;
+
+        // ── Step 3: Get THIS session's uptime ──────────────────────────────────
+        // sock._connectedAt was set in handler.js initSocket()
+        // This is unique per user — NOT process.uptime() (server time)
+        const connectedAt = sock._connectedAt || Date.now();
+        const sessionUptime = Date.now() - connectedAt;
+
+        // ── Step 4: Ping rating ───────────────────────────────────────────────
+        let icon, status;
+        if (ping < 400) {
+            icon = '🟢'; status = 'Excellent';
+        } else if (ping < 1000) {
+            icon = '🟡'; status = 'Normal';
+        } else if (ping < 2500) {
+            icon = '🟠'; status = 'Slow';
         } else {
-            pingIcon = '🔴';
-            pingStatus = 'Slow / Lagging';
+            icon = '🔴'; status = 'Lagging';
         }
 
-        // ── Get REAL Session Uptime ───────────────────────────────────────────
-        const sessionId = botData?.sessionId;
-        let sessionUptimeMs = 0;
+        // ── Step 5: Edit the "Pinging..." message with results ─────────────────
+        // KnightBot does this — much cleaner than sending 2 separate messages
+        const result = (
+            `${icon} *Pong!*\n\n` +
+            `⚡ *Speed:* ${ping}ms _(${status})_\n` +
+            `⏱️ *Session Uptime:* ${formatTime(sessionUptime)}\n` +
+            `🤖 *Bot:* ${botData?.botName || 'OxBot'}`
+        );
 
-        if (sessionId && activeBots.has(sessionId)) {
-            // ★ FIX: openedAt is in SECONDS in state.js, so multiply by 1000
-            const realConnectTimeSec = activeBots.get(sessionId).openedAt;
-            if (realConnectTimeSec && realConnectTimeSec > 0) {
-                sessionUptimeMs = Date.now() - (realConnectTimeSec * 1000);
-            }
-        }
+        await sock.sendMessage(chatId, {
+            text: result,
+            edit: sent.key,
+        });
 
-        // Fallback to server uptime if bot state is missing
-        if (sessionUptimeMs <= 0) {
-            sessionUptimeMs = process.uptime() * 1000;
-        }
-
-        const botInfo = `
- ${pingIcon} *Ping Status: ${pingStatus}*
-
-⚡ *Speed:* ${ping} ms
-⏱️ *Session Uptime:* ${formatTime(sessionUptimeMs)}
-🔖 *Version:* v${version}
-        `.trim();
-
-        await sock.sendMessage(chatId, { text: botInfo }, { quoted: msg });
-        
         return null;
-    } catch (error) {
-        console.error('Error in ping command:', error.message);
-        return '❌ Failed to get bot status.';
+
+    } catch (err) {
+        console.error('[ping] Error:', err.message);
+
+        // If edit failed (some WhatsApp versions don't support it),
+        // send as a new message instead
+        try {
+            return `🏓 *Pong!*\n\n⚡ Speed: _error_\n⏱️ Uptime: ${formatTime((sock._connectedAt ? Date.now() - sock._connectedAt : 0))}`;
+        } catch {
+            return '❌ Failed to ping.';
+        }
     }
 }
 
 module.exports = {
-    name: 'ping',
-    desc: 'Check bot speed and uptime',
-    execute: execute
+    name:     'ping',
+    aliases:  ['p'],
+    desc:     'Check bot speed and session uptime',
+    category: 'general',
+    execute,
 };

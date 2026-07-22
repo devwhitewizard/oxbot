@@ -1,9 +1,76 @@
-// commands/save.js
-// .save command — reply to a status update (image/video/audio/sticker/document)
-// to save it to the user's DM
+/**
+ * commands/save.js
+ * .save command — Reply to a status to save it to DM (PRO ONLY)
+ */
 
 const fs   = require('fs');
 const path = require('path');
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ★ PRO PLAN CHECKERS ★
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function getOwnerUserId(db, sessionId) {
+    if (!db || !sessionId) return null;
+    try {
+        let [rows] = await db.query(
+            'SELECT user_id, session_id FROM bots WHERE session_id=? LIMIT 1',
+            [sessionId]
+        );
+        if (rows.length) return { userId: rows[0].user_id, dbSessionId: rows[0].session_id };
+
+        // Fallback to oxbot_ prefix
+        if (!String(sessionId).startsWith('oxbot_')) {
+            [rows] = await db.query(
+                'SELECT user_id, session_id FROM bots WHERE session_id=? LIMIT 1',
+                [`oxbot_${sessionId}`]
+            );
+            if (rows.length) return { userId: rows[0].user_id, dbSessionId: rows[0].session_id };
+        }
+        return null;
+    } catch (err) {
+        console.error('[save] getOwnerUserId error:', err.message);
+        return null;
+    }
+}
+
+async function isProUser(db, userId) {
+    if (!userId) return false;
+    try {
+        const [rows] = await db.query(
+            `SELECT id FROM pro_subscriptions WHERE user_id=? AND status='active' AND expires_at > NOW() LIMIT 1`,
+            [userId]
+        );
+        return rows.length > 0;
+    } catch (err) {
+        console.error('[save] isProUser error:', err.message);
+        return false;
+    }
+}
+
+/**
+ * Blocks free users and sends upgrade message
+ * @returns {boolean} true = blocked, false = allowed
+ */
+async function blockIfFree(sock, chatId, msg, db, sessionId) {
+    if (!db || !sessionId) return false; // Dev mode
+
+    const ownerData = await getOwnerUserId(db, sessionId);
+    const userId = ownerData?.userId;
+    const proOn = await isProUser(db, userId);
+
+    if (!proOn) {
+        await sock.sendMessage(chatId, {
+            text: '👑 *Pro Plan Required*\n\n_Status Saver is a premium feature. Free Trial users cannot use this._\n\n_Upgrade to Pro at: https://oxbot.name.ng/dashboard_'
+        }, { quoted: msg });
+        return true; // BLOCKED
+    }
+    return false; // ALLOWED
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ★ MAIN SAVE LOGIC ★
+// ═══════════════════════════════════════════════════════════════════════════════
 
 async function handleSaveCommand(sock, chatId, message, senderId) {
     try {
@@ -153,13 +220,25 @@ async function handleSaveCommand(sock, chatId, message, senderId) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ★ COMMAND EXPORTS ★
+// ═══════════════════════════════════════════════════════════════════════════════
+
 const name     = 'save';
-const desc     = 'Reply to a status with .save to download it to your DM';
+const desc     = 'Reply to a status with .save to download it to your DM (Pro)';
 const category = 'utility';
 
 async function execute(sock, msg, botData, args) {
     const chatId   = msg.key.remoteJid;
     const senderId = msg.key.participant || msg.key.remoteJid;
+    
+    if (!chatId) return null;
+
+    // ★ PRO CHECK (Blocks free users immediately) ★
+    if (await blockIfFree(sock, chatId, msg, botData?.db, botData?.sessionId)) {
+        return null;
+    }
+
     return handleSaveCommand(sock, chatId, msg, senderId);
 }
 

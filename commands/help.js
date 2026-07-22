@@ -3,13 +3,23 @@
  * Aliases: .menu, .bot, .list, .commands, .help
  */
 
-const version = '2.0.0';
+const version = '2.1.0';
 const owner   = 'oxdominion.eth';
 
 function getRAM() {
-    const used  = process.memoryUsage().heapUsed / 1024 / 1024;
-    const total = process.memoryUsage().rss / 1024 / 1024;
-    return `${used.toFixed(1)}MB / ${total.toFixed(1)}MB`;
+    const used  = process.memoryUsage().heapUsed;
+    const total = process.memoryUsage().heapTotal;
+    const pct   = Math.min(100, Math.round((used / total) * 100));
+    
+    const filled  = Math.round((pct / 100) * 10);
+    const empty   = 10 - filled;
+    const bar     = '█'.repeat(filled) + '░'.repeat(empty);
+    
+    let icon = '🟢';
+    if (pct > 70) icon = '🟡';
+    if (pct > 90) icon = '🔴';
+    
+    return `${icon} [${bar}] ${pct}%`;
 }
 
 function getDay() {
@@ -88,7 +98,8 @@ async function execute(sock, msg, botData, args) {
         menuText += `📦 Commands: ${totalCmds}\n`;
         menuText += `🧠 RAM: ${ram}\n`;
         menuText += `📅 ${day}\n`;
-        menuText += `🏷️ Plan: ${planLabel}\n\n`;
+        menuText += `🏷️ Plan: ${planLabel}\n`;
+        menuText += `🌐 Site: https://oxbot.name.ng/\n\n`;
 
         // ── Music & Downloader ─────────────────────────────────────────────
         menuText += `┏━━━━━━━━━━━━━━━━━━━\n`;
@@ -125,8 +136,10 @@ async function execute(sock, msg, botData, args) {
         menuText += `┏━━━━━━━━━━━━━━━━━━━\n`;
         menuText += `┃ 🎮 FUN & GAMES\n`;
         menuText += `┗━━━━━━━━━━━━━━━━━━━\n`;
+        menuText += `│ ➜ .hangman <letter>\n`;
         menuText += `│ ➜ .truth\n`;
         menuText += `│ ➜ .dare\n`;
+        menuText += `│ ➜ .question\n`;
         menuText += `│ ➜ .wasted @user\n`;
         menuText += `│ ➜ .circle\n`;
         menuText += `│ ➜ .joke\n`;
@@ -146,9 +159,23 @@ async function execute(sock, msg, botData, args) {
         menuText += `│ ➜ .blur (caption)\n`;
         menuText += `│ ➜ .save\n`;
         menuText += `│ ➜ .vv\n`;
+        menuText += `│ ➜ .vv2 (reply to view once)\n`;
         menuText += `│ ➜ .tts <text>\n`;
         menuText += `│ ➜ .qr <text/url>\n`;
+        menuText += `│ ➜ .readmore text|hidden\n`;
+        menuText += `│ ➜ .ocr (reply to image)\n`;
         menuText += `│ ➜ .regenerate (tag/reply)\n`;
+        menuText += `\n`;
+
+        // ════════════════════════════════════════════════════════════════════
+        // ── NEW TOOLS SECTION (Encrypt & Decrypt Added Here) ───────────────
+        // ════════════════════════════════════════════════════════════════════
+        menuText += `┏━━━━━━━━━━━━━━━━━━━\n`;
+        menuText += `┃ 🛠️ TOOLS\n`;
+        menuText += `┗━━━━━━━━━━━━━━━━━━━\n`;
+        menuText += `│ ➜ .encrypt <text/code>\n`;
+        menuText += `│ ➜ .decrypt <string>\n`;
+        menuText += `│ ➜ .getchannel (use in channel)\n`;
         menuText += `\n`;
 
         // ── Search & Info ──────────────────────────────────────────────────
@@ -159,6 +186,7 @@ async function execute(sock, msg, botData, args) {
         menuText += `│ ➜ .translate <text>\n`;
         menuText += `│ ➜ .github <username>\n`;
         menuText += `│ ➜ .bible <ref>\n`;
+        menuText += `│ ➜ .calc <math>\n`;    
         menuText += `│ ➜ .ping\n`;
         menuText += `│ ➜ .alive\n`;
         menuText += `│ ➜ .uptime\n`;
@@ -174,8 +202,10 @@ async function execute(sock, msg, botData, args) {
         menuText += `│ ➜ .news science\n`;
         menuText += `│ ➜ .news entertainment\n`;
         menuText += `│ ➜ .currency <amt> <from> <to>\n`;
+        menuText += `│ ➜ .imagine <text>\n`;
         menuText += `│ ➜ .getpp @user\n`;
         menuText += `│ ➜ .getgc\n`;
+        menuText += `│ ➜ .tinyurl <link>\n`;   
         menuText += `│ ➜ .owner\n`; 
         menuText += `\n`;
 
@@ -208,6 +238,7 @@ async function execute(sock, msg, botData, args) {
         menuText += `│ ➜ .tagnotadmin\n`;
         menuText += `│ ➜ .mute\n`;
         menuText += `│ ➜ .antilink <on/off/set>\n`;
+        menuText += `│ ➜ .antisticker <on/off/set>\n`;
         menuText += `│ ➜ .unmute\n`;
         menuText += `│ ➜ .grouplink\n`;
         menuText += `│ ➜ .goodbye <on/off/set>\n`; 
@@ -232,6 +263,9 @@ async function execute(sock, msg, botData, args) {
         menuText += `│ ➜ .setpp (tag/reply image)\n`;
         menuText += `│ ➜ .setmenupicture (reply img)\n`;
         menuText += `│ ➜ .support <message>\n`;
+        menuText += `│ ➜ .block @user\n`;
+        menuText += `│ ➜ .unblock @user\n`;
+        menuText += `│ ➜ .spam <number> <msg>\n`;
         menuText += `│ ➜ .autobio set <text>\n`;
         menuText += `│ ➜ .autobio off\n`;
         menuText += `│ ➜ .autobio status\n`;
@@ -292,11 +326,9 @@ async function execute(sock, msg, botData, args) {
 
         // ── Footer ─────────────────────────────────────────────────────────
         menuText += `╰━━━━━━━━━━━━━━━━━━━\n\n`;
-        menuText += `💡 Type .help <command> for more info\n`;
-        menuText += `🌟 Version: ${version}\n`;
-        menuText += `🔗 https://oxbot.name.ng`;
+        menuText += `💡 Type .help <command> for more info`;
 
-                // ── Newsletter context (shows OxBot channel follow button) ────────────
+        // ── Newsletter context (shows OxBot channel follow button) ────────────
         const contextInfo = {
             forwardingScore: 999,
             isForwarded: true,

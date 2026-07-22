@@ -2,6 +2,7 @@
  * commands/add.js
  * Add a user to the group
  */
+ //fixed
 
 const name     = 'add';
 const desc     = 'Add a user to the group';

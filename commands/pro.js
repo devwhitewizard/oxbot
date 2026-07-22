@@ -51,12 +51,12 @@ async function execute(sock, msg, botData, args) {
     // BUILD RESPONSE DATA
     // ══════════════════════════════════════════════════════════════════════════
     const now = new Date();
-    let planType = 'Free Trial';
+    let planType = 'Free Plan';
     let planIcon = '🆓';
     let daysLeft = 0;
     let maxBots = 1;
     let isPro = false;
-    let proStatus = '';
+    let proStatus = '❌ No active subscription';
     let proExpires = '';
     let proStarted = '';
 
@@ -77,22 +77,8 @@ async function execute(sock, msg, botData, args) {
         }
     }
 
-    if (!isPro) {
-        if (user.created_at) {
-            const remainingMs = (2 * 24 * 60 * 60 * 1000) - (now - new Date(user.created_at));
-            if (remainingMs > 0) {
-                daysLeft = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-                const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
-                proStatus = `⏳ Active — ${remainingHours} hour${remainingHours !== 1 ? 's' : ''} remaining`;
-                maxBots = 1;
-            } else {
-                proStatus = '❌ Expired';
-                daysLeft = 0;
-            }
-        } else {
-            proStatus = '❌ Unknown';
-        }
-    }
+    // ★ NO MORE 2-DAY TRIAL — If not pro, they are strictly on Free Plan ★
+
 
     let botList = '';
     if (allBots.length === 0) {
@@ -113,27 +99,32 @@ async function execute(sock, msg, botData, args) {
     const feat = (name, available) => available ? `  ✅ ${name}` : `  🔒 ${name} _(Pro only)_`;
     let features = '';
     features += feat('Public/Private Mode', true) + '\n';
-    features += feat('Auto Typing', true) + '\n';
-    features += feat('Anti Delete', true) + '\n';
+    features += feat('Auto Typing', isPro) + '\n';
+    features += feat('Anti Delete', isPro) + '\n';
     features += feat('Anti Ban', isPro) + '\n';
     features += feat('Auto Reply', isPro) + '\n';
+    features += feat('Sticker Maker', isPro) + '\n';
+    features += feat('Status Saver', isPro) + '\n';
     features += feat('Custom Menu Picture', isPro) + '\n';
     features += feat('Custom Bot Image', isPro);
 
     let currentFeatures = '';
     currentFeatures += `  Mode: ${s.bot_mode === 'private' ? '🔒 Private' : '🌐 Public'}\n`;
-    currentFeatures += `  Auto Typing: ${s.autotyping ? '🟢 ON' : '⚪ OFF'}\n`;
-    currentFeatures += `  Anti Delete: ${s.antidelete ? '🟢 ON' : '⚪ OFF'}\n`;
     if (isPro) {
+        currentFeatures += `  Auto Typing: ${s.autotyping ? '🟢 ON' : '⚪ OFF'}\n`;
+        currentFeatures += `  Anti Delete: ${s.antidelete ? '🟢 ON' : '⚪ OFF'}\n`;
         currentFeatures += `  Anti Ban: ${s.antiban ? '🟢 ON' : '⚪ OFF'}\n`;
         currentFeatures += `  Auto Reply: ${s.autoreply ? '🟢 ON' : '⚪ OFF'}\n`;
         currentFeatures += `  Menu Image: ${s.menu_image === 'custom' ? '🖼️ Custom' : '⚪ Default'}\n`;
+    } else {
+        currentFeatures += `  _Upgrade to Pro to configure premium settings_\n`;
     }
 
     const serverInfo = thisBot.server || 'Unknown';
     const serverFlag = serverInfo.includes('NG') ? '🇳🇬' : '🇺🇸';
 
-    const totalDays = isPro ? 30 : 2;
+    // ★ Updated bar logic (Uses 1 as base for free to prevent division by zero, showing 0%) ★
+    const totalDays = isPro ? 30 : 1; 
     const pct = Math.min(100, Math.max(0, Math.round((daysLeft / totalDays) * 100)));
     const filled = Math.round(pct / 10);
     const empty = 10 - filled;
@@ -148,9 +139,9 @@ async function execute(sock, msg, botData, args) {
 📦 *Current Plan:* ${planType}
 📊 *Status:* ${proStatus}
  ${barColor} [${bar}] ${pct}%
-   ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining out of ${totalDays}
+   ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining out of ${isPro ? 30 : 0}
 
- ${isPro ? `🗓️ Started: ${proStarted}\n⏰ Expires: ${proExpires}` : `🗓️ Account created: ${formatDate(user.created_at)}`}
+ ${isPro ? `🗓️ Started: ${proStarted}\n⏰ Expires: ${proExpires}` : `🗓️ Joined: ${formatDate(user.created_at)}`}
 
 ━━━━━━━━━━━━━━━━━━━━
 

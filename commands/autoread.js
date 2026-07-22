@@ -2,6 +2,7 @@
  * OxBot — Auto Read Command
  * Automatically marks all messages as read (per-session, stored in SQL)
  */
+ //fixed
 
 // ── Strip device/LID suffix ──
 function cleanNumber(jid) {

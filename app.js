@@ -535,20 +535,19 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 
-
 // ── Mount Routes ──────────────────────────────────────────────────────────────
 app.use(require('./routes/auth'));
 app.use(require('./routes/users'));
 app.use(require('./routes/bots'));
 app.use(require('./routes/tickets'));
 app.use(require('./routes/deposits').router);
+app.use(require('./routes/community'));
 
 // ── API ENDPOINTS ───────────────────────────────────────────────────────────────
 // FIX: Mount server routes at /api so the dashboard can find them
 app.use('/api', serverRoutes);
 
 app.use(require('./routes/admin'));
-
 
 // ── Static page routes fallback ────────────────────────────────────────────────
 
